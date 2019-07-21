@@ -3,7 +3,7 @@ GoUDA
 =====
 
 
-Add a short description here!
+Good Old Utilities for Data Analysis
 
 
 Description
