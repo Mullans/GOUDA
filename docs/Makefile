@@ -6,8 +6,8 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = ../build/sphinx/
-AUTODOCDIR    = api
-AUTODOCBUILD  = sphinx-apidoc
+# AUTODOCDIR    = api
+# AUTODOCBUILD  = sphinx-apidoc
 PROJECT       = GOUDA
 MODULEDIR     = ../src/gouda
 

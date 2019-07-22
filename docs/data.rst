@@ -7,44 +7,58 @@ Requirements
 
 * `NumPy <https://github.com/numpy/numpy>`_
 
+.. automodule:: gouda
+
 File Methods
 =============
-.. automodule:: gouda
-   :members: ensure_dir, next_filename, save_json, load_json
+.. autofunction:: ensure_dir
+.. autofunction:: next_filename
+.. autofunction:: save_json
+.. autofunction:: load_json
 
 Data Methods
 ============
-.. automodule:: gouda
-   :members: arr_sample, sigmoid, get_specificities, get_accuracy, get_binary_confusion_matrix, get_confusion_matrix
+.. autofunction:: arr_sample
+.. autofunction:: sigmoid
+.. autofunction:: get_specificities
+.. autofunction:: get_accuracy
+.. autofunction:: get_binary_confusion_matrix
+.. autofunction:: get_confusion_matrix
 
 Text Methods
 ============
-.. automodule:: gouda
-   :members: underline, print_confusion_matrix
+.. autofunction:: print_confusion_matrix
+.. autofunction:: underline
 
 Statistical Classes
 ===================
 ConfusionMatrix
 ---------------
-.. autoclass:: gouda.ConfusionMatrix
+.. autoclass:: ConfusionMatrix
    :members:
+   :special-members: __add__, __iadd__
+   :private-members:
 
 MMean
 -----
-.. autoclass:: gouda.MMean
+.. autoclass:: MMean
    :members:
+   :special-members: __add__, __iadd__, __str__, __sub__
 
 MStddev
 -------
-.. autoclass:: gouda.MStddev
+.. autoclass:: MStddev
    :members:
+   :special-members: __add__, __iadd__, __str__, __sub__
 
 MMeanArray
 ----------
-.. autoclass:: gouda.MMeanArray
+.. autoclass:: MMeanArray
    :members:
+   :special-members: __add__, __iadd__, __str__, __sub__
 
 MStddevArray
 ------------
-.. autoclass:: gouda.MStddevArray
+.. autoclass:: MStddevArray
    :members:
+   :special-members: __add__, __iadd__, __str__, __sub__

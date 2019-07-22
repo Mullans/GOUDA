@@ -402,12 +402,12 @@ def padded_resize_label(label, size=[960, 540]):
 
 
 def horizontal_flip(image):
-    """This is for convenience, but it is ~2e-7s faster to just do this in-line"""
+    """This is for convenience, but it is ~2e-7s faster to just copy the source and do this in-line"""
     return image[:, ::-1, :]
 
 
 def vertical_flip(image):
-    """This is for convenience, but it is ~1e-7s faster to just do this in-line"""
+    """This is for convenience, but it is ~1e-7s faster to just copy the source and do this in-line"""
     return image[::-1, ...]
 
 

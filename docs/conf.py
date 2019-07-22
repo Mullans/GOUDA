@@ -41,20 +41,20 @@ try:
 except FileNotFoundError:
     pass
 
-try:
-    import sphinx
-    from pkg_resources import parse_version
-
-    cmd_line_template = "sphinx-apidoc -f -o {outputdir} {moduledir}"
-    cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
-
-    args = cmd_line.split(" ")
-    if parse_version(sphinx.__version__) >= parse_version('1.7'):
-        args = args[1:]
-
-    apidoc.main(args)
-except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+# try:
+#     import sphinx
+#     from pkg_resources import parse_version
+#
+#     cmd_line_template = "sphinx-apidoc -f -o {outputdir} {moduledir}"
+#     cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
+#
+#     args = cmd_line.split(" ")
+#     if parse_version(sphinx.__version__) >= parse_version('1.7'):
+#         args = args[1:]
+#
+#     apidoc.main(args)
+# except Exception as e:
+#     print("Running `sphinx-apidoc` failed!\n{}".format(e))
 
 # -- General configuration -----------------------------------------------------
 
@@ -262,10 +262,10 @@ latex_documents = [
 # -- External mapping ------------------------------------------------------------
 python_version = '.'.join(map(str, sys.version_info[0:2]))
 intersphinx_mapping = {
-    'sphinx': ('http://www.sphinx-doc.org/en/stable', None),
-    'python': ('https://docs.python.org/' + python_version, None),
-    'matplotlib': ('https://matplotlib.org', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy', None),
+    # 'sphinx': ('http://www.sphinx-doc.org/en/stable', None),
+    # 'python': ('https://docs.python.org/' + python_version, None),
+    # 'matplotlib': ('https://matplotlib.org', None),
+    # 'numpy': ('https://docs.scipy.org/doc/numpy', None),
     # 'sklearn': ('http://scikit-learn.org/stable', None),
     # 'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),
     # 'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),

@@ -21,9 +21,10 @@ finally:
 def arr_sample(arr, rate):
     """Return an array linearly sampled from the input array at the given rate.
 
-    Example: [1, 2, 3, 4] and rate 2   -> [1, 3]
-
-    Example: [1, 2, 3, 4] and rate 0.5 -> [1, 1, 2, 2, 3, 3, 4, 4]
+    Examples
+    --------
+    [1, 2, 3, 4] and rate 2   -> [1, 3]
+    [1, 2, 3, 4] and rate 0.5 -> [1, 1, 2, 2, 3, 3, 4, 4]
     """
     if arr.ndim != 1:
         raise ValueError("Only 1d arrays can be sampled from.")
@@ -130,7 +131,9 @@ def get_accuracy(confusion_matrix):
 def get_binary_confusion_matrix(predictions, labels, threshold=0.5):
     """Get confusion matrix for 2-class predictions.
 
-    NOTE: predictions can be either boolean values or continuous probabilities
+    Note
+    ----
+    Predictions can be either boolean values or continuous probabilities
     """
     if predictions.dtype != np.bool:
         rounded_pred = predictions > threshold
@@ -147,7 +150,9 @@ def get_binary_confusion_matrix(predictions, labels, threshold=0.5):
 def get_confusion_matrix(predictions, labels, num_classes=None):
     """Get confusion matrix for multi-class predictions.
 
-    NOTE: Predictions and labels must both be integer class labels.
+    Note
+    ----
+    Predictions and labels must both be integer class labels.
     """
     if num_classes is None:
         num_classes = labels.max()
@@ -192,33 +197,44 @@ def print_confusion_matrix(confusion_matrix):
 class ConfusionMatrix(object):
     """
     2D array to represent and evaluate a confusion matrix.
+
+    Parameters
+    ----------
+    predictions : type
+        Optional initial predictions for the matrix. (the default is None)
+    labels : type
+        Optional initial lables for the matrix. (the default is None)
+    threshold : float
+        Threshold to use for binary labels with continuous predictions
+    num_classes : int
+        Number of classes to use for the matrix
+    dtype : numpy.dtype
+        Numpy variable type to use for the matrix
+
+    Attributes
+    ----------
+    shape : [int, int]
+        Shape of the matrix
+    size : [int, int]
+        Size of the matrix (not to be confused with :count: `gouda.ConfusionMatrix.count`)
+    dtype : numpy.dtype
+        Variable type of matrix items
+    num_classes : int
+        Number of possible classes
+
+
+    Note
+    ----
+    Threshold only used for binary class probabilities
+
+    Matrix is 0-indexed
+
+    Dtype may be set to change memory usage, but will always be
+    treated as an int. No checking is done to prevent overflow if
+    dtype is manually set.
     """
     def __init__(self, predictions=None, labels=None, threshold=None, num_classes=None, dtype=np.int):
-        """Initialize new confusion matrix.
 
-        Parameters
-        ----------
-        predictions : type
-            Optional initial predictions for the matrix. (the default is None)
-        labels : type
-            Optional initial lables for the matrix. (the default is None)
-        threshold : float
-            Threshold to use for binary labels with continuous predictions
-        num_classes : int
-            Number of classes to use for the matrix
-        dtype : numpy.dtype
-            Numpy variable type to use for the matrix
-
-        Notes
-        -----
-        Threshold only used for binary class probabilities
-
-        Matrix is 0-indexed
-
-        Dtype may be set to change memory usage, but will always be
-        treated as an int. No checking is done to prevent overflow if
-        dtype is manually set.
-        """
         self.matrix = None
         self._num_classes = 0
         self.threshold = threshold
@@ -326,13 +342,13 @@ class ConfusionMatrix(object):
         threshold : type
             Threshold used for predicted probabilities. Defaults to self.threshold
 
-        NOTES
-        -----
+        NOTE
+        ----
         Accepted formats:
-            predicted class     vs expected class
-            probability of true vs expected boolean
-            class probabilities vs expected class
-            list of predictions vs list of class labels (equal length)
+            * predicted class     vs expected class
+            * probability of true vs expected boolean
+            * class probabilities vs expected class
+            * list of predictions vs list of class labels (equal length)
         """
         if threshold is None:
             threshold = self.threshold
@@ -495,8 +511,8 @@ class MStddev(object):
 class MMeanArray(object):
     """Class to hold an array of independent means that update in constant-time and memory.
 
-    Notes
-    -----
+    Note
+    ----
         Value shape must be the same or broadcastable to the shape of the
         mean array for all operations.
     """
@@ -532,8 +548,8 @@ class MMeanArray(object):
 class MStddevArray(object):
     """Class to hold an array of independent standard deviations that update in constant-time and memory.
 
-    Notes
-    -----
+    Note
+    ----
         Value shape must be the same or broadcastable to the shape of the
         mean array for all operations.
     """
