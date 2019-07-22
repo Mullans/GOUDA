@@ -81,7 +81,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'GoUDA'
+project = u'GOUDA'
 copyright = u'2019, Sean Mullan'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -222,21 +222,21 @@ htmlhelp_basename = 'gouda-doc'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-# 'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-# 'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-# 'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'user_guide.tex', u'GoUDA Documentation',
-   u'Sean Mullan', 'manual'),
+    ('index', 'user_guide.tex', u'GOUDA Documentation',
+     u'Sean Mullan', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -266,7 +266,7 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/' + python_version, None),
     'matplotlib': ('https://matplotlib.org', None),
     'numpy': ('https://docs.scipy.org/doc/numpy', None),
-    'sklearn': ('http://scikit-learn.org/stable', None),
-    'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    # 'sklearn': ('http://scikit-learn.org/stable', None),
+    # 'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),
+    # 'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
 }

@@ -8,7 +8,7 @@ PAPER         =
 BUILDDIR      = ../build/sphinx/
 AUTODOCDIR    = api
 AUTODOCBUILD  = sphinx-apidoc
-PROJECT       = GoUDA
+PROJECT       = GOUDA
 MODULEDIR     = ../src/gouda
 
 # User-friendly check for sphinx-build

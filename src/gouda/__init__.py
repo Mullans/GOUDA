@@ -5,11 +5,12 @@ import json
 import os
 from pkg_resources import DistributionNotFound, get_distribution
 
+import colorama
 import numpy as np
 
 try:
     # Change here if project is renamed and does not equal the package name
-    dist_name = 'GoUDA'
+    dist_name = 'GOUDA'
     __version__ = get_distribution(dist_name).version
 except DistributionNotFound:
     __version__ = 'unknown'
@@ -154,6 +155,38 @@ def get_confusion_matrix(predictions, labels, num_classes=None):
     for i in range(predictions.shape[0]):
         confusion[labels[i], predictions[i]] += 1
     return confusion
+
+
+def print_confusion_matrix(confusion_matrix):
+    """Format and print a confusion matrix"""
+    expected_string = u"\u2193" + " Expected"
+    predicted_string = u"\u2192" + "  Predicted"
+    leading_space = "            "
+    confusion_string = "         "
+    header_string = "".join(['|   {:1d}   '.format(i) for i in range(confusion_matrix.shape[1])])
+    confusion_string += predicted_string + "\n" + expected_string + "  " + underline("        " + header_string + "| Sensitivity") + "\n"
+    for i in range(confusion_matrix.shape[0]):
+        correct = confusion_matrix[i, i]
+        line_string = "    {:1d}   |"
+        for j in range(confusion_matrix.shape[1]):
+            if i == j:
+                line_string += colorama.Fore.GREEN + "{:5d}  " + colorama.Style.RESET_ALL + "|"
+            else:
+                line_string += "{:5d}  |"
+        line_string += "{:.5f}"
+        line_string = line_string.format(i, *confusion_matrix[i], correct / confusion_matrix[i].sum())
+        if i == confusion_matrix.shape[0] - 1:
+            line_string = underline(line_string)
+        confusion_string += leading_space + line_string + '\n'
+
+    specificities = get_specificities(confusion_matrix)
+    specificity_string = '        Specificity'
+    for _ in range(confusion_matrix.shape[1]):
+        specificity_string += ' |{:.4f}'
+    confusion_string += (specificity_string + '\n').format(*specificities)
+    confusion_string += "\nAccuracy: {:.4f}".format(get_accuracy(confusion_matrix))
+
+    print(confusion_string)
 
 
 class ConfusionMatrix(object):
@@ -361,7 +394,6 @@ class ConfusionMatrix(object):
             Confusion matrix formatted for plain-text printing if return_string is True.
 
         """
-        import colorama
         specificities = self.specificity()
         sensitivities = self.sensitivity()
         expected_string = u"\u2193" + " Expected"
@@ -394,39 +426,6 @@ class ConfusionMatrix(object):
             for item in [colorama.Fore.GREEN, colorama.Style.RESET_ALL, '\033[4m', '\033[0m']:
                 confusion_string = confusion_string.replace(item, '')
             return confusion_string
-
-
-def print_confusion_matrix(confusion_matrix):
-    """Format and print a confusion matrix"""
-    import colorama
-    expected_string = u"\u2193" + " Expected"
-    predicted_string = u"\u2192" + "  Predicted"
-    leading_space = "            "
-    confusion_string = "         "
-    header_string = "".join(['|   {:1d}   '.format(i) for i in range(confusion_matrix.shape[1])])
-    confusion_string += predicted_string + "\n" + expected_string + "  " + underline("        " + header_string + "| Sensitivity") + "\n"
-    for i in range(confusion_matrix.shape[0]):
-        correct = confusion_matrix[i, i]
-        line_string = "    {:1d}   |"
-        for j in range(confusion_matrix.shape[1]):
-            if i == j:
-                line_string += colorama.Fore.GREEN + "{:5d}  " + colorama.Style.RESET_ALL + "|"
-            else:
-                line_string += "{:5d}  |"
-        line_string += "{:.5f}"
-        line_string = line_string.format(i, *confusion_matrix[i], correct / confusion_matrix[i].sum())
-        if i == confusion_matrix.shape[0] - 1:
-            line_string = underline(line_string)
-        confusion_string += leading_space + line_string + '\n'
-
-    specificities = get_specificities(confusion_matrix)
-    specificity_string = '        Specificity'
-    for _ in range(confusion_matrix.shape[1]):
-        specificity_string += ' |{:.4f}'
-    confusion_string += (specificity_string + '\n').format(*specificities)
-    confusion_string += "\nAccuracy: {:.4f}".format(get_accuracy(confusion_matrix))
-
-    print(confusion_string)
 
 
 # Moving statistics classes
