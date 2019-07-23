@@ -12,7 +12,7 @@ try:
     # Change here if project is renamed and does not equal the package name
     dist_name = 'GOUDA'
     __version__ = get_distribution(dist_name).version
-except DistributionNotFound:
+except DistributionNotFound:  # pragma: no cover
     __version__ = 'unknown'
 finally:
     del get_distribution, DistributionNotFound
@@ -23,8 +23,8 @@ def arr_sample(arr, rate):
 
     Examples
     --------
-    [1, 2, 3, 4] and rate 2   -> [1, 3]
-    [1, 2, 3, 4] and rate 0.5 -> [1, 1, 2, 2, 3, 3, 4, 4]
+    * [1, 2, 3, 4] and rate 2   -> [1, 3]
+    * [1, 2, 3, 4] and rate 0.5 -> [1, 1, 2, 2, 3, 3, 4, 4]
     """
     if arr.ndim != 1:
         raise ValueError("Only 1d arrays can be sampled from.")
@@ -119,43 +119,75 @@ def underline(string):
 
 
 def get_specificities(confusion_matrix):
-    """Return the specificity for each column in a confusion matrix"""
-    return [confusion_matrix[i, i] / confusion_matrix[:, i].sum() for i in range(confusion_matrix.shape[0])]
+    """Return the specificity for each represented class in a 2D array as from :func:`~gouda.get_confusion_matrix`"""
+    if confusion_matrix.ndim != 2:
+        raise ValueError("Confusion matrix must be a 2D array")
+    if confusion_matrix.shape[0] != confusion_matrix.shape[1]:
+        raise ValueError("Confusion matrix must have the same height and width")
+    tn = np.array([sum([confusion_matrix[j, :i].sum() + confusion_matrix[j, i + 1:].sum() for j in range(confusion_matrix.shape[0]) if j != i]) for i in range(confusion_matrix.shape[0])])
+    fp = np.array([confusion_matrix[i, :].sum() - confusion_matrix[i, i].sum() for i in range(confusion_matrix.shape[0])])
+    return tn / (tn + fp)
+
+
+def get_sensitivities(confusion_matrix):
+    """Return the sensitivity for each represented class in a 2D array as from :func:`~gouda.get_confusion_matrix`"""
+    if confusion_matrix.ndim != 2:
+        raise ValueError("Confusion matrix must be a 2D array")
+    if confusion_matrix.shape[0] != confusion_matrix.shape[1]:
+        raise ValueError("Confusion matrix must have the same height and width")
+    return [confusion_matrix[i, i] / confusion_matrix[i, :].sum() if confusion_matrix[i, :].sum() > 0 else 0 for i in range(confusion_matrix.shape[0])]
 
 
 def get_accuracy(confusion_matrix):
-    """Return the accuracy from a confusion matrix"""
+    """Return the accuracy from a 2D array as from :func:`~gouda.get_confusion_matrix`"""
+    if confusion_matrix.ndim != 2:
+        raise ValueError("Confusion matrix must be a 2D array")
+    if confusion_matrix.shape[0] != confusion_matrix.shape[1]:
+        raise ValueError("Confusion matrix must have the same height and width")
     return np.sum([confusion_matrix[i, i] for i in range(confusion_matrix.shape[0])]) / np.sum(confusion_matrix)
 
 
 def get_binary_confusion_matrix(predictions, labels, threshold=0.5):
-    """Get confusion matrix for 2-class predictions.
+    """Get 2D array like a confusion matrix for 2-class predictions.
 
     Note
     ----
-    Predictions can be either boolean values or continuous probabilities
+    * Predictions can be either boolean values or continuous probabilities
+    * Rows represent expected class and columns represent predicted class
     """
+    predictions = np.array(predictions)
+    labels = np.array(labels)
+    if predictions.ndim != 1 or labels.ndim != 1:
+        raise ValueError("Predictions and labels must be lists or 1-dimensional arrays")
+    if predictions.shape[0] != labels.shape[0]:
+        raise ValueError("There must be an equal number of predictions and labels")
     if predictions.dtype != np.bool:
         rounded_pred = predictions > threshold
     else:
         rounded_pred = predictions
-    output = np.empty((2, 2))
-    output[1, 1] = np.where(rounded_pred == labels, labels, 0).sum()  # true positive
-    output[0, 0] = (1 - np.where(rounded_pred == labels, labels, 1)).sum()  # true negative
-    output[0, 1] = rounded_pred.sum() - output[1, 1]  # false positive
-    output[1, 0] = (1 - rounded_pred.sum()) - output[0, 0]  # false negative
+    output = np.zeros((2, 2), dtype=np.int)
+    for i in range(labels.shape[0]):
+        output[int(labels[i]), int(rounded_pred[i])] += 1
     return output
 
 
 def get_confusion_matrix(predictions, labels, num_classes=None):
-    """Get confusion matrix for multi-class predictions.
+    """Get 2D array like a confusion matrix for multi-class predictions.
 
     Note
     ----
-    Predictions and labels must both be integer class labels.
+    * Predictions and labels will be treated as integer class labels and floats will be truncated.
+    * Matrix is 0-indexed
+    * Rows represent expected class and columns represent predicted class
     """
+    predictions = np.array(predictions).astype(np.int)
+    labels = np.array(labels).astype(np.int)
+    if predictions.ndim != 1 or labels.ndim != 1:
+        raise ValueError("Predictions and labels must be lists or 1-dimensional arrays")
+    if predictions.shape[0] != labels.shape[0]:
+        raise ValueError("There must be an equal number of predictions and labels")
     if num_classes is None:
-        num_classes = labels.max()
+        num_classes = labels.max() + 1
     confusion = np.zeros((num_classes, num_classes))
     for i in range(predictions.shape[0]):
         confusion[labels[i], predictions[i]] += 1
@@ -163,7 +195,7 @@ def get_confusion_matrix(predictions, labels, num_classes=None):
 
 
 def print_confusion_matrix(confusion_matrix):
-    """Format and print a confusion matrix"""
+    """Format and print a 2D array like a confusion matrix as from :func:`~gouda.get_confusion_matrix`"""
     expected_string = u"\u2193" + " Expected"
     predicted_string = u"\u2192" + "  Predicted"
     leading_space = "            "
@@ -211,27 +243,13 @@ class ConfusionMatrix(object):
     dtype : numpy.dtype
         Numpy variable type to use for the matrix
 
-    Attributes
-    ----------
-    shape : [int, int]
-        Shape of the matrix
-    size : [int, int]
-        Size of the matrix (not to be confused with :count: `gouda.ConfusionMatrix.count`)
-    dtype : numpy.dtype
-        Variable type of matrix items
-    num_classes : int
-        Number of possible classes
-
-
     Note
     ----
-    Threshold only used for binary class probabilities
+    * Rows represent expected class and columns represent predicted class
+    * Threshold only used for binary class probabilities
+    * Matrix is 0-indexed
+    * Dtype may be set to change memory usage, but will always be treated as an int. No checking is done to prevent overflow if dtype is manually set.
 
-    Matrix is 0-indexed
-
-    Dtype may be set to change memory usage, but will always be
-    treated as an int. No checking is done to prevent overflow if
-    dtype is manually set.
     """
     def __init__(self, predictions=None, labels=None, threshold=None, num_classes=None, dtype=np.int):
 
@@ -239,32 +257,46 @@ class ConfusionMatrix(object):
         self._num_classes = 0
         self.threshold = threshold
         self.add_warned = False
+        self.matrix_add_warned = False
         if num_classes is not None:
             self.reset(num_classes, dtype=dtype)
+        elif predictions is None and labels is None:
+            self.reset(2, dtype=dtype)
         if predictions is not None and labels is not None:
             self.add(predictions, labels, threshold=threshold)
+            if self.matrix.dtype != dtype:
+                self.matrix = self.matrix.astype(dtype)
 
     @property
     def shape(self):
-        return [self._num_classes, self._num_classes]
+        """The shape of the confusion matrix"""
+        return self.matrix.shape
 
     @property
     def size(self):
-        return self._num_classes * self._num_classes
+        """The size of the confusion matrix"""
+        return self.matrix.size
 
     @property
     def dtype(self):
-        return self.matrix.dtype
+        """The datatype of the values stored in the confusion matrix
 
-    @property
-    def num_classes(self):
-        return self._num_classes
+        :getter: Return the datatype
+        :setter: Re-cast the data in the matrix to a new type
+        :type: numpy.dtype
+        """
+        return self.matrix.dtype
 
     @dtype.setter
     def dtype(self, dtype):
         self.matrix = self.matrix.astype(dtype)
 
-    def reset(self, num_classes=None, dtype=np.int):
+    @property
+    def num_classes(self):
+        """Number of classes represented in the confusion matrix"""
+        return self._num_classes
+
+    def reset(self, num_classes=None, dtype=None):
         """Reset all matrix entries
 
         Parameters
@@ -278,6 +310,8 @@ class ConfusionMatrix(object):
             num_classes = self._num_classes
         if num_classes <= 0:
             raise ValueError("Matrix must have at least 1 class")
+        if dtype is None:
+            dtype = self.matrix.dtype
         self._num_classes = num_classes
         self.matrix = np.zeros((self._num_classes, self._num_classes), dtype=dtype)
 
@@ -290,10 +324,18 @@ class ConfusionMatrix(object):
         """Add two matrices together.
 
         NOTE: Output dtype defaults to first matrix type."""
+        incoming_matrix = np.copy(matrix.matrix)
+        if self.matrix.dtype != matrix.dtype:
+            print("Warning: Second matrix converted from {} to {} in order to match first matrix.".format(matrix.dtype, self.matrix.dtype))
+            self.matrix_add_warned = True
+            incoming_matrix = incoming_matrix.astype(self.matrix.dtype)
         output_size = max(self._num_classes, matrix.num_classes)
         output = np.zeros((output_size, output_size), dtype=self.dtype)
         output[:self._num_classes, :self._num_classes] += self.matrix
-        output[:matrix.num_classes, :matrix.num_classes] += matrix.matrix
+        output[:matrix.num_classes, :matrix.num_classes] += incoming_matrix
+        output_mat = ConfusionMatrix(num_classes=output_size, dtype=self.matrix.dtype)
+        output_mat.matrix = output
+        return output_mat
 
     def __str__(self):
         return str(self.matrix)
@@ -306,29 +348,33 @@ class ConfusionMatrix(object):
         """Get the total accuracy in the matrix"""
         return np.sum([self.matrix[i, i] for i in range(self._num_classes)]) / np.sum(self.matrix)
 
-    def specificity(self, class_label=None):
+    def specificity(self, class_index=None):
         """Return the specificity of all classes or a single class.
 
-        NOTE: specificity = (true negative) / (true negative + false positive) for each class.
+        NOTE
+        ----
+        specificity = (true negative) / (true negative + false positive) for each class.
         """
-        if class_label is None:
+        if class_index is None:
             tn = np.array([sum([self.matrix[j, :i].sum() + self.matrix[j, i + 1:].sum() for j in range(self._num_classes) if j != i]) for i in range(self._num_classes)])
             fp = np.array([self.matrix[i, :].sum() - self.matrix[i, i].sum() for i in range(self._num_classes)])
             return tn / (tn + fp)
         else:
-            tn = sum([self.matrix[j, :class_label].sum() + self.matrix[j, class_label + 1:].sum() for j in range(self._num_classes) if j != class_label])
-            fp = self.matrix[class_label, :].sum() - self.matrix[class_label, class_label].sum()
+            tn = sum([self.matrix[j, :class_index].sum() + self.matrix[j, class_index + 1:].sum() for j in range(self._num_classes) if j != class_index])
+            fp = self.matrix[class_index, :].sum() - self.matrix[class_index, class_index].sum()
             return tn / (tn + fp)
 
-    def sensitivity(self, class_label=None):
+    def sensitivity(self, class_index=None):
         """Return the sensitivity of all classes or a single class.
 
-        NOTE: sensitivity = (true positive) / (true positive + false negative) for each class.
+        NOTE
+        ----
+        sensitivity = (true positive) / (true positive + false negative) for each class.
         """
-        if class_label is None:
+        if class_index is None:
             return [self.matrix[i, i] / self.matrix[i, :].sum() if self.matrix[i, :].sum() > 0 else 0 for i in range(self._num_classes)]
         else:
-            return self.matrix[class_label, class_label] / self.matrix[class_label, :].sum()
+            return self.matrix[class_index, class_index] / self.matrix[class_index, :].sum()
 
     def add(self, predicted, expected, threshold=None):
         """Add data to the confusion Matrix
@@ -361,21 +407,22 @@ class ConfusionMatrix(object):
                     self.add_warned = True
                     print("Warning: Float predicted classes without a threshold are rounded to the nearest integer.")
                 predicted_class = np.round(predicted).astype(int)
+        elif isinstance(predicted, (bool, np.bool_)):
+            predicted_class = 1 if predicted else 0
         elif isinstance(predicted, (int, np.int_)):
             # Single value: class label
             predicted_class = predicted
-        elif isinstance(predicted, (bool, np.bool_)):
-            predicted_class = 1 if predicted else 0
-        elif isinstance(expected, (float, int, bool, np.bool_)):
+        elif isinstance(expected, (float, int, bool, np.bool_)) and isinstance(predicted, (list, np.ndarray)):
             # Class probabilities with single expected label
             predicted_class = np.argmax(predicted).astype(int)
-        elif len(predicted) == len(expected):
+        elif isinstance(predicted, (list, np.ndarray)) and isinstance(expected, (list, np.ndarray))and len(predicted) == len(expected):
             # Paired lists
             for x, y in zip(predicted, expected):
                 self.add(x, y, threshold=threshold)
             return
         else:
             raise ValueError("Unsupported input format")
+
         if not isinstance(expected, (float, np.float_, np.int_, int, bool, np.bool_)):
             print(type(expected))
             raise ValueError("Only 1 expected value per prediction is supported")
@@ -388,7 +435,7 @@ class ConfusionMatrix(object):
 
         max_in = max(predicted_class, expected_class) + 1
         if self.matrix is None:
-            self.reset(max_in)
+            self.reset(max_in, dtype=np.array(expected).dtype)
         if self._num_classes < max_in:
             new_matrix = np.zeros((max_in, max_in), dtype=self.dtype)
             new_matrix[:self._num_classes, :self._num_classes] += self.matrix
@@ -449,104 +496,134 @@ class MMean(object):
     """Class to hold a moving mean with constant-time update and memory."""
 
     def __init__(self):
-        self.mean = 0.0
-        self.count = 0
+        self._mean = 0.0
+        self._count = 0
+
+    @property
+    def count(self):
+        """The count of items included in the mean"""
+        return self._count
 
     def __iadd__(self, value):
         """Update the mean, including the given value."""
-        self.count += 1
-        self.mean += (1.0 / self.count) * (value - self.mean)
+        self._count += 1
+        self._mean += (1.0 / self._count) * (value - self._mean)
         return self
 
     def __add__(self, value):
         """Add a new value to the mean, does not update class values."""
-        return self.mean + value
+        return self._mean + value
 
     def __sub__(self, value):
         """Subtract a new value from the mean, does not update class values."""
-        return self.mean - value
+        return self._mean - value
 
     def __str__(self):
         """Return the mean as a string."""
-        return str(self.mean)
+        return str(self._mean)
 
     def val(self):
         """Return the mean."""
-        return self.mean
+        return self._mean
 
 
 class MStddev(object):
     """Class to hold a moving standard deviation with constant-time update and memory."""
 
     def __init__(self):
-        self.count = 0.0
-        self.mean = 0.0
-        self.stddev = 0.0
+        self._count = 0.0
+        self._mean = 0.0
+        self._variance = 0.0
+
+    @property
+    def count(self):
+        """The count of items included in the standard deviation"""
+        return self._count
 
     def __iadd__(self, value):
         """Update the mean and stddev, including the new value."""
-        self.count += 1
-        prev_mean = self.mean
-        self.mean += (1.0 / self.count) * (value - self.mean)
-        self.stddev += (value - self.mean) * (value - prev_mean)
+        self._count += 1
+        prev_mean = self._mean
+        self._mean += (1.0 / self._count) * (value - self._mean)
+        self._variance += (value - self._mean) * (value - prev_mean)
         return self
 
     def __add__(self, value):
         """Add a value to the stddev, does not update class values."""
-        return self.stddev + value
+        return self.val() + value
 
     def __sub__(self, value):
         """Subtract a value from the stddev, does not update class values."""
-        return self.stddev - value
+        return self.val() - value
 
     def __str__(self):
         """Return the stddev as a string."""
-        return str(self.stddev)
+        if self._count == 0:
+            return str(0)
+        stddev = np.sqrt(self._variance / self._count)
+        return str(stddev)
 
     def val(self):
         """Return the current stddev."""
-        return self.stddev
+        if self._count == 0:
+            return 0
+        return np.sqrt(self._variance / self._count)
 
 
 class MMeanArray(object):
-    """Class to hold an array of independent means that update in constant-time and memory.
+    """Class to hold an array of element-wise independent means that update in constant-time and memory.
 
     Note
     ----
         Value shape must be the same or broadcastable to the shape of the
         mean array for all operations.
     """
+    def __init__(self, shape, dtype=np.float):
+        self._mean = np.zeros(shape, dtype=dtype)
+        self._count = 0
 
-    def __init__(self, shape, dtype=np.float32):
-        self.mean = np.zeros(shape, dtype=dtype)
-        self.count = 0
-        self.shape = shape
+    @property
+    def shape(self):
+        """The shape of the array"""
+        return self._mean.shape
+
+    @property
+    def dtype(self):
+        """The type of data stored in the array"""
+        return self._mean.dtype
+
+    @property
+    def count(self):
+        """The number of examples used for the mean of each item in the array"""
+        return self._count
 
     def __iadd__(self, value):
-        """Update the mean, including the given value."""
-        self.count += 1
-        self.mean += (value - self.mean) * (1.0 / self.count)
+        """Update the _mean, including the given value."""
+        if value.shape != self.shape:
+            raise ValueError('Input values must have the same shape as the MMeanArray')
+        self._count += 1
+        self._mean += (value - self._mean) * (1.0 / self._count)
         return self
 
     def __add__(self, value):
         """Add a new value to the mean, does not update class values."""
-        return self.mean + value
+        return self._mean + value
 
     def __sub__(self, value):
         """Subtract a new value from the mean, does not update class values."""
-        return self.mean - value
+        return self._mean - value
 
     def __str__(self):
-        """Return the mean as a string."""
-        return str(self.mean)
+        """Return the _mean as a string."""
+        return str(self._mean)
 
     def val(self):
-        """Return the mean."""
-        return self.mean
+        """Return the _mean."""
+        return self._mean
 
 
 class MStddevArray(object):
-    """Class to hold an array of independent standard deviations that update in constant-time and memory.
+    """Class to hold an array of element-wise independent standard deviations that update in constant-time and memory.
 
     Note
     ----
@@ -554,32 +631,58 @@ class MStddevArray(object):
         mean array for all operations.
     """
 
-    def __init__(self, shape, dtype=np.float32):
-        self.mean = np.zeros(shape, dtype=dtype)
-        self.stddev = np.zeros(shape, dtype=dtype)
-        self.count = 0
-        self.shape = shape
+    def __init__(self, shape, dtype=np.float):
+        self._mean = np.zeros(shape, dtype=dtype)
+        self._variance = np.zeros(shape, dtype=dtype)
+        self._count = 0
+
+    @property
+    def shape(self):
+        """The shape of the array"""
+        return self._variance.shape
+
+    @property
+    def dtype(self):
+        """The type of data stored in the array"""
+        return self._mean.dtype
+
+    @property
+    def count(self):
+        """The number of examples used for the standard deviation of each item in the array"""
+        return self._count
+
+    def mean(self):
+        """Return the mean of the array"""
+        return self._mean
+
+    def variance(self):
+        """Return the variance of the array"""
+        return self._variance
 
     def __iadd__(self, value):
         """Update the mean and stddev, including the new value."""
-        self.count += 1
-        prev_mean = np.copy(self.mean)
-        self.mean += (value - self.mean) * (1.0 / self.count)
-        self.stddev += (value - self.mean) * (value - prev_mean)
+        if value.shape != self.shape:
+            raise ValueError('Input values must have the same shape as the MStddevArray')
+        self._count += 1
+        prev_mean = np.copy(self._mean)
+        self._mean += (1.0 / self._count) * (value - self._mean)
+        self._variance += (value - self._mean) * (value - prev_mean)
         return self
 
     def __add__(self, value):
         """Add a value to the stddev, does not update class values."""
-        return self.stddev + value
+        return self.val() + value
 
     def __sub__(self, value):
         """Subtract a value from the stddev, does not update class values."""
-        return self.stddev - value
+        return self.val() - value
 
     def __str__(self):
         """Return the stddev as a string."""
-        return str(self.stddev)
+        return str(self.val())
 
     def val(self):
         """Return the current stddev."""
-        return self.stddev
+        if self._count == 0:
+            return np.zeros_like(self._variance)
+        return np.sqrt(self._variance / self._count)

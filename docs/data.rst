@@ -21,6 +21,7 @@ Data Methods
 .. autofunction:: arr_sample
 .. autofunction:: sigmoid
 .. autofunction:: get_specificities
+.. autofunction:: get_sensitivities
 .. autofunction:: get_accuracy
 .. autofunction:: get_binary_confusion_matrix
 .. autofunction:: get_confusion_matrix
@@ -43,22 +44,22 @@ MMean
 -----
 .. autoclass:: MMean
    :members:
-   :special-members: __add__, __iadd__, __str__, __sub__
+   :special-members: __add__, __iadd__, __sub__
 
 MStddev
 -------
 .. autoclass:: MStddev
    :members:
-   :special-members: __add__, __iadd__, __str__, __sub__
+   :special-members: __add__, __iadd__, __sub__
 
 MMeanArray
 ----------
 .. autoclass:: MMeanArray
    :members:
-   :special-members: __add__, __iadd__, __str__, __sub__
+   :special-members: __add__, __iadd__, __sub__
 
 MStddevArray
 ------------
 .. autoclass:: MStddevArray
    :members:
-   :special-members: __add__, __iadd__, __str__, __sub__
+   :special-members: __add__, __iadd__, __sub__

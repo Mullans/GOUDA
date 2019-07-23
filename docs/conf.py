@@ -29,10 +29,10 @@ sys.path.insert(0, os.path.join(__location__, '../src'))
 # setup.py install" in the RTD Advanced Settings.
 # Additionally it helps us to avoid running apidoc manually
 
-try:  # for Sphinx >= 1.7
-    from sphinx.ext import apidoc
-except ImportError:
-    from sphinx import apidoc
+# try:  # for Sphinx >= 1.7
+#     from sphinx.ext import apidoc
+# except ImportError:
+#     from sphinx import apidoc
 
 output_dir = os.path.join(__location__, "api")
 module_dir = os.path.join(__location__, "../src/gouda")
@@ -265,7 +265,7 @@ intersphinx_mapping = {
     # 'sphinx': ('http://www.sphinx-doc.org/en/stable', None),
     # 'python': ('https://docs.python.org/' + python_version, None),
     # 'matplotlib': ('https://matplotlib.org', None),
-    # 'numpy': ('https://docs.scipy.org/doc/numpy', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy', None),
     # 'sklearn': ('http://scikit-learn.org/stable', None),
     # 'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),
     # 'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
