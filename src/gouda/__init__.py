@@ -522,7 +522,11 @@ class MMean(object):
         """Return the mean as a string."""
         return str(self._mean)
 
-    def val(self):
+    def __call__(self):
+        """Alternate method for self.mean()"""
+        return self._mean
+
+    def mean(self):
         """Return the mean."""
         return self._mean
 
@@ -550,11 +554,15 @@ class MStddev(object):
 
     def __add__(self, value):
         """Add a value to the stddev, does not update class values."""
-        return self.val() + value
+        return self.stddev() + value
+
+    def __call__(self):
+        """Alternate method for self.stddev"""
+        return self.stddev()
 
     def __sub__(self, value):
         """Subtract a value from the stddev, does not update class values."""
-        return self.val() - value
+        return self.stddev() - value
 
     def __str__(self):
         """Return the stddev as a string."""
@@ -563,7 +571,11 @@ class MStddev(object):
         stddev = np.sqrt(self._variance / self._count)
         return str(stddev)
 
-    def val(self):
+    def mean(self):
+        """Return the mean"""
+        return self._mean
+
+    def stddev(self):
         """Return the current stddev."""
         if self._count == 0:
             return 0
@@ -617,7 +629,11 @@ class MMeanArray(object):
         """Return the _mean as a string."""
         return str(self._mean)
 
-    def val(self):
+    def __call__(self):
+        """Alternate method for self.mean()"""
+        return self._mean
+
+    def mean(self):
         """Return the _mean."""
         return self._mean
 
@@ -657,7 +673,9 @@ class MStddevArray(object):
 
     def variance(self):
         """Return the variance of the array"""
-        return self._variance
+        if self._count == 0:
+            return np.zeros_like(self._variance)
+        return self._variance / self._count
 
     def __iadd__(self, value):
         """Update the mean and stddev, including the new value."""
@@ -671,17 +689,21 @@ class MStddevArray(object):
 
     def __add__(self, value):
         """Add a value to the stddev, does not update class values."""
-        return self.val() + value
+        return self.stddev() + value
 
     def __sub__(self, value):
         """Subtract a value from the stddev, does not update class values."""
-        return self.val() - value
+        return self.stddev() - value
 
     def __str__(self):
         """Return the stddev as a string."""
-        return str(self.val())
+        return str(self.stddev())
 
-    def val(self):
+    def __call__(self):
+        """Alternate method for self.stddev()"""
+        return self.stddev()
+
+    def stddev(self):
         """Return the current stddev."""
         if self._count == 0:
             return np.zeros_like(self._variance)

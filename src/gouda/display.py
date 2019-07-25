@@ -9,8 +9,13 @@ __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
+FULL_RANGE = 0
+TANH = 1
+SIGMOID = 2
+
+
 def _denorm(x, norm_type=None):
-    """Denormalize an image based on specified or inferred normalization type."""
+    """Denormalize an image to [0, 255] based on specified or inferred normalization type."""
     if norm_type is None:
         if x.max() > 1 and x.max() <= 255 and x.min() >= 0:
             norm_type = 0  # Values are in range 0-255, no norm
@@ -22,9 +27,9 @@ def _denorm(x, norm_type=None):
             raise ValueError(
                 "Given values are not in one of the valid image normalization ranges."
             )
-    if norm_type == 1:
+    if norm_type == TANH:
         x = ((x * 127.5) + 127.5)
-    elif norm_type == 2:
+    elif norm_type == SIGMOID:
         x = (x * 255.0)
     return x.astype(np.uint8)
 
@@ -36,6 +41,7 @@ def show_image(arr):
     and have the origin in the upper left corner.
     """
     plt.imshow(arr.T, origin='lower')
+    plt.axis('off')
     plt.show()
 
 
@@ -43,7 +49,8 @@ def print_grid(image_grid,
                show_axis=False,
                figsize=(8, 8),
                norm_type=None,
-               toFile=None):
+               toFile=None,
+               show=True):
     """Print the input list of images (or list of lists) as a grid with pyplot.
 
     Parameters
@@ -100,7 +107,9 @@ def print_grid(image_grid,
             plt.imshow(img)
     if toFile:
         plt.savefig(toFile)
-    plt.show()
+    if show:
+        plt.show()
+    fig.close()
 
 
 def print_grid_v2(charts, figsize=(8, 8), toFile=None):
