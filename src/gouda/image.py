@@ -8,9 +8,9 @@ __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
-NO_NORM = 0
-TANH_NORM = 1
-SIGMOID_NORM = 2
+FULL_RANGE = 0
+TANH = 1
+SIGMOID = 2
 
 
 def imread(path, as_RGB=True):
@@ -26,6 +26,14 @@ def imwrite(path, image, as_RGB=True):
     if image.ndim == 2:
         image = np.dstack([image, image, image])
         as_RGB = False
+    elif image.ndim == 3 and image.shape[2] == 1:
+        image = image[:, :, 0]
+        image = np.dstack([image, image, image])
+        as_RGB = False
+    elif image.ndim == 3 and image.shape[2] == 3:
+        pass
+    else:
+        raise ValueError("Image must be of shape [x, y, 1], [x, y, 3], or [x, y], not {}".format(image.shape))
     if as_RGB:
         cv2.imwrite(path, image[:, :, ::-1])
     else:
@@ -35,11 +43,11 @@ def imwrite(path, image, as_RGB=True):
 def val_type(x):
     """Get the normalization type used for a numpy array."""
     if x.max() > 1 and x.max() <= 255 and x.min() >= 0:
-        return NO_NORM  # Values are in range 0-255, no norm
+        return FULL_RANGE  # Values are in range 0-255, no norm
     elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:
-        return TANH_NORM  # Values are in range [-1, 1], tanh norm
+        return TANH  # Values are in range [-1, 1], tanh norm
     elif x.min() >= 0 and x.max() <= 1:
-        return SIGMOID_NORM  # Values are in range [0, 1], sigmoid norm
+        return SIGMOID  # Values are in range [0, 1], sigmoid norm
     else:
         raise ValueError(
             "Given values are not in one of the valid image normalization ranges."
@@ -47,39 +55,56 @@ def val_type(x):
 
 
 def denorm(x, norm_type=None):
-    """Denormalize an image based on specified or inferred normalization type."""
+    """Denormalize an image to [0, 255] based on specified or inferred normalization type."""
     if norm_type is None:
-        norm_type = val_type(x)
-    if norm_type == 1:
+        if x.max() > 1 and x.max() <= 255 and x.min() >= 0:
+            norm_type = FULL_RANGE  # Values are in range [0, 255], no norm
+        elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:
+            norm_type = TANH  # Values are in range [-1, 1], tanh norm
+        elif x.min() >= 0 and x.max() <= 1:
+            norm_type = SIGMOID  # Values are in range [0, 1], sigmoid norm
+        else:
+            raise ValueError(
+                "Given values are not in one of the valid image normalization ranges."
+            )
+    if norm_type == TANH:
         x = ((x * 127.5) + 127.5)
-    elif norm_type == 2:
+    elif norm_type == SIGMOID:
         x = (x * 255.0)
     return x.astype(np.uint8)
 
 
-def rescale(data, column_wise=False):
-    """Scale either an image or rows of data to [0, 1]"""
+def rescale(data, column_wise=False, max_val=1, min_val=0, return_type=np.float):
+    """Scale either an image or rows of data to [0, 1].
+
+        NOTE
+        ----
+        If the range of values in a column/image is 0, data will scale to 0
+    """
+    data = data.astype(np.float)
     if column_wise:
         range = data.max(axis=0) - data.min(axis=0)
-        range[range == 0] = 1.0 / data.shape[0]
-        return (data - data.min(axis=0)) / range
+        range[range == 0] = 1
+        rescaled = (data - data.min(axis=0)) / range
+        rescaled[range == 0] = 0
     else:
         range = data.max() - data.min() + 0.0
         if range == 0:
-            return np.zeros_like(data)
+            rescaled = np.zeros_like(data)
         else:
-            return (data - data.min()) / range
+            rescaled = (data - data.min()) / range
+    return ((rescaled * (max_val - min_val)) + min_val).astype(return_type)
 
 
-def stack_label(label, denorm=True):
+def stack_label(label, should_denorm=True):
     """Denormalize and change a 1d label to a 3d image.
 
     Note
     ----
-        If denorm is True, return image is in range [0, 255].
+        If should_denorm is True, return image is in range [0, 255].
     """
     x = np.dstack([label, label, label])
-    if denorm:
+    if should_denorm:
         x = denorm(x)
     return x
 
@@ -126,8 +151,10 @@ def mask(img, mask, overlay=True, norm_type=None, renorm=True):
     output = np.copy(img)
     if mask.ndim == 2:
         mask = mask[:, :, np.newaxis]
-    elif mask.shape[2] == 3:
+    elif mask.ndim == 3 and (mask.shape[2] == 3 or mask.shape[2] == 1):
         mask = np.mean(mask, axis=2, keepdims=True)
+    else:
+        raise ValueError("Mask must have shape [x, y], [x, y, 1], or [x, y, 3], not {}".format(mask.shape))
     if mask.max() > 1.0 or mask.min() < 0:
         raise ValueError('Mask values must be in range [0, 1].')
     mask = (mask * 255.0).astype(np.uint8)
@@ -138,9 +165,9 @@ def mask(img, mask, overlay=True, norm_type=None, renorm=True):
 
     if norm_type is None:
         norm_type = val_type(output)
-    if norm_type == 1:
+    if norm_type == TANH:
         output = ((output * 127.5) + 127.5).astype(np.uint8)
-    elif norm_type == 2:
+    elif norm_type == SIGMOID:
         output = (output * 255.0).astype(np.uint8)
 
     if overlay:
@@ -155,10 +182,14 @@ def mask(img, mask, overlay=True, norm_type=None, renorm=True):
         output[:, :, :1] = mask
 
     if renorm:
-        if norm_type == 1:
-            output = (output.astype(img.dtype) - 127.5) / 127.0
-        if norm_type == 2:
-            output = output.astype(img.dtype) / 255.0
+        if norm_type == TANH:
+            output = output.astype(np.float)
+            output = (output - 127.5) / 127.5
+        elif norm_type == SIGMOID:
+            output = output.astype(np.float)
+            output = output / 255.0
+        else:
+            output = output.astype(img.dtype)
     return output
 
 
@@ -181,59 +212,59 @@ def masked_lineup(image, label, norm_type=None):
     """
     return [
         image,
-        mask(image, label, norm_type),
+        mask(image, label, norm_type=norm_type),
         np.dstack([label * 255,
                    np.zeros_like(label),
                    np.zeros_like(label)]).astype(np.uint8)
     ]
 
 
-def grabCut(image, labels, thresholds=(0.2, 0.6, 0.8), iterations=2):
-    """Use the predicted mask and grabCut algorithm to mask an image."""
+def grabCut(image, labels, use_tresholds=True, thresholds=(0.2, 0.6, 0.8), iterations=2, clean=False):
+    """Use the predicted mask and OpenCV's GrabCut algorithm to mask an image.
+
+    Parameters
+    ----------
+    image : numpy.ndarray
+        input image to mask
+    labels : numpy.ndarray
+        labels for background/foreground.
+    use_thresholds: bool
+        If true, thresholds the labels to find FG/BG components. Otherwise assumes that the values are [0, 2, 3, 1] defined by OpenCV for [BG, PR_BG, PR_FG, FG]
+    thresholds : (int, int, int)
+        Thesholds to divide [BG, PR_BG, PR_FG, FG] in the input labels
+    iterations : int
+        Number of GrabCut iterations to perform (the default is 2).
+    clean : bool
+        Should the GrabCut results be smoothed using :func:`~gouda.image.clean_grabCut_mask` (the default is False).
+
+    Returns
+    -------
+    The GrabCut masked image and the generated mask : numpy.ndarray, numpy.ndarray
+
+    """
     image = denorm(image)
     if labels.max() <= 1:
-        mask = np.zeros_like(image).astype(np.uint8)
+        mask = np.zeros_like(labels, dtype=np.uint8)
+        mask += cv2.GC_BGD
         mask[labels > thresholds[0]] = cv2.GC_PR_BGD
         mask[labels > thresholds[1]] = cv2.GC_PR_FGD
         mask[labels > thresholds[2]] = cv2.GC_FGD
     else:
-        mask = labels
+        mask = labels.astype(np.uint8)
 
-    if labels.sum() == 0:
+    if cv2.GC_FGD not in mask and cv2.GC_PR_FGD not in mask:
         raise ValueError("Labels cannot all be background")
-    elif labels.sum() == labels.size():
+    elif cv2.GC_BGD not in mask and cv2.GC_PR_BGD not in mask:
         raise ValueError("Labels cannot all be foreground")
 
     bg, fg = np.zeros((1, 65), np.float64), np.zeros((1, 65), np.float64)
     cv2.grabCut(image, mask, None, bg, fg, iterations, cv2.GC_INIT_WITH_MASK)
-    mask2 = np.where((mask == 1) + (mask == 3), 1, 0).astype(np.uint8)
-    masked_img = cv2.bitwise_and(image, image, mask=mask2)
-    return masked_img, mask2
-
-
-def label_grabCut(image,
-                  labels,
-                  thresholds=(0, 0.6, 0.8),
-                  iterations=2,
-                  clean=False):
-    """Use the predicted mask and grabCut to threshold a probability label to true/false"""
-    image = denorm(image)
-
-    mask = np.zeros_like(labels).astype(np.uint8)
-    mask[labels > thresholds[0]] = cv2.GC_PR_BGD
-    mask[labels > thresholds[1]] = cv2.GC_PR_FGD
-    mask[labels > thresholds[2]] = cv2.GC_FGD
-
-    bg, fg = np.zeros((1, 65), np.float64), np.zeros((1, 65), np.float64)
-
-    cv2.grabCut(image, mask, None, bg, fg, iterations, cv2.GC_INIT_WITH_MASK)
 
     if clean:
         mask = clean_grabCut_mask(mask)
-
-    mask2 = np.where((mask == 1) + (mask == 3), True, False)
-
-    return mask2
+    mask_out = np.where((mask == 1) + (mask == 3), 1, 0).astype(np.uint8)
+    masked_img = cv2.bitwise_and(image, image, mask=mask_out)
+    return masked_img, mask_out
 
 
 def clean_grabCut_mask(mask):
@@ -314,7 +345,7 @@ def get_bounds(mask):
 
 
 def crop_to_content(image):
-    """Crop image to only be as large as the contained image."""
+    """Crop image to only be as large as the contained image excluding black space."""
     vert = np.mean(image, axis=(-1, 0))
     y_range = np.where(vert > 0)
     horiz = np.mean(image, axis=(-1, 1))
@@ -325,17 +356,20 @@ def crop_to_content(image):
 
 
 def rotate(img, degrees=90):
-    """Rotate image using OpenCV methods."""
+    """Rotate image clock-wise using OpenCV."""
     (h, w) = img.shape[:2]
-    (cX, cY) = (w // 2, h // 2)
-    M = cv2.getRotationMatrix2D((cX, cY), degrees, 1.0)
+    (cX, cY) = (w / 2, h / 2)
+    M = cv2.getRotationMatrix2D((cX, cY), -degrees, 1.0)
     cos = np.abs(M[0, 0])
     sin = np.abs(M[0, 1])
     nW = int((h * sin) + (w * cos))
     nH = int((h * cos) + (w * sin))
     M[0, 2] += (nW / 2) - cX
     M[1, 2] += (nH / 2) - cY
-    return cv2.warpAffine(img, M, (nW, nH))
+    # Fixes a 1-pixel offset courtesy of: https://github.com/opencv/opencv/issues/4585#issuecomment-397895187
+    M[0, 2] += (M[0, 0] + M[0, 1] - 1) / 2
+    M[1, 2] += (M[1, 0] + M[1, 1] - 1) / 2
+    return cv2.warpAffine(img, M, (nW, nH)).astype(img.dtype)
 
 
 def padded_resize(image, size=[960, 540], allow_rotate=True):
@@ -343,8 +377,8 @@ def padded_resize(image, size=[960, 540], allow_rotate=True):
 
     Parameters
     ----------
-    image: image
-        image to resize
+    image: image/path
+        image/path to image to resize
     size: [int, int]
         output size
     allow_rotate: bool
@@ -354,51 +388,35 @@ def padded_resize(image, size=[960, 540], allow_rotate=True):
     if type(image) == str:
         image = imread(image, as_RGB=True)
     data_type = image.dtype
-    x, y = image.shape[:2]
-    if x < y and allow_rotate:
-        image = rotate(image)
+    if image.ndim == 2:
+        x, y = image.shape
+        c = 0
+        image = image[:, :, np.newaxis]
+    else:
+        x, y, c = image.shape
+    if ((size[0] < size[1] and x > y) or (size[0] > size[1] and x < y)) and allow_rotate:
+        image = rotate(image, 90)
         x, y = image.shape[:2]
     padx = int(y * (float(size[0]) / size[1])) - x
     pady = int(x * (float(size[1]) / size[0])) - y
     if abs(padx) > 10 or abs(pady) > 10:
         padx = 10000 if padx < 0 else padx
         pady = 10000 if pady < 0 else pady
-        new_shape = list(image.shape)
         if padx < pady:
-            new_shape[0] += padx
+            new_shape = [x + padx, y, max(c, 1)]
             padded_image = np.zeros(new_shape, dtype=data_type)
             padded_image[int(padx // 2):-int(padx - padx // 2), :] = image
-            image = padded_image
         else:
-            new_shape[1] += pady
+            new_shape = [x, y + pady, max(c, 1)]
             padded_image = np.zeros(new_shape, dtype=data_type)
             padded_image[:, int(pady // 2):-int(pady - pady // 2)] = image
-            image = padded_image
-    return cv2.resize(image, (size[1], size[0]))
-
-
-def padded_resize_label(label, size=[960, 540]):
-    """Resize input label to given size, only padding as needed for aspect ratio."""
-    x, y = label.shape[:2]
-    if label.ndim == 2:
-        label = label[:, :, np.newaxis]
-    if x < y:
-        label = rotate(label, 90).astype(np.bool)
-        x, y = label.shape[:2]
-    padx = int(y * (float(size[0]) / size[1])) - x
-    pady = int(x * (float(size[1]) / size[0])) - y
-    if abs(padx) > 10 or abs(pady) > 10:
-        padx = 10000 if padx < 0 else padx
-        pady = 10000 if pady < 0 else pady
-        if padx < pady:
-            padded_image = np.zeros([x + padx, y, 1], dtype=np.bool)
-            padded_image[int(padx // 2):-int(padx - padx // 2), :, :] = label
-            label = padded_image
-        else:
-            padded_image = np.zeros([x, y + pady, 1], dtype=np.bool)
-            padded_image[:, int(pady // 2):-int(pady - pady // 2), :] = label
-            label = padded_image
-    return cv2.resize(label, (size[1], size[0])).astype(np.bool)
+    else:
+        padded_image = image
+    padded_image = cv2.resize(padded_image, (size[1], size[0])).astype(data_type)
+    if c == 1:
+        # cv2.resize auto-squeezes images
+        return padded_image[:, :, np.newaxis]
+    return padded_image
 
 
 def horizontal_flip(image):

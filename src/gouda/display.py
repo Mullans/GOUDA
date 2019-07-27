@@ -18,7 +18,7 @@ def _denorm(x, norm_type=None):
     """Denormalize an image to [0, 255] based on specified or inferred normalization type."""
     if norm_type is None:
         if x.max() > 1 and x.max() <= 255 and x.min() >= 0:
-            norm_type = 0  # Values are in range 0-255, no norm
+            norm_type = 0  # Values are in range [0, 255], no norm
         elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:
             norm_type = 1  # Values are in range [-1, 1], tanh norm
         elif x.min() >= 0 and x.max() <= 1:
@@ -32,17 +32,6 @@ def _denorm(x, norm_type=None):
     elif norm_type == SIGMOID:
         x = (x * 255.0)
     return x.astype(np.uint8)
-
-
-def show_image(arr):
-    """Show an image transposed and with the origin in the lower corner.
-
-    Not useful for standard images or graphs, but some images are rotated
-    and have the origin in the upper left corner.
-    """
-    plt.imshow(arr.T, origin='lower')
-    plt.axis('off')
-    plt.show()
 
 
 def print_grid(image_grid,

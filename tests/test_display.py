@@ -1,5 +1,6 @@
+import pytest
+
 import numpy as np
-from matplotlib.testing.decorators import image_comparison
 
 from gouda import display
 
@@ -52,9 +53,7 @@ def test_denorm_sigmoid():
     np.testing.assert_array_equal(denormed, denormed1)
 
 
-@image_comparison(baseline_images=['baseline'], remove_text=True, extensions=['png'])
-def test_show_image():
-    image = np.ones([100, 100, 3], dtype=np.uint8)
-    image[:100] -= 1
-    image *= 127
-    display.show_image(image)
+def test_denorm_exception():
+    full_range = np.ones([10, 10], dtype=np.float32) * -2
+    with pytest.raises(ValueError):
+        assert display._denorm(full_range)

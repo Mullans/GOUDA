@@ -14,4 +14,4 @@ Methods
 =======
 
 .. automodule:: gouda.display
-   :members: show_image, print_grid, print_grid_v2
+   :members: print_grid, print_grid_v2
