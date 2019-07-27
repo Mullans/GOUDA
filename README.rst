@@ -9,7 +9,7 @@ Good Old Utilities for Data Analysis
 Description
 ===========
 
-A longer description of your project goes here...
+These are a bunch of miscellaneous data/image utilities that have been made as needed. Full documentation on its way.
 
 
 Note
