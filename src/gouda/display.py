@@ -98,7 +98,7 @@ def print_grid(image_grid,
         plt.savefig(toFile)
     if show:
         plt.show()
-    fig.close()
+    plt.close(fig=fig)
 
 
 def print_grid_v2(charts, figsize=(8, 8), toFile=None):
