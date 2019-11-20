@@ -490,11 +490,15 @@ class ConfusionMatrix(object):
             self._num_classes = max_in
         self.matrix[expected_class, predicted_class] += 1
 
-    def print(self, return_string=False):
+    def print(self, show_specificities=True, show_sensitivities=True, show_accuracy=True, return_string=False):
         """Format and print the confusion matrix
 
         Parameters
         ----------
+        show_specificities : bool
+            Whether to include specificities at end of columns
+        show_sensitivities : bool
+            Whether to include sensitivities at end of rows
         return_string : bool
             Whether to return a plain-text version of the matrix (the default is False).
 
@@ -510,26 +514,35 @@ class ConfusionMatrix(object):
         predicted_string = u"\u2192" + "  Predicted"
         leading_space = "            "
         confusion_string = "         "
-        header_string = "".join(['|   {:1d}   '.format(i) for i in range(self._num_classes)])
-        confusion_string += predicted_string + "\n" + expected_string + "  " + underline("        " + header_string + "| Sensitivity") + "\n"
+        item_width = str(np.ceil(np.log10(self.matrix.max())).astype(np.int))
+        header_string = "        " + "".join([('| {:^' + item_width + 'd} ').format(i) for i in range(self._num_classes)])
+        if show_sensitivities:
+            header_string += "| Sensitivity"
+        confusion_string += predicted_string + "\n" + expected_string + "  " + underline(header_string) + '\n'
         for i in range(self._num_classes):
             line_string = "    {:1d}   |"
             for j in range(self._num_classes):
                 if i == j:
-                    line_string += colorama.Fore.GREEN + "{:5d}  " + colorama.Style.RESET_ALL + "|"
+                    line_string += colorama.Fore.GREEN + " {:" + item_width + "d} " + colorama.Style.RESET_ALL + "|"
                 else:
-                    line_string += "{:5d}  |"
-            line_string += "{:.5f}"
-            line_string = line_string.format(i, *self.matrix[i], sensitivities[i])
+                    line_string += " {:" + item_width + "d} |"
+            if show_sensitivities:
+                line_string += " {:.4f}"
+                line_string = line_string.format(i, *self.matrix[i], sensitivities[i])
+            else:
+                line_string = line_string.format(i, *self.matrix[i])
             if i == self.num_classes - 1:
                 line_string = underline(line_string)
             confusion_string += leading_space + line_string + '\n'
 
-        specificity_string = '        Specificity'
-        for _ in range(self._num_classes):
-            specificity_string += ' |{:.4f}'
-        confusion_string += (specificity_string + '\n').format(*specificities)
-        confusion_string += "\nAccuracy: {:.4f}".format(self.accuracy())
+        if show_specificities:
+            specificity_string = '        Specificity '
+            for _ in range(self._num_classes):
+                specificity_string += '| {:>' + item_width + '.4f} '
+            confusion_string += (specificity_string + '\n').format(*specificities)
+
+        if show_accuracy:
+            confusion_string += "\nAccuracy: {:.4f}".format(self.accuracy())
 
         print(confusion_string)
         if return_string:
