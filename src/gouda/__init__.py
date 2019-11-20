@@ -346,7 +346,7 @@ class ConfusionMatrix(object):
 
     def accuracy(self):
         """Get the total accuracy in the matrix"""
-        return np.sum([self.matrix[i, i] for i in range(self._num_classes)]) / np.sum(self.matrix)
+        return np.sum([self.matrix[i, i] for i in range(self._num_classes)]) / np.sum(self.matrix) if np.sum(self.matrix) > 0 else 0
 
     def specificity(self, class_index=None):
         """Return the specificity of all classes or a single class.
@@ -358,11 +358,12 @@ class ConfusionMatrix(object):
         if class_index is None:
             tn = np.array([sum([self.matrix[j, :i].sum() + self.matrix[j, i + 1:].sum() for j in range(self._num_classes) if j != i]) for i in range(self._num_classes)])
             fp = np.array([self.matrix[i, :].sum() - self.matrix[i, i].sum() for i in range(self._num_classes)])
-            return tn / (tn + fp)
+            return np.divide(tn, tn + fp, where=(tn + fp) > 0)
+
         else:
             tn = sum([self.matrix[j, :class_index].sum() + self.matrix[j, class_index + 1:].sum() for j in range(self._num_classes) if j != class_index])
             fp = self.matrix[class_index, :].sum() - self.matrix[class_index, class_index].sum()
-            return tn / (tn + fp)
+            return np.divide(tn, tn + fp, where=(tn + fp) > 0)
 
     def sensitivity(self, class_index=None):
         """Return the sensitivity of all classes or a single class.
@@ -374,7 +375,7 @@ class ConfusionMatrix(object):
         if class_index is None:
             return [self.matrix[i, i] / self.matrix[i, :].sum() if self.matrix[i, :].sum() > 0 else 0 for i in range(self._num_classes)]
         else:
-            return self.matrix[class_index, class_index] / self.matrix[class_index, :].sum()
+            return self.matrix[class_index, class_index] / self.matrix[class_index, :].sum() if self.matrix[class_index, :].sum() > 0 else 0
 
     def add_array(self, predicted, expected, threshold=None):
         """Add data to the confusion matrix as numpy arrays
@@ -394,7 +395,7 @@ class ConfusionMatrix(object):
             raise ValueError("predicted and expected must be arrays, not {}".format(type(predicted)))
         if not isinstance(expected, np.ndarray):
             raise ValueError("predicted and expected must be arrays, not {}".format(type(expected)))
-        if isinstance(predicted, np.float_):
+        if 'float' in predicted.dtype.name:
             if predicted.ndim == 2:
                 # Assumes predicted samples as [samples, classes]
                 predicted = np.argmax(predicted, axis=1)
@@ -403,9 +404,9 @@ class ConfusionMatrix(object):
                     predicted = np.round(predicted)
                 else:
                     predicted = predicted > threshold
-        if not isinstance(expected, (np.int_, np.bool_)):
+        if not ('int' in expected.dtype.name or 'bool' in expected.dtype.name):
             raise ValueError("Expected must be either an int or a bool, not {}".format(expected.dtype))
-        max_in = max(expected.max(), predicted.max())
+        max_in = max(expected.max(), predicted.max()) + 1
         if self.matrix is None:
             self.reset(max_in, dtype=expected.dtype)
         if self._num_classes < max_in:
@@ -419,7 +420,7 @@ class ConfusionMatrix(object):
             raise ValueError("Expected and predicted must have same shape")
         merged = np.stack([expected, predicted])
         points, counts = np.unique(merged, axis=1, return_counts=True)
-        for i in range(points.shape[0]):
+        for i in range(points.shape[1]):
             self.matrix[points[0, i], points[1, i]] += counts[i]
 
     def add(self, predicted, expected, threshold=None):
