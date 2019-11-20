@@ -355,15 +355,18 @@ def crop_to_content(image):
     return image[x0:x1, y0:y1]
 
 
-def rotate(img, degrees=90):
+def rotate(img, degrees=90, allow_resize=True):
     """Rotate image clock-wise using OpenCV."""
     (h, w) = img.shape[:2]
     (cX, cY) = (w / 2, h / 2)
     M = cv2.getRotationMatrix2D((cX, cY), -degrees, 1.0)
     cos = np.abs(M[0, 0])
     sin = np.abs(M[0, 1])
-    nW = int((h * sin) + (w * cos))
-    nH = int((h * cos) + (w * sin))
+    if allow_resize:
+        nW = int((h * sin) + (w * cos))
+        nH = int((h * cos) + (w * sin))
+    else:
+        nW, nH = w, h
     M[0, 2] += (nW / 2) - cX
     M[1, 2] += (nH / 2) - cY
     # Fixes a 1-pixel offset courtesy of: https://github.com/opencv/opencv/issues/4585#issuecomment-397895187

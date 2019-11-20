@@ -376,6 +376,52 @@ class ConfusionMatrix(object):
         else:
             return self.matrix[class_index, class_index] / self.matrix[class_index, :].sum()
 
+    def add_array(self, predicted, expected, threshold=None):
+        """Add data to the confusion matrix as numpy arrays
+        Parameters
+        ----------
+        predicted : np.ndarray
+            Predicted values to add to the matrix either in same shape as expected or with shape [samples, classes] for probabilities
+        expected : np.ndarray
+            Expected values to add to the matrix
+        threshold : type
+            Threshold to use for predicted probabilities of binary classes. Defaults to self.threshold
+
+        """
+        if threshold is None:
+            threshold = self.threshold
+        if not isinstance(predicted, np.ndarray):
+            raise ValueError("predicted and expected must be arrays, not {}".format(type(predicted)))
+        if not isinstance(expected, np.ndarray):
+            raise ValueError("predicted and expected must be arrays, not {}".format(type(expected)))
+        if isinstance(predicted, np.float_):
+            if predicted.ndim == 2:
+                # Assumes predicted samples as [samples, classes]
+                predicted = np.argmax(predicted, axis=1)
+            else:
+                if threshold is None:
+                    predicted = np.round(predicted)
+                else:
+                    predicted = predicted > threshold
+        if not isinstance(expected, (np.int_, np.bool_)):
+            raise ValueError("Expected must be either an int or a bool, not {}".format(expected.dtype))
+        max_in = max(expected.max(), predicted.max())
+        if self.matrix is None:
+            self.reset(max_in, dtype=expected.dtype)
+        if self._num_classes < max_in:
+            new_matrix = np.zeros((max_in, max_in), dtype=self.dtype)
+            new_matrix[:self._num_classes, :self._num_classes] += self.matrix
+            self.matrix = new_matrix
+            self._num_classes = max_in
+        expected = expected.astype(self.dtype).flatten()
+        predicted = predicted.astype(self.dtype).flatten()
+        if expected.shape != predicted.shape:
+            raise ValueError("Expected and predicted must have same shape")
+        merged = np.stack([expected, predicted])
+        points, counts = np.unique(merged, axis=1, return_counts=True)
+        for i in range(points.shape[0]):
+            self.matrix[points[0, i], points[1, i]] += counts[i]
+
     def add(self, predicted, expected, threshold=None):
         """Add data to the confusion Matrix
 
@@ -386,7 +432,7 @@ class ConfusionMatrix(object):
         expected : [bool, float, int, list]
             Expected value(s) to add to matrix
         threshold : type
-            Threshold used for predicted probabilities. Defaults to self.threshold
+            Threshold used for predicted probabilities of binary classes. Defaults to self.threshold
 
         NOTE
         ----
