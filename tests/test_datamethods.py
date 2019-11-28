@@ -5,6 +5,17 @@ import numpy as np
 import gouda
 
 
+def test_num_digits():
+    assert gouda.num_digits(5) == 1
+    assert gouda.num_digits(9) == 1
+    assert gouda.num_digits(10) == 2
+    assert gouda.num_digits(99) == 2
+    assert gouda.num_digits(100) == 3
+    assert gouda.num_digits(0) == 1
+    assert gouda.num_digits(-1) == 1
+    assert gouda.num_digits(-10) == 2
+
+
 def test_arr_sample():
     temp_data = np.arange(1, 5)
     resampled = gouda.arr_sample(temp_data, 2)
@@ -23,6 +34,45 @@ def test_sigmoid():
     np.testing.assert_almost_equal(gouda.sigmoid(0), 0.5)
     np.testing.assert_almost_equal(gouda.sigmoid(-100), 0)
     np.testing.assert_almost_equal(gouda.sigmoid(100), 1)
+
+
+def test_normalize():
+    test_data = np.arange(1000).reshape([10, 10, 10])
+    normed_1 = gouda.normalize(test_data)
+    assert normed_1.max() == 1
+    assert normed_1.min() == 0
+    assert pytest.approx(normed_1.min(axis=2).sum(), 0.1) == 50
+    normed_2 = gouda.normalize(test_data, axis=1)
+    assert normed_2.max(axis=1).sum() == 100
+    assert normed_2.min(axis=1).sum() == 0
+    assert pytest.approx(normed_2.min(axis=2).sum(), 0.1) == 50
+    normed_3 = gouda.normalize(test_data, axis=(0, 1))
+    assert normed_3.max(axis=(0, 1)).sum() == 10
+    assert normed_3.min(axis=(0, 1)).sum() == 0
+    assert pytest.approx(normed_3.min(axis=2).sum(), 0.1) == 50
+
+
+def test_rescale():
+    test_data = np.arange(10)
+    scaled_1 = gouda.rescale(test_data, new_min=0, new_max=1, axis=2)
+    assert np.testing.assert_array_equal(scaled_1, gouda.normalize(test_data, axis=2))
+
+    scaled_2 = gouda.rescale(test_data, new_min=-1, new_max=2)
+    assert scaled_2.max() == 2
+    assert scaled_2.min() == -1
+
+
+def test_standardize():
+    test_data = np.arange(1000).reshape([10, 10, 10])
+    standard_1 = gouda.standardize(test_data)
+    assert pytest.approx(standard_1.mean(), 0.0001) == 0
+    assert pytest.approx(standard_1.std(), 0.0001) == 1
+    standard_2 = gouda.standardize(test_data, axis=1)
+    assert pytest.approx(standard_2.mean(axis=1), 0.0001) == 0
+    assert pytest.approx(standard_2.std(axis=1), 0.0001) == 1
+    standard_3 = gouda.standardize(test_data, axis=(0, 1))
+    assert pytest.approx(standard_3.mean(axis=(0, 1)), 0.0001) == 0
+    assert pytest.approx(standard_3.std(axis=(0, 1)), 0.0001) == 1
 
 
 def test_get_specificities():

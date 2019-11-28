@@ -333,6 +333,14 @@ def test_rotate():
     np.testing.assert_array_equal(image_test, image.rotate(image_test, degrees=360))
 
 
+def test_rotate_allow_resize():
+    image_test = np.zeros([100, 50, 3], dtype=np.uint8)
+    rotated_1 = image.rotate(image_test, degrees=90, allow_resize=True)
+    assert rotated_1.shape == (50, 100, 3)
+    rotated_2 = image.rotate(image_test, degrees=90, allow_resize=False)
+    assert rotated_2.shape == (100, 50, 3)
+
+
 def test_padded_resize():
     image_test = np.ones([50, 50, 3], dtype=np.uint8)
     image.imwrite("test.png", image_test)

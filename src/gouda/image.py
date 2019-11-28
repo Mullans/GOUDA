@@ -13,22 +13,53 @@ TANH = 1
 SIGMOID = 2
 
 
-def imread(path, as_RGB=True):
-    """SHORTCUT: Load an image from a path using OpenCV modified for RGB."""
-    if as_RGB:
+def imread(path, as_RGB=True, as_greyscale=False, unchanged=False):
+    """SHORTCUT: Load an image from a path using OpenCV modified for RGB.
+
+    Parameters
+    ----------
+    path: string
+        Path to image file
+    as_RGB: bool
+        If true, assumes an RGB image and flips the channels. (OpenCV uses BGR by default)
+    as_greyscale: bool
+        If true, reads the image as greyscale
+    unchanged: bool
+        If true, reads in the image without constraining to 3-channel uint8 format.
+
+    Note
+    ----
+    Priority for options is: unchanged > as_greyscale > as_RGB > default
+    """
+    if unchanged:
+        return cv2.imread(path, -1)
+    elif as_greyscale:
+        return cv2.imread(path, 0)
+    elif as_RGB:
         return cv2.imread(path)[:, :, ::-1]
     else:
         return cv2.imread(path)
 
 
 def imwrite(path, image, as_RGB=True):
-    """SHORTCUT: Write an image to a path using OpenCV modified for RGB."""
+    """SHORTCUT: Write an image to a path using OpenCV modified for RGB.
+
+    Parameters
+    ----------
+    path: string
+        Path to save image file to
+    image: image data
+        image data to save - must be uint8/uint16 and with shape [x, y], [x, y, 1], or [x, y, 3]
+    as_RGB: bool
+        If true, flips the channels before saving (OpenCV assumes BGR image by default)
+        """
     if image.ndim == 2:
-        image = np.dstack([image, image, image])
+        # image = np.dstack([image, image, image])
+        image = image[:, :, np.newaxis]
         as_RGB = False
     elif image.ndim == 3 and image.shape[2] == 1:
-        image = image[:, :, 0]
-        image = np.dstack([image, image, image])
+        # image = image[:, :, 0]
+        # image = np.dstack([image, image, image])
         as_RGB = False
     elif image.ndim == 3 and image.shape[2] == 3:
         pass
@@ -356,7 +387,17 @@ def crop_to_content(image):
 
 
 def rotate(img, degrees=90, allow_resize=True):
-    """Rotate image clock-wise using OpenCV."""
+    """Rotate image clock-wise using OpenCV.
+
+    Parameters
+    ----------
+    img: image (as required by OpenCV getRotationMatrix2D)
+        image/path to rotate
+    degrees: int
+        Degrees to rotate the image clockwise
+    allow_resize: bool
+        If yes, the image boundaries will change to fit the rotated image. Otherwise the output rotated image is cropped to fit the original boundaries.
+    """
     (h, w) = img.shape[:2]
     (cX, cY) = (w / 2, h / 2)
     M = cv2.getRotationMatrix2D((cX, cY), -degrees, 1.0)

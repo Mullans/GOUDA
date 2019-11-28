@@ -18,6 +18,12 @@ finally:
     del get_distribution, DistributionNotFound
 
 
+def num_digits(x):
+    if x == 0:
+        return 1
+    return int(np.ceil(np.log10(np.abs(x) + 1)))
+
+
 def arr_sample(arr, rate):
     """Return an array linearly sampled from the input array at the given rate.
 
@@ -36,12 +42,18 @@ def arr_sample(arr, rate):
     return np.array(out)
 
 
-def ensure_dir(path):
-    """Check if a given directory exists, and create it if it doesn't."""
-    import os
-    if not os.path.exists(path):
-        os.mkdir(path)
-    return path
+def ensure_dir(*paths):
+    """Check if a given directory exists, and create it if it doesn't. Multiple directories can be passed as a top-to-bottom path structure."""
+    full_path = ''
+    for path in paths:
+        full_path = os.path.join(full_path, path)
+        if os.path.exists(full_path) and os.path.isdir(full_path):
+            continue
+        elif os.path.exists(full_path):
+            raise ValueError("A file without an extension is blocking directory creation at {}".format(full_path))
+        else:
+            os.mkdir(full_path)
+    return full_path
 
 
 def next_filename(filename):
@@ -62,6 +74,26 @@ def next_filename(filename):
 def sigmoid(x):
     """Return the sigmoid of the given value/array."""
     return 1.0 / (1.0 + np.exp(-x) + 1e-7)
+
+
+def rescale(data, new_min=0, new_max=1, axis=None):
+    """Rescales data to have range [new_min, new_max] along axis or axes indicated."""
+    data_range = data.max(axis=axis, keepdims=True) - data.min(axis=axis, keepdims=True)
+    x = np.divide(data - data.min(axis=axis, keepdims=True), data_range, where=data_range > 0)
+    new_range = new_max - new_min
+    return (x * new_range) + new_min
+
+
+def normalize(data, axis=None):
+    """Return data normalized to [0, 1] along axis or axes indicated."""
+    data_range = data.max(axis=axis, keepdims=True) - data.min(axis=axis, keepdims=True)
+    return np.divide(data - data.min(axis=axis, keepdims=True), data_range, where=data_range > 0)
+
+
+def standardize(data, axis=None):
+    """Standardize data to have zero mean and unit variance along axis or axes indicated."""
+    stds = data.std(axis=axis, keepdims=True)
+    return np.divide(data - data.mean(axis=axis, keepdims=True), stds, where=stds > 0)
 
 
 def _unnumpy(data):

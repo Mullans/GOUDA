@@ -1,4 +1,7 @@
 import os
+import pathlib
+
+import pytest
 
 import numpy as np
 
@@ -13,7 +16,18 @@ def test_ensure_dir():
     assert test_dir == test_dir2
     assert os.path.isdir("test_dir")
     assert test_dir == "test_dir"
+
+    test_dir_path = gouda.ensure_dir("test_dir", "check1")
+    assert test_dir_path == os.path.join(test_dir, "check1")
+    assert os.path.isdir(test_dir_path)
+
+    pathlib.Path(os.path.join(test_dir_path, 'check2')).touch()
+    with pytest.raises(ValueError):
+        assert gouda.ensure_dir(test_dir_path, "check2")
+
     # Cleanup
+    os.remove(os.path.join(test_dir_path, 'check2'))
+    os.rmdir(test_dir_path)
     os.rmdir('test_dir')
 
 
