@@ -399,7 +399,6 @@ class ConfusionMatrix(object):
         self._num_classes = 0
         self.threshold = threshold
         self.add_warned = False
-        self.matrix_add_warned = False
         if num_classes is not None:
             self.reset(num_classes, dtype=dtype)
         elif predictions is None and labels is None:
@@ -468,8 +467,7 @@ class ConfusionMatrix(object):
         NOTE: Output dtype defaults to first matrix type."""
         incoming_matrix = np.copy(matrix.matrix)
         if self.matrix.dtype != matrix.dtype:
-            print("Warning: Second matrix converted from {} to {} in order to match first matrix.".format(matrix.dtype, self.matrix.dtype))
-            self.matrix_add_warned = True
+            warnings.warn("Second matrix converted from {} to {} in order to match first matrix.".format(matrix.dtype, self.matrix.dtype), UserWarning)
             incoming_matrix = incoming_matrix.astype(self.matrix.dtype)
         output_size = max(self._num_classes, matrix.num_classes)
         output = np.zeros((output_size, output_size), dtype=self.dtype)
@@ -522,7 +520,7 @@ class ConfusionMatrix(object):
     @staticmethod
     def from_array(predicted, expected, threshold=None):
         mat = ConfusionMatrix()
-        mat.add_array(predicted, expected, threshold=None)
+        mat.add_array(predicted, expected, threshold=threshold)
         return mat
 
     def add_array(self, predicted, expected, threshold=None):
@@ -552,6 +550,9 @@ class ConfusionMatrix(object):
                     predicted = np.round(predicted)
                 else:
                     predicted = predicted > threshold
+        if 'float' in expected.dtype.name:
+            warnings.warn("Float type labels will be automatically rounded to the nearest integer", UserWarning)
+            expected = np.round(expected).astype(np.int)
         if not ('int' in expected.dtype.name or 'bool' in expected.dtype.name):
             raise ValueError("Expected must be either an int or a bool, not {}".format(expected.dtype))
         max_in = max(expected.max(), predicted.max()) + 1

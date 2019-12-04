@@ -107,13 +107,15 @@ def test_ConfusionMatrix_add():
     np.testing.assert_array_equal(mat1.matrix, np.ones([3, 3]))
     np.testing.assert_array_equal(mat2.matrix, np.ones([3, 3]))
 
-    mat3 = mat1 + mat2
+    with pytest.warns(UserWarning):
+        mat3 = mat1 + mat2
     assert mat3.dtype == 'int'
     np.testing.assert_array_equal(mat3.matrix, np.ones([3, 3]) * 2)
 
     assert mat1.dtype == 'int'
     assert mat2.dtype == 'float'
-    mat4 = mat2 + mat1
+    with pytest.warns(UserWarning):
+        mat4 = mat2 + mat1
     assert mat4.dtype == 'float'
     np.testing.assert_array_equal(mat4.matrix, np.ones([3, 3]) * 2)
 
@@ -166,3 +168,80 @@ def test_ConfusionMatrix_print():
     confusion_string = mat1.print(return_string=True)
     assert confusion_string is not None
     assert len(confusion_string) > 10
+    assert 'Specificity' in confusion_string
+    assert 'Sensitivity' in confusion_string
+    assert 'Accuracy' in confusion_string
+
+    confusion_string2 = mat1.print(show_specificities=False, return_string=True)
+    assert 'Specificity' not in confusion_string2
+    confusion_string3 = mat1.print(show_sensitivities=False, return_string=True)
+    assert 'Sensitivity' not in confusion_string3
+    confusion_string4 = mat1.print(show_accuracy=False, return_string=True)
+    assert 'Accuracy' not in confusion_string4
+
+
+def test_ConfusionMatrix_from_array_add_array():
+    predictions = np.zeros([100])
+    labels = np.zeros([100])
+    predictions[25:100] = 1
+    labels[50:] = 1
+    mat = gouda.ConfusionMatrix()
+    with pytest.warns(UserWarning):
+        mat.add_array(predictions, labels)
+    np.testing.assert_array_equal(mat.matrix, np.array([[25, 25], [0, 50]]))
+
+    mat2 = gouda.ConfusionMatrix.from_array(predictions, labels.astype(np.int))
+    np.testing.assert_array_equal(mat2.matrix, mat.matrix)
+
+    mat3 = gouda.ConfusionMatrix()
+    mat3.matrix = None
+    mat3.add_array(predictions, labels.astype(np.int))
+    np.testing.assert_array_equal(mat3.matrix, np.array([[25, 25], [0, 50]]))
+
+    mat4 = gouda.ConfusionMatrix(num_classes=1)
+    mat4.add_array(predictions, labels.astype(np.int))
+    np.testing.assert_array_equal(mat4.matrix, np.array([[25, 25], [0, 50]]))
+
+
+def test_ConfusionMatrix_add_array_exception():
+    predictions = np.zeros([10])
+    labels = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    mat = gouda.ConfusionMatrix()
+    with pytest.raises(ValueError):
+        mat.add_array(predictions, labels)
+
+    predictions = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    labels = np.zeros([10])
+    mat = gouda.ConfusionMatrix()
+    with pytest.raises(ValueError):
+        mat.add_array(predictions, labels)
+
+    predictions = np.zeros([10])
+    labels = np.zeros([10]).astype(np.object)
+    mat = gouda.ConfusionMatrix()
+    with pytest.raises(ValueError):
+        mat.add_array(predictions, labels)
+
+    predictions = np.zeros([10], dtype=np.int)
+    labels = np.zeros([8], dtype=np.int)
+    with pytest.raises(ValueError):
+        mat = gouda.ConfusionMatrix.from_array(predictions, labels)
+
+
+def test_ConfusionMatrix_add_array_argmax():
+    predictions = np.array([[0.1, 0.9], [0.3, 0.7], [0.6, 0.4], [1.0, 0.0]])
+    labels = np.array([1, 1, 0, 1])
+    mat = gouda.ConfusionMatrix.from_array(predictions, labels)
+    np.testing.assert_array_equal(mat.matrix, np.array([[1, 0], [1, 2]]))
+
+
+def test_ConfusionMatrix_add_array_threshold():
+    predictions = np.array([0.1, 0.2, 0.6, 0.8])
+    labels = np.array([0, 1, 0, 1])
+    mat = gouda.ConfusionMatrix.from_array(predictions, labels)
+    np.testing.assert_array_equal(mat.matrix, np.ones([2, 2]))
+
+    predictions = np.array([0.1, 0.2, 0.6, 0.8])
+    labels = np.array([0, 1, 0, 1])
+    mat = gouda.ConfusionMatrix.from_array(predictions, labels, threshold=0.7)
+    np.testing.assert_array_equal(mat.matrix, np.array([[2, 0], [1, 1]]))
