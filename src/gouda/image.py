@@ -29,7 +29,8 @@ def imread(path, as_RGB=True, as_greyscale=False, unchanged=False):
 
     Note
     ----
-    Priority for options is: unchanged > as_greyscale > as_RGB > default
+    * Priority for options is: unchanged > as_greyscale > as_RGB > default
+    * Greyscale transforms input image based on perceived color. See [https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor]
     """
     if unchanged:
         return cv2.imread(path, -1)
@@ -479,3 +480,23 @@ def adjust_gamma(image, gamma=1.0):
     table = np.array([((i / 255.0)**invGamma) * 255
                       for i in np.arange(0, 256)]).astype(np.uint8)
     return cv2.LUT(image, table)
+
+
+def polar_to_cartesian(image, output_shape=None):
+    """Convert a square image with a polar object (circle/tube) to cartesian (unroll it).
+
+    NOTE: output_shape uses numpy shape: [rows, columns]
+    """
+    if output_shape is None:
+        output_shape = image.shape
+
+    degrees = np.linspace(0, 360, output_shape[1], endpoint=False, dtype=np.float32)
+    degrees = np.radians(degrees)
+    center = image.shape[0] // 2
+    radius = np.linspace(0, center, output_shape[0], endpoint=False, dtype=np.float32)
+    d, r = np.meshgrid(degrees, radius)
+    newx = r * np.cos(d) + center
+    newy = r * np.sin(d) + center
+
+    output = cv2.remap(image, newx, newy, cv2.INTER_LINEAR)
+    return output

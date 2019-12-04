@@ -519,6 +519,12 @@ class ConfusionMatrix(object):
         else:
             return self.matrix[class_index, class_index] / self.matrix[class_index, :].sum() if self.matrix[class_index, :].sum() > 0 else 0
 
+    @staticmethod
+    def from_array(predicted, expected, threshold=None):
+        mat = ConfusionMatrix()
+        mat.add_array(predicted, expected, threshold=None)
+        return mat
+
     def add_array(self, predicted, expected, threshold=None):
         """Add data to the confusion matrix as numpy arrays
         Parameters

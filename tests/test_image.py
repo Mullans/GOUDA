@@ -19,6 +19,7 @@ def test_imwrite_imread():
     image.imwrite('test_BGR.png', image_test, as_RGB=False)
     image.imwrite('test_singleChannel.png', image_test[:, :, :1])
     image.imwrite('test_2D.png', image_test[:, :, 0])
+    image.imwrite('test_uint16.png', image_test.astype(np.uint16))
     with pytest.raises(ValueError):
         assert image.imwrite('failure.png', image_test[:, :, :2])
 
@@ -26,13 +27,13 @@ def test_imwrite_imread():
     assert os.path.isfile('test_BGR.png')
     assert os.path.isfile('test_singleChannel.png')
     assert os.path.isfile('test_2D.png')
+    assert os.path.isfile('test_uint16.png')
     assert not os.path.isfile('failure.png')
 
     image_test_in_1 = image.imread('test_RGB.png', as_RGB=True)
     image_test_in_2 = image.imread('test_RGB.png', as_RGB=False)
     image_test_in_3 = image.imread('test_BGR.png', as_RGB=True)
     image_test_in_4 = image.imread('test_BGR.png', as_RGB=False)
-
     np.testing.assert_array_equal(image_test_in_1, image_test_in_4)
     np.testing.assert_array_equal(image_test_in_2, image_test_in_3)
 
@@ -41,10 +42,18 @@ def test_imwrite_imread():
 
     np.testing.assert_array_equal(image_test_in_5, image_test_in_6)
 
+    image_test_in_7 = image.imread('test_uint16.png', unchanged=True)
+    assert image_test_in_7.dtype == np.uint16
+
+    image_test_in_8 = image.imread('test_RGB.png', as_greyscale=True)
+    assert image_test_in_8.shape == (100, 100)
+    np.testing.assert_allclose(image_test_in_8, cv2.cvtColor(image_test, cv2.COLOR_RGB2GRAY), rtol=0, atol=1)
+
     os.remove('test_RGB.png')
     os.remove('test_BGR.png')
     os.remove('test_singleChannel.png')
     os.remove('test_2D.png')
+    os.remove('test_uint16.png')
 
 
 def test_val_type():
@@ -409,3 +418,25 @@ def test_adjust_gamma():
     gamma_test_2 = image.adjust_gamma(image_test, gamma=0.5)
     assert gamma_test_1.sum() > image_test.sum()
     assert gamma_test_2.sum() < image_test.sum()
+
+
+def test_polar_to_cartesian():
+    x = np.zeros([200, 200, 3])
+    color1 = (255, 0, 0)
+    color2 = (255, 255, 0)
+    color3 = (255, 0, 255)
+    cv2.circle(x, (100, 100), 50, color1, -1)
+    cv2.circle(x, (100, 100), 25, color2, -1)
+    cv2.circle(x, (100, 100), 10, color3, -1)
+
+    y = image.polar_to_cartesian(x)
+    z = image.polar_to_cartesian(x, output_shape=[400, 100, 3])
+
+    assert y.shape == x.shape
+    assert z.shape == tuple([400, 100, 3])
+    assert (y[0, 0] == color3).all()
+    assert (y[50, 0] == color2).all()
+    assert (y[100, 0] == color1).all()
+    assert (y[0, 0] == z[0, 0]).all()
+    assert(y[50, 0] == z[100, 0]).all()
+    assert(y[100, 0] == z[200, 0]).all()
