@@ -245,3 +245,22 @@ def test_ConfusionMatrix_add_array_threshold():
     labels = np.array([0, 1, 0, 1])
     mat = gouda.ConfusionMatrix.from_array(predictions, labels, threshold=0.7)
     np.testing.assert_array_equal(mat.matrix, np.array([[2, 0], [1, 1]]))
+
+
+def test_ConfusionMatrix_precision_mcc():
+    predictions = np.array([0, 0, 1, 1])
+    labels = np.array([0, 1, 0, 1])
+    mat = gouda.ConfusionMatrix.from_array(predictions, labels)
+    np.testing.assert_array_equal(mat.precision(), np.array([0.5, 0.5]))
+    np.testing.assert_array_equal(np.array([mat.precision(0), mat.precision(1)]), mat.precision())
+    assert mat.mcc() == 0.0
+
+    predictions = np.array([0, 0, 1, 1, 1])
+    labels = np.array([0, 0, 0, 1, 1])
+    mat2 = gouda.ConfusionMatrix.from_array(predictions, labels)
+    np.testing.assert_array_equal(mat2.precision(), np.array([2.0 / 2.0, 2.0 / 3.0]))
+    assert mat2.mcc() == 2.0 / 3.0
+
+    mat3 = gouda.ConfusionMatrix.from_array(np.array([1, 2, 3]), np.array([1, 2, 3]))
+    with pytest.raises(ValueError):
+        mat3.mcc()

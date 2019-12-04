@@ -506,7 +506,7 @@ class ConfusionMatrix(object):
             return np.divide(tn, tn + fp, where=(tn + fp) > 0)
 
     def sensitivity(self, class_index=None):
-        """Return the sensitivity of all classes or a single class.
+        """Return the sensitivity of all classes or a single class. AKA recall
 
         NOTE
         ----
@@ -516,6 +516,33 @@ class ConfusionMatrix(object):
             return [self.matrix[i, i] / self.matrix[i, :].sum() if self.matrix[i, :].sum() > 0 else 0 for i in range(self._num_classes)]
         else:
             return self.matrix[class_index, class_index] / self.matrix[class_index, :].sum() if self.matrix[class_index, :].sum() > 0 else 0
+
+    def precision(self, class_index=None):
+        """Return the precision of all classes or a single class.
+
+        NOTE
+        ----
+        precision = (true positive) / (true positive + false positive)
+        """
+        if class_index is None:
+            return [self.matrix[i, i] / self.matrix[:, i].sum() if self.matrix[:, i].sum() > 0 else 0 for i in range(self._num_classes)]
+        else:
+            return self.matrix[class_index, class_index] / self.matrix[:, class_index].sum() if self.matrix[class_index, :].sum() > 0 else 0
+
+    def mcc(self):
+        """Return the Matthews correlation coefficient of a binary confusion matrix.
+
+        NOTE
+        ----
+        mcc = ((tp * tn) - (fp * fn)) / sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+        """
+        if self._num_classes != 2:
+            raise ValueError("Matthews correlation coefficient only applies to binary classifications")
+        tp = self.matrix[1, 1]
+        tn = sum([self.matrix[j, j] for j in range(self._num_classes) if j != 1])
+        fp = sum([self.matrix[j, 1] for j in range(self._num_classes) if j != 1])
+        fn = sum([self.matrix[:, j].sum() - self.matrix[j, j] for j in range(self._num_classes) if j != 1])
+        return ((tp * tn) - (fp * fn)) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
 
     @staticmethod
     def from_array(predicted, expected, threshold=None):
