@@ -3,6 +3,7 @@
 import copy
 import json
 import os
+import warnings
 from pkg_resources import DistributionNotFound, get_distribution
 
 import colorama
@@ -96,52 +97,161 @@ def standardize(data, axis=None):
     return np.divide(data - data.mean(axis=axis, keepdims=True), stds, where=stds > 0)
 
 
-def _unnumpy(data):
-    """Convert numpy arrays to lists for JSON"""
-    if type(data) == list:
-        new_data = []
-        for i in range(len(data)):
-            new_data.append(_unnumpy(data[i]))
-    elif type(data) == dict:
-        new_data = {}
-        for key in data.keys():
-            new_data[key] = _unnumpy(data[key])
-    elif type(data) == np.ndarray:
-        new_data = {"numpy_array": data.tolist(), "dtype": str(data.dtype), "shape": data.shape}
-    else:
-        new_data = copy.copy(data)
-    return new_data
+# def _unnumpy(data):
+#     """Convert numpy arrays to lists for JSON"""
+#     if type(data) == list:
+#         new_data = []
+#         for i in range(len(data)):
+#             new_data.append(_unnumpy(data[i]))
+#     elif type(data) == dict:
+#         new_data = {}
+#         for key in data.keys():
+#             new_data[key] = _unnumpy(data[key])
+#     elif type(data) == np.ndarray:
+#         new_data = {"numpy_array": data.tolist(), "dtype": str(data.dtype), "shape": data.shape}
+#     else:
+#         new_data = copy.copy(data)
+#     return new_data
+#
+#
+# def _renumpy(data):
+#     """Convert JSON back to numpy arrays"""
+#     if type(data) == list:
+#         for i in range(len(data)):
+#             data[i] = _renumpy(data[i])
+#     elif type(data) == dict:
+#         if "numpy_array" in data:
+#             data = np.array(data['numpy_array']).astype(data['dtype']).reshape(data['shape'])
+#         else:
+#             for key in data.keys():
+#                 data[key] = _renumpy(data[key])
+#     return data
+#
+#
+# def save_json(data, filename, numpy=False):
+#     """Save a list/dict as a json object.
+#
+#     NOTE
+#     ----
+#     This is intended for structures with small numpy arrays (if any). Large arrays such as images may take a while to process and make it hard to read the JSON.
+#     """
+#     if numpy:
+#         data = _unnumpy(data)
+#     with open(filename, 'w') as f:
+#         json.dump(data, f, indent=2, sort_keys=True)
+#
+#
+# def load_json(filename, numpy=False):
+#     """Load a json file as a list/dict."""
+#     with open(filename, 'r') as f:
+#         data = json.load(f)
+#         if numpy:
+#             data = _renumpy(data)
+#         return data
 
+def save_json(data, filename, embed_arrays=True, compressed=False):
+    """Save a list/dict/numpy.ndarray as a JSON file.
 
-def _renumpy(data):
-    """Convert JSON back to numpy arrays"""
-    if type(data) == list:
-        for i in range(len(data)):
-            data[i] = _renumpy(data[i])
-    elif type(data) == dict:
-        if "numpy_array" in data:
-            data = np.array(data['numpy_array']).astype(data['dtype']).reshape(data['shape'])
+    Parameters
+    ----------
+    data : [list, dict, numpy.ndarray]
+        Data to save as a JSON file
+    filename : string
+        Path to write the JSON to
+    embed_arrays : bool [defaults to True]
+        Whether to embed any numpy arrays into the JSON as lists with metadata. If false saves them to a separate file with placeholders in the JSON.
+    compressed : bool [defaults to False]
+        If saving numpy arrays in a separate file, this determines if they are zipped or not.
+
+    NOTE
+    ----
+    JSON files saved this way can be read with any JSON reader, but will have an extra numpy tag at the end that is used to tell :func:`~gouda.load_json` how to read the arrays back in.
+    """
+    out_arrays = {}
+    used_numpy = [False]
+    if embed_arrays and compressed:
+        warnings.warn('Cannot compress an array that is embedded in a JSON', UserWarning)
+        compressed = False
+
+    def unnumpy(_data):
+        if isinstance(_data, list):
+            new_data = []
+            for i in range(len(_data)):
+                new_data.append(unnumpy(_data[i]))
+        elif isinstance(_data, dict):
+            new_data = {}
+            for key in _data.keys():
+                new_data[key] = unnumpy(_data[key])
+        elif isinstance(_data, np.ndarray):
+            used_numpy[0] = True
+            if embed_arrays:
+                new_data = {"numpy_array": _data.tolist(), "dtype": str(_data.dtype), "shape": _data.shape}
+            else:
+                new_data = {"numpy_array": 'array_{}'.format(len(out_arrays)), 'dtype': str(_data.dtype), 'shape': _data.shape}
+                out_arrays['array_{}'.format(len(out_arrays))] = _data
         else:
-            for key in data.keys():
-                data[key] = _renumpy(data[key])
-    return data
+            new_data = copy.copy(_data)
+        return new_data
 
-
-def save_json(data, filename, numpy=False):
-    """Save a list/dict as a json object."""
-    if numpy:
-        data = _unnumpy(data)
+    data = unnumpy(data)
+    if used_numpy[0]:
+        if not isinstance(data, list):
+            data = [data]
+        if compressed:
+            data.append('numpy_zip')
+        elif embed_arrays:
+            data.append('numpy_embed')
+        else:
+            data.append('numpy')
     with open(filename, 'w') as f:
         json.dump(data, f, indent=2, sort_keys=True)
+    if len(out_arrays) != 0:
+        np_filename = filename.rsplit('.', 1)[0]
+        if compressed:
+            np.savez_compressed(np_filename + '_arrayzip.npz', **out_arrays)
+        else:
+            np.savez(np_filename + '_array.npz', **out_arrays)
 
 
-def load_json(filename, numpy=False):
-    """Load a json file as a list/dict."""
+def load_json(filename):
+    """Load a JSON file, and re-form any numpy arrays if :func:`~gouda.save_json` was used to write them."""
     with open(filename, 'r') as f:
         data = json.load(f)
-        if numpy:
-            data = _renumpy(data)
-        return data
+    if isinstance(data, list):
+        if data[-1] == 'numpy':
+            np_filename = filename.rsplit('.', 1)[0] + '_array.npz'
+            arrays = np.load(np_filename)
+        elif data[-1] == 'numpy_zip':
+            np_filename = filename.rsplit('.', 1)[0] + '_arrayzip.npz'
+            arrays = np.load(np_filename)
+        elif data[-1] == 'numpy_embed':
+            pass
+        else:
+            return data
+
+        def renumpy(_data):
+            if isinstance(_data, list):
+                for i in range(len(_data)):
+                    _data[i] = renumpy(_data[i])
+            elif isinstance(_data, dict):
+                if 'numpy_array' in _data:
+                    if isinstance(_data['numpy_array'], list):
+                        new_data = np.array(_data['numpy_array'], dtype=_data['dtype']).reshape(_data['shape'])
+                    else:
+                        new_data = arrays[_data['numpy_array']]
+                        if new_data.dtype != _data['dtype'] or list(new_data.shape) != _data['shape']:
+                            raise ValueError("Numpy array file doesn't match expected stored numpy array data")
+                    return new_data
+                else:
+                    for key in _data.keys():
+                        _data[key] = renumpy(_data[key])
+            return _data
+
+        data = data[:-1]
+        if len(data) == 1:
+            data = data[0]
+        data = renumpy(data)
+    return data
 
 
 # Confusion Matrix utils
@@ -413,9 +523,9 @@ class ConfusionMatrix(object):
         """Add data to the confusion matrix as numpy arrays
         Parameters
         ----------
-        predicted : np.ndarray
+        predicted : numpy.ndarray
             Predicted values to add to the matrix either in same shape as expected or with shape [samples, classes] for probabilities
-        expected : np.ndarray
+        expected : numpy.ndarray
             Expected values to add to the matrix
         threshold : type
             Threshold to use for predicted probabilities of binary classes. Defaults to self.threshold

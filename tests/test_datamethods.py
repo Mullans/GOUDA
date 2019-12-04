@@ -53,9 +53,9 @@ def test_normalize():
 
 
 def test_rescale():
-    test_data = np.arange(10)
-    scaled_1 = gouda.rescale(test_data, new_min=0, new_max=1, axis=2)
-    assert np.testing.assert_array_equal(scaled_1, gouda.normalize(test_data, axis=2))
+    test_data = np.arange(100).reshape([10, 10])
+    scaled_1 = gouda.rescale(test_data, new_min=0, new_max=1, axis=1)
+    np.testing.assert_array_equal(scaled_1, gouda.normalize(test_data, axis=1))
 
     scaled_2 = gouda.rescale(test_data, new_min=-1, new_max=2)
     assert scaled_2.max() == 2

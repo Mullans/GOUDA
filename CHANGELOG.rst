@@ -18,3 +18,4 @@ Version 0.2
 - Add standardize/rescale/normalize methods
 - Can now pass a list of directories to ensure_dir to be made as part of one path
 - Added num_digits
+- Changed load_json/save_json to allow for splitting large arrays into a .npz file with placeholder keys in the JSON
