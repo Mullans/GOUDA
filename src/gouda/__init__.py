@@ -554,7 +554,19 @@ class ConfusionMatrix(object):
         tn = sum([self.matrix[j, j] for j in range(self._num_classes) if j != 1])
         fp = sum([self.matrix[j, 1] for j in range(self._num_classes) if j != 1])
         fn = sum([self.matrix[:, j].sum() - self.matrix[j, j] for j in range(self._num_classes) if j != 1])
-        return ((tp * tn) - (fp * fn)) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+        with warnings.catch_warnings(record=False):
+            warnings.filterwarnings('error')
+            try:
+                result = ((tp * tn) - (fp * fn)) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+            except RuntimeWarning:
+                # Defaults to this in case of overflow issues with large matrices
+                n = tn + tp + fn + fp + 0.0
+                s = (tp + fn) / n
+                p = (tp + fp) / n
+                top = (tp / n) - (s * p)
+                bottom = p * s * (1 - s) * (1 - p)
+                result = top / np.sqrt(bottom)
+        return result
 
     @staticmethod
     def from_array(predicted, expected, threshold=None):
