@@ -44,7 +44,19 @@ def arr_sample(arr, rate):
 
 
 def ensure_dir(*paths):
-    """Check if a given directory exists, and create it if it doesn't. Multiple directories can be passed as a top-to-bottom path structure."""
+    """Check if a given directory exists, and create it if it doesn't. Multiple directories can be passed as a top-to-bottom path structure.
+
+    Parameters
+    ----------
+    *paths : iterable
+        One or more nested directories to ensure
+
+    Returns
+    -------
+    str
+        Joined filepath of all ensured directories
+
+    """
     full_path = ''
     for path in paths:
         full_path = os.path.join(full_path, path)
@@ -569,7 +581,7 @@ class ConfusionMatrix(object):
         if not isinstance(expected, np.ndarray):
             raise ValueError("predicted and expected must be arrays, not {}".format(type(expected)))
         if 'float' in predicted.dtype.name:
-            if predicted.ndim == 2:
+            if predicted.ndim == 2 and predicted.shape[1] > 1:
                 # Assumes predicted samples as [samples, classes]
                 predicted = np.argmax(predicted, axis=1)
             else:
