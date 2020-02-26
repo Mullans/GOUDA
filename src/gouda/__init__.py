@@ -492,6 +492,18 @@ class ConfusionMatrix(object):
     def __str__(self):
         return str(self.matrix)
 
+    def __getitem__(self, key):
+        """Access values of the confusion matrix"""
+        return self.matrix[key]
+
+    def __setitem__(self, key, value):
+        """Manually set values of the confusion matrix -- NOT RECOMMENDED - USE ADDING/RESET METHODS"""
+        self.matrix[key] = value
+
+    def __len__(self):
+        """Get length of confusion matrix (number of classes)"""
+        return self._num_classes
+
     def count(self):
         """Count the number of items in the matrix"""
         return self.matrix.sum()
@@ -551,9 +563,12 @@ class ConfusionMatrix(object):
         if self._num_classes != 2:
             raise ValueError("Matthews correlation coefficient only applies to binary classifications")
         tp = self.matrix[1, 1]
-        tn = sum([self.matrix[j, j] for j in range(self._num_classes) if j != 1])
-        fp = sum([self.matrix[j, 1] for j in range(self._num_classes) if j != 1])
-        fn = sum([self.matrix[:, j].sum() - self.matrix[j, j] for j in range(self._num_classes) if j != 1])
+        tn = self.matrix[0, 0]
+        fp = self.matrix[0, 1]
+        fn = self.matrix[1, 0]
+        # tn = sum([self.matrix[j, j] for j in range(self._num_classes) if j != 1])
+        # fp = sum([self.matrix[j, 1] for j in range(self._num_classes) if j != 1])
+        # fn = sum([self.matrix[:, j].sum() - self.matrix[j, j] for j in range(self._num_classes) if j != 1])
         with warnings.catch_warnings(record=False):
             warnings.filterwarnings('error')
             try:
@@ -567,6 +582,10 @@ class ConfusionMatrix(object):
                 bottom = p * s * (1 - s) * (1 - p)
                 result = top / np.sqrt(bottom)
         return result
+
+    def zero_rule(self):
+        """Returns the accuracy as if only the most common class is predicted"""
+        return np.max(self.matrix.sum(axis=1) / self.matrix.sum())
 
     @staticmethod
     def from_array(predicted, expected, threshold=None):
