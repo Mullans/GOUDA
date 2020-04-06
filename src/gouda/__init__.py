@@ -9,6 +9,8 @@ from pkg_resources import DistributionNotFound, get_distribution
 import colorama
 import numpy as np
 
+from .GoudaPath import GoudaPath
+
 try:
     # Change here if project is renamed and does not equal the package name
     dist_name = 'GOUDA'
@@ -66,6 +68,8 @@ def ensure_dir(*paths):
             raise ValueError("A file without an extension is blocking directory creation at {}".format(full_path))
         else:
             os.mkdir(full_path)
+    if isinstance(paths[0], GoudaPath):
+        return GoudaPath(full_path)
     return full_path
 
 
@@ -987,3 +991,90 @@ class MStddevArray(object):
         if self._count == 0:
             return np.zeros_like(self._variance)
         return np.sqrt(self._variance / self._count)
+
+
+def get_factors(x):
+    """Return the factors of x.
+
+    Parameters
+    ----------
+    x : int
+        The number to factorize. Must be a non-zero integer
+
+    Returns
+    -------
+    factors : set
+        The set of factors for x
+    """
+    if x == 0 or x % 1 != 0:
+        raise ValueError("Factors can only be found with non-zero integers")
+    if x < 0:
+        x = np.abs(x)
+        warnings.warn("Only positive factors will be returned, but negative numbers have a positive and negative factor for each.", UserWarning)
+    factors = set([1, x])
+    for i in range(2, int(np.sqrt(x) + 1)):
+        if (x / float(i)) == int(x / i):
+            factors.add(int(i))
+            factors.add(int(x / i))
+    return factors
+
+
+def get_prime_factors(x):
+    """Return the prime factorization of x.
+
+    Parameters
+    ----------
+    x : int
+        The number to factorize. Must be a non-zero integer
+
+    Returns
+    -------
+    prime_factors : list
+        The list of prime factors. Repeated factors will occur multiple times in the list.
+    """
+    if x == 0 or x % 1 != 0:
+        raise ValueError("Factors can only be found with non-zero integers")
+    if x < 0:
+        x = np.abs(x)
+        warnings.warn("Only positive factors will be returned, but negative numbers have a positive and negative factor for each.", UserWarning)
+    factors = [x]
+    prime_factors = []
+    while len(factors) > 0:
+        check = factors.pop()
+        found = False
+        for i in range(2, int(np.sqrt(check) + 1)):
+            if (check / float(i)) == int(check / i):
+                factors.extend([i, int(check / i)])
+                found = True
+                break
+        if not found:
+            prime_factors.append(check)
+    return sorted(prime_factors)
+
+
+def get_prime_overlap(x, y):
+    """Return the prime factors x and y have in common.
+
+    Parameters
+    ----------
+    x : int
+        The first number to factorize
+    y: int
+        The second number to factorize
+
+    Returns
+    -------
+    overlap : list
+        The list of common factors. Repeated factors are included for the number of common repeats.
+    """
+    fact_x = get_prime_factors(x)
+    fact_y = get_prime_factors(y)
+    overlap = []
+    for i in range(len(fact_x)):
+        item = fact_x.pop()
+        if item in fact_y:
+            overlap.append(item)
+            fact_y.remove(item)
+        if len(fact_x) == 0 or len(fact_y) == 0:
+            break
+    return sorted(overlap)

@@ -201,3 +201,54 @@ def test_get_binary_confusion_matrix_exception():
 def test_print_confusion_matrix_and_underline():
     data = np.arange(16).reshape([4, 4])
     gouda.print_confusion_matrix(data)
+
+
+def test_get_factors():
+    result1 = gouda.get_factors(100)
+    expected1 = set([1, 2, 4, 5, 10, 20, 25, 50, 100])
+    assert len(result1.symmetric_difference(expected1)) == 0
+
+    result2 = gouda.get_factors(6)
+    expected2 = set([1, 2, 3, 6])
+    assert len(result2.symmetric_difference(expected2)) == 0
+
+    result3 = gouda.get_factors(7)
+    expected3 = set([1, 7])
+    assert len(result3.symmetric_difference(expected3)) == 0
+
+    with pytest.raises(ValueError):
+        assert gouda.get_factors(0)
+
+    with pytest.warns(UserWarning):
+        result4 = gouda.get_factors(-1)
+        expected4 = set([1])
+        assert len(result4.symmetric_difference(expected4)) == 0
+
+
+def test_get_prime_factors():
+    result1 = gouda.get_prime_factors(100)
+    expected1 = [2, 2, 5, 5]
+    assert result1 == expected1
+
+    result2 = gouda.get_prime_factors(7)
+    expected2 = [7]
+    assert result2 == expected2
+
+    with pytest.raises(ValueError):
+        assert gouda.get_prime_factors(0)
+
+    with pytest.warns(UserWarning):
+        result3 = gouda.get_prime_factors(-1)
+        expected3 = [1]
+        assert result3 == expected3
+
+
+def test_get_prime_overlap():
+    result1 = gouda.get_prime_overlap(2, 5)
+    assert len(result1) == 0
+
+    result2 = gouda.get_prime_overlap(4, 10)
+    assert result2 == [2]
+
+    result3 = gouda.get_prime_overlap(672, 42)
+    assert result3 == [2, 3, 7]
