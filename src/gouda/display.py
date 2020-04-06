@@ -2,8 +2,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# from gouda import __version__
-
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"

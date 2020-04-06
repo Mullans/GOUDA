@@ -2,11 +2,12 @@
 import cv2
 import numpy as np
 
-# from gouda import __version__
+from .GoudaPath import GoudaPath
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
+
 
 FULL_RANGE = 0
 TANH = 1
@@ -32,6 +33,8 @@ def imread(path, as_RGB=True, as_greyscale=False, unchanged=False):
     * Priority for options is: unchanged > as_greyscale > as_RGB > default
     * Greyscale transforms input image based on perceived color. See [https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor]
     """
+    if isinstance(path, GoudaPath):
+        path = path.path
     if unchanged:
         return cv2.imread(path, -1)
     elif as_greyscale:
@@ -54,6 +57,8 @@ def imwrite(path, image, as_RGB=True):
     as_RGB: bool
         If true, flips the channels before saving (OpenCV assumes BGR image by default)
         """
+    if isinstance(path, GoudaPath):
+        path = path.path
     if image.ndim == 2:
         # image = np.dstack([image, image, image])
         image = image[:, :, np.newaxis]
