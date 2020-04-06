@@ -113,58 +113,6 @@ def standardize(data, axis=None):
     return np.divide(data - data.mean(axis=axis, keepdims=True), stds, where=stds > 0)
 
 
-# def _unnumpy(data):
-#     """Convert numpy arrays to lists for JSON"""
-#     if type(data) == list:
-#         new_data = []
-#         for i in range(len(data)):
-#             new_data.append(_unnumpy(data[i]))
-#     elif type(data) == dict:
-#         new_data = {}
-#         for key in data.keys():
-#             new_data[key] = _unnumpy(data[key])
-#     elif type(data) == np.ndarray:
-#         new_data = {"numpy_array": data.tolist(), "dtype": str(data.dtype), "shape": data.shape}
-#     else:
-#         new_data = copy.copy(data)
-#     return new_data
-#
-#
-# def _renumpy(data):
-#     """Convert JSON back to numpy arrays"""
-#     if type(data) == list:
-#         for i in range(len(data)):
-#             data[i] = _renumpy(data[i])
-#     elif type(data) == dict:
-#         if "numpy_array" in data:
-#             data = np.array(data['numpy_array']).astype(data['dtype']).reshape(data['shape'])
-#         else:
-#             for key in data.keys():
-#                 data[key] = _renumpy(data[key])
-#     return data
-#
-#
-# def save_json(data, filename, numpy=False):
-#     """Save a list/dict as a json object.
-#
-#     NOTE
-#     ----
-#     This is intended for structures with small numpy arrays (if any). Large arrays such as images may take a while to process and make it hard to read the JSON.
-#     """
-#     if numpy:
-#         data = _unnumpy(data)
-#     with open(filename, 'w') as f:
-#         json.dump(data, f, indent=2, sort_keys=True)
-#
-#
-# def load_json(filename, numpy=False):
-#     """Load a json file as a list/dict."""
-#     with open(filename, 'r') as f:
-#         data = json.load(f)
-#         if numpy:
-#             data = _renumpy(data)
-#         return data
-
 def save_json(data, filename, embed_arrays=True, compressed=False):
     """Save a list/dict/numpy.ndarray as a JSON file.
 
@@ -1078,3 +1026,37 @@ def get_prime_overlap(x, y):
         if len(fact_x) == 0 or len(fact_y) == 0:
             break
     return sorted(overlap)
+
+
+def flip_dict(dict, unique_items=False, force_list_values=False):
+    """Swap keys and values in a dictionary
+
+    Parameters
+    ----------
+    dict: dictionary
+        dictionary object to flip
+    unique_items: bool
+        whether to assume that all items in dict are unique, potential speedup but repeated items will be lost
+    force_list_values: bool
+        whether to force all items in the result to be lists or to let unique items have unwrapped values. Doesn't apply if unique_items is true.
+    """
+    if unique_items:
+        return {v: k for k, v in dict.items()}
+    elif force_list_values:
+        new_dict = {}
+        for k, v in dict.items():
+            if v not in new_dict:
+                new_dict[v] = []
+            new_dict[v].append(k)
+        return new_dict
+    else:
+        new_dict = {}
+        for k, v in dict.items():
+            if v in new_dict:
+                if isinstance(new_dict[v], list):
+                    new_dict[v].append(k)
+                else:
+                    new_dict[v] = [new_dict[v], k]
+            else:
+                new_dict[v] = k
+        return new_dict
