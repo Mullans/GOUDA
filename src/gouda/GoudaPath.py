@@ -10,6 +10,15 @@ __license__ = "mit"
 class GoudaPath(os.PathLike):
     """Note: requires python 3.6+"""
     def __init__(self, *path, use_absolute=True):
+        """PathLike class for easier file traversal
+
+        Parameters
+        ----------
+        path : str
+            One or more strings to join as a filepath
+        use_absolute : bool
+            Whether to convert the path to the absolute path (the default is True)
+        """
         path = os.path.join(*path)
         self.use_absolute = use_absolute
         if use_absolute:
@@ -18,6 +27,20 @@ class GoudaPath(os.PathLike):
             self.__path = path
 
     def __call__(self, *path_args, use_absolute=None):
+        """Add to the current path.
+
+        Parameters
+        ----------
+        *path_args : os.PathLike
+            One or more strings or PathLike objects to create new GoudaPaths from
+        use_absolute : bool
+            Whether to convert the path to the absolute path (defaults to the object parameter value)
+
+        Returns
+        -------
+        path | paths : GoudaPath | list
+            Returns one or more GoudaPaths that are children of the current object path
+        """
         if use_absolute is None:
             use_absolute = self.use_absolute
         if len(path_args) == 0:
@@ -38,15 +61,24 @@ class GoudaPath(os.PathLike):
         return "GoudaPath('{}')".format(self.__path)
 
     def __truediv__(self, path):
+        """Shortcut method for __call__ with a single child path and use_absolute set to False"""
         return GoudaPath(self(path), use_absolute=False)
 
     def __floordiv__(self, path):
+        """Shortcut method for __call__ with a single child path and use_absolute set to True"""
         return GoudaPath(self(path), use_absolute=True)
 
     def __add__(self, path):
+        """Appends a path to the end of the current path.
+
+        Note
+        ----
+        This appends the strings. This does not join the paths, so it is not a child path of the current path
+        """
         return GoudaPath(self.__path + path, use_absolute=self.use_absolute)
 
     def __getitem__(self, index):
+        """Get part of the current path hierarchy."""
         split_path = self.__path.split(os.path.sep)
         if len(split_path[0]) == 0:
             split_path = split_path[1:]
@@ -55,6 +87,7 @@ class GoudaPath(os.PathLike):
         return split_path[index]
 
     def __len__(self):
+        """Get the length of the current path hierarchy."""
         split_path = self.__path.split(os.path.sep)
         if len(split_path[0]) == 0:
             return len(split_path) - 1
@@ -65,6 +98,19 @@ class GoudaPath(os.PathLike):
         return os.fspath(self.__path)
 
     def glob(self, pattern, basenames=False, recursive=False, sort=False):
+        """Make a glob call starting from the current path.
+
+        Parameters
+        ----------
+        pattern : str
+            Pattern to match with the glob
+        basenames : bool
+            Whether to return only the basenames of results (the default is False)
+        recursive : bool
+            The setting for the glob recursive argument (the default is False)
+        sort : bool
+            Whether to sort the results (the default is False)
+        """
         results = glob.glob(os.path.join(self.__path, pattern), recursive=recursive)
         if basenames:
             results = [os.path.basename(item) for item in results]
@@ -73,6 +119,7 @@ class GoudaPath(os.PathLike):
         return results
 
     def parent_dir(self):
+        """Return the parent directory of the current path."""
         parent_dir = os.path.dirname(self.__path)
         if len(parent_dir) == 0:
             parent_dir = os.path.join(os.pardir, os.path.basename(os.path.abspath(parent_dir)))

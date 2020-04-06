@@ -21,3 +21,11 @@ Version 0.2
 - Changed load_json/save_json to allow for splitting large arrays into a .npz file with placeholder keys in the JSON
 - Add gouda.image.polar_to_cartesian
 - Add precision and Matthews correlation coefficient (binary only) to ConfusionMatrix
+
+
+Version 0.3
+==========
+
+- Add GoudaPath
+- Add GoudaPath support for image reading/writing methods
+- Add factorizing Methods
