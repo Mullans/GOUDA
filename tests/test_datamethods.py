@@ -75,182 +75,182 @@ def test_standardize():
     assert pytest.approx(standard_3.std(axis=(0, 1)), 0.0001) == 1
 
 
-def test_get_specificities():
-    data = np.array([[10, 7, 5], [7, 10, 7], [5, 7, 10]])
-    specificities = gouda.get_specificities(data)
-    assert specificities[0] == (10 + 7 + 7 + 10) / (10 + 7 + 7 + 10 + 7 + 5)
-    assert specificities[1] == (10 + 5 + 5 + 10) / (10 + 5 + 5 + 10 + 7 + 7)
-    assert specificities[2] == (10 + 7 + 7 + 10) / (10 + 7 + 7 + 10 + 7 + 5)
+# def test_get_specificities():
+#     data = np.array([[10, 7, 5], [7, 10, 7], [5, 7, 10]])
+#     specificities = gouda.get_specificities(data)
+#     assert specificities[0] == (10 + 7 + 7 + 10) / (10 + 7 + 7 + 10 + 7 + 5)
+#     assert specificities[1] == (10 + 5 + 5 + 10) / (10 + 5 + 5 + 10 + 7 + 7)
+#     assert specificities[2] == (10 + 7 + 7 + 10) / (10 + 7 + 7 + 10 + 7 + 5)
+#
+#
+# def test_get_specificities_exception():
+#     data = np.arange(10)
+#     with pytest.raises(ValueError):
+#         assert gouda.get_specificities(data)
+#
+#     data = np.arange(27).reshape([3, 3, 3])
+#     with pytest.raises(ValueError):
+#         assert gouda.get_specificities(data)
+#
+#     data = np.arange(8).reshape([2, 4])
+#     with pytest.raises(ValueError):
+#         assert gouda.get_specificities(data)
+#
+#
+# def test_get_sensitivities():
+#     data = np.array([[10, 7, 5], [7, 10, 7], [5, 7, 10]])
+#     sensitivities = gouda.get_sensitivities(data)
+#     assert sensitivities[0] == 10 / (10 + 7 + 5)
+#     assert sensitivities[1] == 10 / (7 + 10 + 7)
+#     assert sensitivities[2] == 10 / (5 + 7 + 10)
+#
+#
+# def test_get_sensitivities_exception():
+#     data = np.arange(10)
+#     with pytest.raises(ValueError):
+#         assert gouda.get_sensitivities(data)
+#
+#     data = np.arange(27).reshape([3, 3, 3])
+#     with pytest.raises(ValueError):
+#         assert gouda.get_sensitivities(data)
+#
+#     data = np.arange(8).reshape([2, 4])
+#     with pytest.raises(ValueError):
+#         assert gouda.get_sensitivities(data)
+#
+#
+# def test_get_accuracy():
+#     data = np.array([[10, 7, 5], [7, 10, 7], [5, 7, 10]])
+#     accuracy = gouda.get_accuracy(data)
+#     assert accuracy == (10 + 10 + 10) / data.sum()
+#
+#
+# def test_get_accuracy_exception():
+#     data = np.arange(10)
+#     with pytest.raises(ValueError):
+#         assert gouda.get_accuracy(data)
+#
+#     data = np.arange(27).reshape([3, 3, 3])
+#     with pytest.raises(ValueError):
+#         assert gouda.get_accuracy(data)
+#
+#     data = np.arange(8).reshape([2, 4])
+#     with pytest.raises(ValueError):
+#         assert gouda.get_accuracy(data)
+#
+#
+# def test_get_confusion_matrix():
+#     predictions = [0, 1, 2, 1, 1, 1]
+#     labels = [0, 1, 2, 0, 0, 0]
+#     matrix = gouda.get_confusion_matrix(predictions, labels)
+#     expected = np.array([[1, 3, 0], [0, 1, 0], [0, 0, 1]])
+#     assert matrix.shape[0] == matrix.shape[1]
+#     assert matrix.shape[0] == 3
+#     assert matrix.sum() == 6
+#     np.testing.assert_array_equal(matrix, expected)
+#     matrix2 = gouda.get_confusion_matrix(predictions, labels, num_classes=3)
+#     np.testing.assert_array_equal(matrix, matrix2)
+#
+#
+# def test_get_confusion_matrix_exception():
+#     predictions = np.arange(8).reshape([4, 2])
+#     labels = np.arange(8)
+#     with pytest.raises(ValueError):
+#         assert gouda.get_confusion_matrix(predictions, labels)
+#
+#     predictions = [0, 1, 2]
+#     labels = [0, 1]
+#     with pytest.raises(ValueError):
+#         assert gouda.get_confusion_matrix(predictions, labels)
+#
+#
+# def test_get_binary_confusion_matrix():
+#     predictions = [False, False, True, True]
+#     labels = [True, False, True, False]
+#     matrix = gouda.get_binary_confusion_matrix(predictions, labels)
+#     expected = np.ones([2, 2])
+#     assert matrix.shape[0] == matrix.shape[1]
+#     assert matrix.shape[0] == 2
+#     assert matrix.sum() == 4
+#     np.testing.assert_array_equal(matrix, expected)
+#
+#
+# def test_get_binary_confusion_matrix_threshold():
+#     predictions = [-1, 0.4, 0.5, 1.1]
+#     labels = [1, 0, 1, 0]
+#     matrix = gouda.get_binary_confusion_matrix(predictions, labels, threshold=0.4)
+#     expected = np.ones([2, 2])
+#     assert matrix.shape[0] == matrix.shape[1]
+#     assert matrix.shape[0] == 2
+#     assert matrix.sum() == 4
+#     np.testing.assert_array_equal(matrix, expected)
+#
+#
+# def test_get_binary_confusion_matrix_exception():
+#     predictions = np.arange(8).reshape([4, 2])
+#     labels = np.arange(8)
+#     with pytest.raises(ValueError):
+#         assert gouda.get_binary_confusion_matrix(predictions, labels)
+#
+#     predictions = [0, 1, 2]
+#     labels = [0, 1]
+#     with pytest.raises(ValueError):
+#         assert gouda.get_binary_confusion_matrix(predictions, labels)
+#
+#
+# def test_print_confusion_matrix_and_underline():
+#     data = np.arange(16).reshape([4, 4])
+#     gouda.print_confusion_matrix(data)
 
 
-def test_get_specificities_exception():
-    data = np.arange(10)
-    with pytest.raises(ValueError):
-        assert gouda.get_specificities(data)
-
-    data = np.arange(27).reshape([3, 3, 3])
-    with pytest.raises(ValueError):
-        assert gouda.get_specificities(data)
-
-    data = np.arange(8).reshape([2, 4])
-    with pytest.raises(ValueError):
-        assert gouda.get_specificities(data)
-
-
-def test_get_sensitivities():
-    data = np.array([[10, 7, 5], [7, 10, 7], [5, 7, 10]])
-    sensitivities = gouda.get_sensitivities(data)
-    assert sensitivities[0] == 10 / (10 + 7 + 5)
-    assert sensitivities[1] == 10 / (7 + 10 + 7)
-    assert sensitivities[2] == 10 / (5 + 7 + 10)
-
-
-def test_get_sensitivities_exception():
-    data = np.arange(10)
-    with pytest.raises(ValueError):
-        assert gouda.get_sensitivities(data)
-
-    data = np.arange(27).reshape([3, 3, 3])
-    with pytest.raises(ValueError):
-        assert gouda.get_sensitivities(data)
-
-    data = np.arange(8).reshape([2, 4])
-    with pytest.raises(ValueError):
-        assert gouda.get_sensitivities(data)
-
-
-def test_get_accuracy():
-    data = np.array([[10, 7, 5], [7, 10, 7], [5, 7, 10]])
-    accuracy = gouda.get_accuracy(data)
-    assert accuracy == (10 + 10 + 10) / data.sum()
-
-
-def test_get_accuracy_exception():
-    data = np.arange(10)
-    with pytest.raises(ValueError):
-        assert gouda.get_accuracy(data)
-
-    data = np.arange(27).reshape([3, 3, 3])
-    with pytest.raises(ValueError):
-        assert gouda.get_accuracy(data)
-
-    data = np.arange(8).reshape([2, 4])
-    with pytest.raises(ValueError):
-        assert gouda.get_accuracy(data)
-
-
-def test_get_confusion_matrix():
-    predictions = [0, 1, 2, 1, 1, 1]
-    labels = [0, 1, 2, 0, 0, 0]
-    matrix = gouda.get_confusion_matrix(predictions, labels)
-    expected = np.array([[1, 3, 0], [0, 1, 0], [0, 0, 1]])
-    assert matrix.shape[0] == matrix.shape[1]
-    assert matrix.shape[0] == 3
-    assert matrix.sum() == 6
-    np.testing.assert_array_equal(matrix, expected)
-    matrix2 = gouda.get_confusion_matrix(predictions, labels, num_classes=3)
-    np.testing.assert_array_equal(matrix, matrix2)
-
-
-def test_get_confusion_matrix_exception():
-    predictions = np.arange(8).reshape([4, 2])
-    labels = np.arange(8)
-    with pytest.raises(ValueError):
-        assert gouda.get_confusion_matrix(predictions, labels)
-
-    predictions = [0, 1, 2]
-    labels = [0, 1]
-    with pytest.raises(ValueError):
-        assert gouda.get_confusion_matrix(predictions, labels)
-
-
-def test_get_binary_confusion_matrix():
-    predictions = [False, False, True, True]
-    labels = [True, False, True, False]
-    matrix = gouda.get_binary_confusion_matrix(predictions, labels)
-    expected = np.ones([2, 2])
-    assert matrix.shape[0] == matrix.shape[1]
-    assert matrix.shape[0] == 2
-    assert matrix.sum() == 4
-    np.testing.assert_array_equal(matrix, expected)
-
-
-def test_get_binary_confusion_matrix_threshold():
-    predictions = [-1, 0.4, 0.5, 1.1]
-    labels = [1, 0, 1, 0]
-    matrix = gouda.get_binary_confusion_matrix(predictions, labels, threshold=0.4)
-    expected = np.ones([2, 2])
-    assert matrix.shape[0] == matrix.shape[1]
-    assert matrix.shape[0] == 2
-    assert matrix.sum() == 4
-    np.testing.assert_array_equal(matrix, expected)
-
-
-def test_get_binary_confusion_matrix_exception():
-    predictions = np.arange(8).reshape([4, 2])
-    labels = np.arange(8)
-    with pytest.raises(ValueError):
-        assert gouda.get_binary_confusion_matrix(predictions, labels)
-
-    predictions = [0, 1, 2]
-    labels = [0, 1]
-    with pytest.raises(ValueError):
-        assert gouda.get_binary_confusion_matrix(predictions, labels)
-
-
-def test_print_confusion_matrix_and_underline():
-    data = np.arange(16).reshape([4, 4])
-    gouda.print_confusion_matrix(data)
-
-
-def test_get_factors():
-    result1 = gouda.get_factors(100)
+def test_factors():
+    result1 = gouda.factors(100)
     expected1 = set([1, 2, 4, 5, 10, 20, 25, 50, 100])
     assert len(result1.symmetric_difference(expected1)) == 0
 
-    result2 = gouda.get_factors(6)
+    result2 = gouda.factors(6)
     expected2 = set([1, 2, 3, 6])
     assert len(result2.symmetric_difference(expected2)) == 0
 
-    result3 = gouda.get_factors(7)
+    result3 = gouda.factors(7)
     expected3 = set([1, 7])
     assert len(result3.symmetric_difference(expected3)) == 0
 
     with pytest.raises(ValueError):
-        assert gouda.get_factors(0)
+        assert gouda.factors(0)
 
     with pytest.warns(UserWarning):
-        result4 = gouda.get_factors(-1)
+        result4 = gouda.factors(-1)
         expected4 = set([1])
         assert len(result4.symmetric_difference(expected4)) == 0
 
 
-def test_get_prime_factors():
-    result1 = gouda.get_prime_factors(100)
+def test_prime_factors():
+    result1 = gouda.prime_factors(100)
     expected1 = [2, 2, 5, 5]
     assert result1 == expected1
 
-    result2 = gouda.get_prime_factors(7)
+    result2 = gouda.prime_factors(7)
     expected2 = [7]
     assert result2 == expected2
 
     with pytest.raises(ValueError):
-        assert gouda.get_prime_factors(0)
+        assert gouda.prime_factors(0)
 
     with pytest.warns(UserWarning):
-        result3 = gouda.get_prime_factors(-1)
+        result3 = gouda.prime_factors(-1)
         expected3 = [1]
         assert result3 == expected3
 
 
-def test_get_prime_overlap():
-    result1 = gouda.get_prime_overlap(2, 5)
+def test_prime_overlap():
+    result1 = gouda.prime_overlap(2, 5)
     assert len(result1) == 0
 
-    result2 = gouda.get_prime_overlap(4, 10)
+    result2 = gouda.prime_overlap(4, 10)
     assert result2 == [2]
 
-    result3 = gouda.get_prime_overlap(672, 42)
+    result3 = gouda.prime_overlap(672, 42)
     assert result3 == [2, 3, 7]
 
 
@@ -268,10 +268,10 @@ def test_flip_dict():
     assert flip3 == {1: ['a'], 2: ['b'], 3: ['c']}
 
     flip4 = gouda.flip_dict(many2one_dict)
-    assert flip4 == {1: ['a', 'b'], 3: 'c'}
+    assert flip4 == {1: ['a', 'b'], 2: 'c'}
 
     flip5 = gouda.flip_dict(many2one_dict, unique_items=True)
-    assert flip5 == {1: 'b', 3: 'c'}
+    assert flip5 == {1: 'b', 2: 'c'}
 
     flip6 = gouda.flip_dict(many2one_dict, force_list_values=True)
-    assert flip6 == {1: ['a', 'b'], 3: ['c']}
+    assert flip6 == {1: ['a', 'b'], 2: ['c']}

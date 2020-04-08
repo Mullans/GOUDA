@@ -2,7 +2,7 @@
 import cv2
 import numpy as np
 
-from .GoudaPath import GoudaPath
+from .goudapath import GoudaPath
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"

@@ -30,10 +30,10 @@ def test_imwrite_imread():
     assert os.path.isfile('test_uint16.png')
     assert not os.path.isfile('failure.png')
 
-    image_test_in_1 = image.imread('test_RGB.png', as_RGB=True)
-    image_test_in_2 = image.imread('test_RGB.png', as_RGB=False)
-    image_test_in_3 = image.imread('test_BGR.png', as_RGB=True)
-    image_test_in_4 = image.imread('test_BGR.png', as_RGB=False)
+    image_test_in_1 = image.imread('test_RGB.png', as_RGB=True, unchanged=False)
+    image_test_in_2 = image.imread('test_RGB.png', as_RGB=False, unchanged=False)
+    image_test_in_3 = image.imread('test_BGR.png', as_RGB=True, unchanged=False)
+    image_test_in_4 = image.imread('test_BGR.png', as_RGB=False, unchanged=False)
     np.testing.assert_array_equal(image_test_in_1, image_test_in_4)
     np.testing.assert_array_equal(image_test_in_2, image_test_in_3)
 
@@ -45,7 +45,7 @@ def test_imwrite_imread():
     image_test_in_7 = image.imread('test_uint16.png', unchanged=True)
     assert image_test_in_7.dtype == np.uint16
 
-    image_test_in_8 = image.imread('test_RGB.png', as_greyscale=True)
+    image_test_in_8 = image.imread('test_RGB.png', as_greyscale=True, unchanged=False)
     assert image_test_in_8.shape == (100, 100)
     np.testing.assert_allclose(image_test_in_8, cv2.cvtColor(image_test, cv2.COLOR_RGB2GRAY), rtol=0, atol=1)
 
