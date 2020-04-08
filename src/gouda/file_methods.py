@@ -37,7 +37,7 @@ def ensure_dir(*paths):
         else:
             os.mkdir(full_path)
     if isinstance(paths[0], GoudaPath):
-        return GoudaPath(full_path)
+        return GoudaPath(full_path, use_absolute=paths[0].use_absolute)
     return full_path
 
 

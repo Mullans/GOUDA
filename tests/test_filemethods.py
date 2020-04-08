@@ -13,8 +13,8 @@ import gouda
 
 def test_ensure_dir():
     test_dir = gouda.ensure_dir("test_dir")
-    test_dir2 = gouda.ensure_dir("test_dir")
-    assert test_dir == test_dir2
+    test_dir2 = gouda.ensure_dir(gouda.GoudaPath("test_dir", use_absolute=False))
+    assert test_dir == test_dir2.path
     assert os.path.isdir("test_dir")
     assert test_dir == "test_dir"
 

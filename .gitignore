@@ -49,3 +49,5 @@ MANIFEST
 .venv*/
 
 ignore_*
+
+src/gouda/deprecated.py

@@ -5,7 +5,7 @@ import pytest
 import cv2
 import numpy as np
 
-from gouda import image
+from gouda import GoudaPath, image
 
 
 def test_imwrite_imread():
@@ -15,7 +15,7 @@ def test_imwrite_imread():
     image_test *= 255
 
     assert image_test[:, :, 2].sum() == 0
-    image.imwrite('test_RGB.png', image_test)
+    image.imwrite(GoudaPath('test_RGB.png'), image_test)
     image.imwrite('test_BGR.png', image_test, as_RGB=False)
     image.imwrite('test_singleChannel.png', image_test[:, :, :1])
     image.imwrite('test_2D.png', image_test[:, :, 0])
@@ -30,7 +30,7 @@ def test_imwrite_imread():
     assert os.path.isfile('test_uint16.png')
     assert not os.path.isfile('failure.png')
 
-    image_test_in_1 = image.imread('test_RGB.png', as_RGB=True, unchanged=False)
+    image_test_in_1 = image.imread(GoudaPath('test_RGB.png'), as_RGB=True, unchanged=False)
     image_test_in_2 = image.imread('test_RGB.png', as_RGB=False, unchanged=False)
     image_test_in_3 = image.imread('test_BGR.png', as_RGB=True, unchanged=False)
     image_test_in_4 = image.imread('test_BGR.png', as_RGB=False, unchanged=False)

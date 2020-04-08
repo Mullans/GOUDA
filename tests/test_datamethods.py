@@ -253,10 +253,17 @@ def test_prime_overlap():
     result3 = gouda.prime_overlap(672, 42)
     assert result3 == [2, 3, 7]
 
+    result4 = gouda.prime_overlap(42, 672)
+    assert result4 == [2, 3, 7]
+
+    result5 = gouda.prime_overlap(7, 5)
+    assert result5 == []
+
 
 def test_flip_dict():
     one2one_dict = {'a': 1, 'b': 2, 'c': 3}
     many2one_dict = {'a': 1, 'b': 1, 'c': 2}
+    all2one_dict = {'a': 1, 'b': 1, 'c': 1}
 
     flip1 = gouda.flip_dict(one2one_dict)
     assert flip1 == {1: 'a', 2: 'b', 3: 'c'}
@@ -275,3 +282,6 @@ def test_flip_dict():
 
     flip6 = gouda.flip_dict(many2one_dict, force_list_values=True)
     assert flip6 == {1: ['a', 'b'], 2: ['c']}
+
+    flip7 = gouda.flip_dict(all2one_dict)
+    assert flip7 == {1: ['a', 'b', 'c']}
