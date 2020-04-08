@@ -31,3 +31,4 @@ Version 0.3
 - Add factorizing Methods
 - Add dict_flip to reverse dictionary key/value pairs
 - Updated print_grid and added single print_image
+- Add BinaryConfusionMatrix
