@@ -51,3 +51,7 @@ MANIFEST
 ignore_*
 
 src/gouda/deprecated.py
+
+.ipynb_checkpoints/
+
+*.ipynb
