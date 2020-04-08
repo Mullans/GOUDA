@@ -14,7 +14,7 @@ TANH = 1
 SIGMOID = 2
 
 
-def imread(path, as_RGB=True, as_greyscale=False, unchanged=False):
+def imread(path, as_RGB=True, as_greyscale=False, unchanged=True):
     """SHORTCUT: Load an image from a path using OpenCV modified for RGB.
 
     Parameters
@@ -22,11 +22,11 @@ def imread(path, as_RGB=True, as_greyscale=False, unchanged=False):
     path: string
         Path to image file
     as_RGB: bool
-        If true, assumes an RGB image and flips the channels. (OpenCV uses BGR by default)
+        If true, assumes an RGB image and flips the channels. (OpenCV uses BGR by default) (the default is True)
     as_greyscale: bool
-        If true, reads the image as greyscale
+        If true, reads the image as greyscale (the default is False)
     unchanged: bool
-        If true, reads in the image without constraining to 3-channel uint8 format.
+        If true, reads in the image without constraining to 3-channel uint8 format. (the default is True)
 
     Note
     ----
