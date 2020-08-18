@@ -55,3 +55,8 @@ src/gouda/deprecated.py
 .ipynb_checkpoints/
 
 *.ipynb
+
+# Test generated files
+test1_array.npz
+test1.json
+test3_arrayzip.npz
