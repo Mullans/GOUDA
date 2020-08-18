@@ -108,6 +108,7 @@ def test_math():
     assert test_mat.mcc() == 0
     assert test_mat.sensitivity() == 0
     assert test_mat.specificity() == 0
+    assert test_mat.precision() == 0
     assert test_mat.accuracy() == 0
     assert test_mat.zero_rule() == 0
     test_mat.add(np.array([[1, 1, 1, 1], [1, 1, 1, 1]]))
@@ -120,6 +121,7 @@ def test_math():
     assert test_mat.count() == 10
     assert test_mat.sensitivity() == 4 / 5
     assert test_mat.specificity() == 2 / 5
+    assert test_mat.precision() == 4 / 7
     assert test_mat.zero_rule() == 5 / 10
 
     n = 10

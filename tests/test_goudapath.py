@@ -1,7 +1,9 @@
 import os
 
+import numpy as np
 import pytest
 
+import gouda
 from gouda import GoudaPath
 
 # def test_ensure_dir():
@@ -26,12 +28,17 @@ from gouda import GoudaPath
 
 
 def test_init_call():
+    test_basic = gouda.GoudaPath()
+    assert test_basic.path == '.'
+
     test_abs = GoudaPath('absolute', use_absolute=True)
     test_rel = GoudaPath('relative', use_absolute=False)
 
     assert os.path.expanduser('~') in test_abs.path
     assert test_abs.path == os.path.abspath('absolute')
     assert test_rel.path == 'relative'
+    assert 'relative' in test_rel
+    assert 'relative' not in test_abs
     assert test_abs.abspath == os.path.abspath('absolute')
     assert test_rel.abspath == os.path.abspath('relative')
     assert test_abs.basename() == 'absolute'
@@ -52,6 +59,10 @@ def test_init_call():
     assert [item.path for item in test_abs(*file_list)] == [os.path.join(os.path.abspath('absolute'), item) for item in file_list]
     assert [item.path for item in test_rel(*file_list)] == [os.path.join('relative', item) for item in file_list]
 
+    assert test_abs.abspath == test_abs.realpath
+    test_rel.resolve_links()
+    assert test_rel.path == test_rel.realpath
+
 
 def test_representations():
     test_abs = GoudaPath('absolute', use_absolute=True)
@@ -64,7 +75,7 @@ def test_representations():
     assert repr(test_rel) == "GoudaPath('{}')".format('relative')
 
     assert os.fspath(test_abs) == os.path.abspath('absolute')
-    assert os.fspath(test_rel) == 'relative'
+    assert os.fspath(test_rel) == os.path.abspath('relative')
 
 
 def test_navigation():
@@ -94,23 +105,27 @@ def test_relation():
     assert not test_dir('doesntexist').exists()
     assert test_dir('check_file.txt').extension() == '.txt'
 
-    children = test_dir.children(dirs_only=True, exclude_dirs=False, basenames=False)
+    children = test_dir.children(dirs_only=True, files_only=False, basenames=False)
     assert len(children) == 2
     assert os.path.join(test_dir.path, 'check_dir1') in [item.path for item in children]
     assert os.path.join(test_dir.path, 'check_dir2') in [item.path for item in children]
     assert os.path.join(test_dir.path, 'check_file.txt') not in [item.path for item in children]
 
-    children = test_dir.children(dirs_only=False, exclude_dirs=True, basenames=False)
+    children = test_dir.children(dirs_only=False, files_only=True, basenames=False)
     assert len(children) == 1
     assert os.path.join(test_dir.path, 'check_dir1') not in [item.path for item in children]
     assert os.path.join(test_dir.path, 'check_file.txt') in [item.path for item in children]
 
-    children = test_dir.children(dirs_only=True, exclude_dirs=True, basenames=False)
+    children = test_dir.children(dirs_only=True, files_only=True, basenames=False)
     assert len(children) == 0
 
-    children = test_dir.children(dirs_only=True, exclude_dirs=False, basenames=True)
+    children = test_dir.children(dirs_only=True, files_only=False, basenames=True, include_hidden=True)
     assert 'check_dir1' in children
     assert 'check_dir2' in children
+
+    assert test_dir.num_children(dirs_only=False, files_only=False, include_hidden=True) == 3
+    assert test_dir.num_children(dirs_only=True, files_only=False, include_hidden=False) == 2
+    assert test_dir.num_children(dirs_only=False, files_only=True, include_hidden=True) == 1
 
     with pytest.raises(NotADirectoryError):
         assert test_dir('check_file.txt').children()
@@ -125,9 +140,45 @@ def test_relation():
     globbed = test_dir.glob('*', sort=True)
     assert test_dir('check_dir1').path == globbed[0]
 
+    globbed = test_dir.glob('*', sort=True, as_gouda=True)
+    assert isinstance(globbed[0], GoudaPath)
+
     globbed = test_dir.parent_dir().glob('**/*.txt', recursive=True)
     assert test_dir('check_file.txt').path in globbed
 
+    test_img = np.ones([50, 50, 3])
+    gouda.image.imwrite(test_dir / 'image1.png', test_img)
+    gouda.image.imwrite(test_dir / 'image2.png', test_img)
+    image_results = test_dir.get_images()
+    assert 'image1.png' in image_results
+    assert 'image2.png' in image_results
+    assert 'check_file.txt' not in image_results
+    assert test_dir('image1.png').is_image()
+    with pytest.raises(NotADirectoryError):
+        assert test_dir('image1.png').num_children()
+    with pytest.raises(NotADirectoryError):
+        assert test_dir('image1.png').get_images()
+    assert test_dir.is_image() is False
+    assert test_dir.num_children(dirs_only=True, files_only=False, include_hidden=True) == 2
+    assert test_dir.num_children(dirs_only=False, files_only=True, include_hidden=False) == 3
+
     os.remove(test_dir / 'check_file.txt')
+    os.remove(test_dir / 'image1.png')
+    os.remove(test_dir / 'image2.png')
     os.removedirs(test_dir / 'check_dir1')
     os.removedirs(test_dir / 'check_dir2')
+
+
+def test_encode():
+    path = gouda.GoudaPath('.')
+    assert os.path.abspath('.').encode() == path.__bytes__()
+
+
+def test_strings():
+    path = gouda.GoudaPath('testerpath', use_absolute=False)
+    assert path.startswith('tester')
+    assert path.endswith('path')
+
+    path = gouda.GoudaPath('testerpath', use_absolute=True)
+    assert path.startswith('tester') is False
+    assert path.endswith('path')

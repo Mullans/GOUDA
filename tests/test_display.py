@@ -1,59 +1,153 @@
+import os
+
 import pytest
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from gouda import display
 
 
-def test_denorm_full():
-    full_range = np.ones([10, 10], dtype=np.uint8) * 255
-    full_range[:5] -= 255
-    denormed = display._denorm(full_range)
-    assert np.max(denormed) == 255
-    assert np.min(denormed) == 0
-    assert denormed.dtype == 'uint8'
+def test_print_grid():
+    # List Tests
+    image = np.random.randint(0, 255, size=[100, 100])
 
-    denormed1 = display._denorm(full_range, norm_type=display.FULL_RANGE)
-    assert np.max(denormed1) == 255
-    assert np.min(denormed1) == 0
-    assert denormed1.dtype == 'uint8'
+    # Image
+    assert display.print_grid(image, show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
 
-    np.testing.assert_array_equal(denormed, denormed1)
+    # # Multiple images
+    assert display.print_grid(image, image, show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+
+    # # List of Images
+    assert display.print_grid([image], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid([image, image], show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+
+    # # List of List of Images
+    assert display.print_grid([image], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid([[image, image]], show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+    assert display.print_grid([[image], [image]], show=False, return_grid_shape=True) == (2, 1)
+    plt.close()
+    assert display.print_grid([[image, image], [image]], show=False, return_grid_shape=True) == (2, 2)
+    plt.close()
+    assert display.print_grid([[image, image], [None, image]], show=False, return_grid_shape=True) == (2, 2)
+    plt.close()
+
+    # Array Tests
+    image_0c = np.random.randint(0, 255, size=[100, 100])
+    image_1c = np.random.randint(0, 255, size=[100, 100, 1])
+    image_3c = np.random.randint(0, 255, size=[100, 100, 3])
+
+    # [x, y], [x, y, 1], [x, y, 3]
+    assert display.print_grid(image_0c, show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(image_1c, show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(image_3c, show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+
+    # [cols, x, y], [cols, x, y, 1], [cols, x, y, 3]
+    assert display.print_grid(image_0c[np.newaxis], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(np.stack([image_0c, image_0c], axis=0), show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+    assert display.print_grid(image_1c[np.newaxis], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(np.stack([image_1c, image_1c], axis=0), show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+    assert display.print_grid(image_3c[np.newaxis], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(np.stack([image_3c, image_3c], axis=0), show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+
+    # [rows, cols, x, y], [rows, cols, x, y, 1], [rows, cols, x, y, 3]
+    assert display.print_grid(image_0c[np.newaxis, np.newaxis], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(np.stack([image_0c, image_0c], axis=0)[np.newaxis],
+                      show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+    assert display.print_grid(np.stack([image_0c[np.newaxis], image_0c[np.newaxis]], axis=0),
+                              show=False, return_grid_shape=True) == (2, 1)
+    plt.close()
+    assert display.print_grid(np.stack([
+        np.stack([image_0c, image_0c], axis=0),
+        np.stack([image_0c, image_0c], axis=0)]),
+                              show=False, return_grid_shape=True) == (2, 2)
+    plt.close()
+
+    assert display.print_grid(image_1c[np.newaxis, np.newaxis],
+                              show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(np.stack([image_1c, image_1c], axis=0)[np.newaxis],
+                              show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+    assert display.print_grid(np.stack([image_1c[np.newaxis], image_1c[np.newaxis]], axis=0),
+                              show=False, return_grid_shape=True) == (2, 1)
+    plt.close()
+    assert display.print_grid(np.stack([
+        np.stack([image_1c, image_1c], axis=0),
+        np.stack([image_1c, image_1c], axis=0)]),
+                              show=False, return_grid_shape=True) == (2, 2)
+    plt.close()
+
+    assert display.print_grid(image_3c[np.newaxis, np.newaxis],
+                              show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(np.stack([image_3c, image_3c], axis=0)[np.newaxis],
+                              show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+    assert display.print_grid(np.stack([image_3c[np.newaxis], image_3c[np.newaxis]], axis=0),
+                              show=False, return_grid_shape=True) == (2, 1)
+    plt.close()
+    assert display.print_grid(np.stack([
+        np.stack([image_3c, image_3c], axis=0),
+        np.stack([image_3c, image_3c], axis=0)]),
+                              show=False, return_grid_shape=True) == (2, 2)
+    plt.close()
+
+    test_image = {'image': image_3c}
+    assert display.print_grid(test_image, show=False, return_grid_shape=True, suptitle='test_sup') == (1, 1)
+    test_image = {'image': image_1c}
+    assert display.print_grid(test_image, show=False, return_grid_shape=True) == (1, 1)
+    test_image = {'image': image_1c, 'cmap': 'viridis', 'title': 'test', 'xlabel': 'testx', 'ylabel': 'testy'}
+    assert display.print_grid(test_image, show=False, return_grid_shape=True, left=0.1) == (1, 1)
+    plt.close()
 
 
-def test_denorm_tanh():
-    full_range = np.ones([10, 10], dtype=np.float32)
-    full_range[:5] -= 2
-    denormed = display._denorm(full_range)
-    assert np.max(denormed) == 255
-    assert np.min(denormed) == 0
-    assert denormed.dtype == 'uint8'
-
-    denormed1 = display._denorm(full_range, norm_type=display.TANH)
-    assert np.max(denormed1) == 255
-    assert np.min(denormed1) == 0
-    assert denormed1.dtype == 'uint8'
-
-    np.testing.assert_array_equal(denormed, denormed1)
+def test_print_grid_tofile():
+    test_image = np.ones([10, 10])
+    display.print_grid(test_image, show=False, toFile='testprintgrid.png')
+    assert os.path.exists('testprintgrid.png')
+    os.remove('testprintgrid.png')
+    assert not os.path.exists('testprintgrid.png')
 
 
-def test_denorm_sigmoid():
-    full_range = np.ones([10, 10], dtype=np.float32)
-    full_range[:5] -= 1
-    denormed = display._denorm(full_range)
-    assert np.max(denormed) == 255
-    assert np.min(denormed) == 0
-    assert denormed.dtype == 'uint8'
-
-    denormed1 = display._denorm(full_range, norm_type=display.SIGMOID)
-    assert np.max(denormed1) == 255
-    assert np.min(denormed1) == 0
-    assert denormed1.dtype == 'uint8'
-
-    np.testing.assert_array_equal(denormed, denormed1)
-
-
-def test_denorm_exception():
-    full_range = np.ones([10, 10], dtype=np.float32) * -2
+def test_print_grid_exceptions():
+    test_image = np.ones([5, 5, 100, 100, 5])
     with pytest.raises(ValueError):
-        assert display._denorm(full_range)
+        assert display.print_grid(test_image)
+
+    with pytest.raises(ValueError):
+        assert display.print_grid('string')
+
+
+def test_print_image():
+    test_image = np.ones([100, 100])
+    test_image[25:75, 25:75] = 0
+    display.print_image(test_image, show=False, left=0.1)
+    plt.close()
+    display.print_image(test_image, show=False)
+    plt.close()
+
+    test_image = np.ones([100, 100, 3], dtype=np.uint8) * 255
+    test_image[25:75, 25:75] = 0
+    display.print_image(test_image, toFile='test_image.png', show=False)
+    plt.close()
+    assert os.path.exists('test_image.png')
+    os.remove('test_image.png')
+    assert not os.path.exists('test_image.png')

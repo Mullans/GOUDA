@@ -87,6 +87,8 @@ def test_save_json_load_json_numpy():
     assert os.path.isfile('test2_array.npz')
     assert os.path.isfile('test3.json')
     assert os.path.isfile('test3_arrayzip.npz')
+    assert os.path.isfile('test4.json')
+    assert os.path.isfile('test4_arrayzip.npz')
 
     with open('testx.json', 'r') as f:
         data = json.load(f)
@@ -97,19 +99,46 @@ def test_save_json_load_json_numpy():
     with open('test3.json', 'r') as f:
         data = json.load(f)
         assert data[-1] == 'numpy_zip'
+    with open('test4.json', 'r') as f:
+        data = json.load(f)
+        assert data[-1] == 'numpy_zip'
 
     check_data = gouda.load_json('testx.json')
     check_data2 = gouda.load_json('test2.json')
     check_data3 = gouda.load_json('test3.json')
+    check_data4 = gouda.load_json('test4.json')
     np.testing.assert_array_equal(temp_data, check_data)
     np.testing.assert_array_equal(temp_data, check_data2)
     np.testing.assert_array_equal(temp_data, check_data3)
+    np.testing.assert_array_equal(temp_data, check_data4[0])
 
     os.remove('testx.json')
     os.remove('test2.json')
     os.remove('test3.json')
+    os.remove('test4.json')
     os.remove('test2_array.npz')
     os.remove('test3_arrayzip.npz')
+    os.remove('test4_arrayzip.npz')
+
+
+def test_save_load_json_list_numpy():
+    temp_data = np.arange(5, dtype=np.uint8)
+
+    gouda.save_json([temp_data], 'test1.json', embed_arrays=False, compressed=False)
+    gouda.save_json([temp_data], 'test2.json', embed_arrays=True, compressed=False)
+    gouda.save_json([temp_data], 'test3.json', embed_arrays=False, compressed=True)
+
+    check1 = gouda.load_json('test1.json')
+    check2 = gouda.load_json('test2.json')
+    check3 = gouda.load_json('test3.json')
+    assert isinstance(check1, list)
+    assert isinstance(check2, list)
+    assert isinstance(check3, list)
+
+    np.testing.assert_array_equal(temp_data, check1[0])
+    np.testing.assert_array_equal(temp_data, check2[0])
+    np.testing.assert_array_equal(temp_data, check3[0])
+
 
 
 def test_save_load_json_numpy_list():
@@ -188,3 +217,47 @@ def test_save_json_warning_error():
     os.remove('test2.json')
     os.remove('test3.json')
     os.remove('test_array.npz')
+
+
+def test_is_image():
+    test_image = np.ones([20, 20])
+    gouda.image.imwrite('test_image.png', test_image)
+    assert gouda.is_image('test_image.png')
+    assert gouda.is_image('.') is False
+    with pytest.raises(FileNotFoundError):
+        assert gouda.is_image('asdfhaksdfhklasjdhfakdhsfk.asdf')
+    path = gouda.GoudaPath('test_image.png')
+    assert gouda.is_image(path)
+
+    os.remove('test_image.png')
+    assert not os.path.exists('test_image.png')
+
+
+def test_save_load_json_slice():
+    data = slice(0, 10, None)
+    gouda.save_json(data, 'test.json')
+    compare = gouda.load_json('test.json')
+    assert compare == data
+    os.remove('test.json')
+
+    data = slice(0, 10, 2)
+    gouda.save_json(data, 'test.json')
+    compare = gouda.load_json('test.json')
+    assert compare == data
+    os.remove('test.json')
+
+    data = [slice(0, 10, 2)]
+    gouda.save_json(data, 'test.json')
+    compare = gouda.load_json('test.json')
+    print(compare, data)
+    assert compare == data
+    os.remove('test.json')
+
+    data = [slice(0, 10, 2), {'this': slice(100, 230, None), 'that': np.array([1, 2, 3])}]
+    gouda.save_json(data, 'test.json')
+    compare = gouda.load_json('test.json')
+    assert compare[0] == slice(0, 10, 2)
+    assert isinstance(compare[1], dict)
+    assert compare[1]['this'] == slice(100, 230)
+    np.testing.assert_array_equal(compare[1]['that'], np.array([1, 2, 3]))
+    os.remove('test.json')
