@@ -187,17 +187,23 @@ class GoudaPath(os.PathLike):
             children = [child.basename() for child in children]
         return children
 
-    def get_images(self):
+    def get_images(self, sort=False, basenames=False):
         """Return all images contained in the directory of the path"""
         if not self.is_dir():
             raise NotADirectoryError("Not a directory: {}".format(self.__path))
         images = []
         for item in os.listdir(self.__path):
             try:
-                if imghdr.what(os.path.join(self.__path, item)) is not None:
-                    images.append(item)
+                check_item = os.path.join(self.__path, item)
+                if imghdr.what(check_item) is not None:
+                    if basenames:
+                        images.append(item)
+                    else:
+                        images.append(check_item)
             except IsADirectoryError:
                 continue
+        if sort:
+            images = sorted(images, key=lambda x: os.path.basename(x))
         return images
 
     def resolve_links(self):
