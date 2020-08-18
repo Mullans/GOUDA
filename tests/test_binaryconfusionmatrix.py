@@ -138,3 +138,9 @@ def test_math():
     assert test_mat2.mcc() == 0
     test_mat2[0, 0] = 99999999999
     assert test_mat2.mcc() == 1
+
+
+def test_array():
+    test_mat = BinaryConfusionMatrix()
+    assert test_mat.__array__().dtype == test_mat.dtype
+    assert test_mat.__array__(np.uint8).dtype == np.uint8

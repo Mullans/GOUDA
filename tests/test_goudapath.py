@@ -77,6 +77,8 @@ def test_representations():
     assert os.fspath(test_abs) == os.path.abspath('absolute')
     assert os.fspath(test_rel) == os.path.abspath('relative')
 
+    assert test_abs.add_basename(test_abs).path == test_abs('absolute').path
+
 
 def test_navigation():
     test_rel = GoudaPath('relative', use_absolute=False)
@@ -192,3 +194,12 @@ def test_strings():
     path = gouda.GoudaPath('testerpath', use_absolute=True)
     assert path.startswith('tester') is False
     assert path.endswith('path')
+
+    path = gouda.GoudaPath('test  ')
+    assert path.rstrip().path == 'test'
+    assert path.rstrip('.').path == path.path
+
+    path = gouda.GoudaPath('test.txt')
+    assert path[-1] == 'test.txt'
+    assert path.basename() == 'test.txt'
+    assert path.basicname() == 'test'

@@ -78,6 +78,12 @@ class BinaryConfusionMatrix(object):
     def true_positive(self):
         return self.__matrix[1, 1]
 
+    def __array__(self, dtype=None):
+        if dtype is None:
+            return self.__matrix
+        else:
+            return self.__matrix.astype(dtype)
+
     def __add__(self, data):
         """Create a new matrix that is the sum of the current one and a new one"""
         new_matrix = self.copy()

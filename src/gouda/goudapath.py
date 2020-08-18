@@ -219,6 +219,9 @@ class GoudaPath(os.PathLike):
     def basename(self):
         return os.path.basename(self.__path)
 
+    def basicname(self):
+        return os.path.splitext(os.path.basename(self.__path))[0]
+
     def is_dir(self):
         """Check if the path is a directory"""
         return os.path.isdir(self.__path)
@@ -242,5 +245,11 @@ class GoudaPath(os.PathLike):
     def endswith(self, suffix):
         return self.__path.endswith(suffix)
 
+    def rstrip(self, chars=None):
+        return GoudaPath(self.__path.rstrip(chars), use_absolute=self.use_absolute)
+
     def startswith(self, prefix):
         return self.__path.startswith(prefix)
+
+    def add_basename(self, path):
+        return self(os.path.basename(path))
