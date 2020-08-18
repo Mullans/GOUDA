@@ -144,3 +144,10 @@ def test_flip_dict():
 
     flip7 = gouda.flip_dict(all2one_dict)
     assert flip7 == {1: ['a', 'b', 'c']}
+
+
+def test_softmax():
+    data = np.arange(10).reshape([5, 2])
+    assert gouda.softmax(data).sum() == 1
+    assert gouda.softmax(data, axis=0).sum() == 2
+    assert gouda.softmax(data, axis=1).sum() == 5

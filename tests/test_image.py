@@ -101,8 +101,16 @@ def test_rescale_columnwise():
 
 
 def test_stack_label():
-    pass
-    # TODO add this
+    test_label = np.ones([10, 10])
+    r_label = image.stack_label(test_label, label_channel=0)
+    g_label = image.stack_label(test_label, label_channel=1)
+    b_label = image.stack_label(test_label, label_channel=2)
+    all_label = image.stack_label(test_label, label_channel=-1)
+    np.testing.assert_array_equal(r_label + g_label + b_label, all_label)
+    np.testing.assert_array_equal(r_label[:, :, 0], g_label[:, :, 1])
+    np.testing.assert_array_equal(r_label[:, :, 0], b_label[:, :, 2])
+    with pytest.raises(ValueError):
+        image.stack_label(test_label, label_channel=4)
 
 
 def test_laplacian_var():
@@ -128,14 +136,55 @@ def test_add_overlay():
     overlay1 = image.add_overlay(image_1, label_1)
     np.testing.assert_array_equal(np.unique(overlay1), np.array([0, 128]))
 
+    overlay1b = image.add_overlay(image_1, np.dstack([label_1, np.zeros([100, 100]), np.zeros([100, 100])]))
+    np.testing.assert_array_equal(overlay1, overlay1b)
+
     label_2 = np.copy(label_1).astype(np.float)
     label_2[:50] = 1
     overlay2 = image.add_overlay(image_1[:, :, np.newaxis], label_2)
     np.testing.assert_array_equal(overlay1, overlay2)
 
+    overlay2b = image.add_overlay(image_1.astype(np.float32), label_2.astype(np.float32))
+    np.testing.assert_array_equal(np.sign(overlay2) * 0.5, overlay2b)
+
     image_2 = np.zeros([100, 100, 3], dtype=np.uint8)
     overlay3 = image.add_overlay(image_2, label_2)
     np.testing.assert_array_equal(overlay1, overlay3)
+
+    label_3 = np.copy(label_2)
+    label_3[:50] = 255
+    overlay4 = image.add_overlay(image_2, label_3)
+    np.testing.assert_array_equal(overlay1, overlay4)
+
+    label_4 = np.copy(label_2)
+    label_4[50:] = -1
+    overlay5 = image.add_overlay(image_2, label_4)
+    np.testing.assert_array_equal(overlay5[0, 0], np.array([128, 64, 64]))
+    np.testing.assert_array_equal(overlay5[-1, -1], np.array([0, 64, 64]))
+
+    overlay6 = image.add_overlay(image_2, label_4, separate_signs=True)
+    np.testing.assert_array_equal(overlay6[0, 0], np.array([0, 128, 0]))
+    np.testing.assert_array_equal(overlay6[-1, -1], np.array([128, 0, 0]))
+
+
+
+
+    label_5 = label_3 * 10
+    with pytest.warns(UserWarning):
+        image.to_uint8(label_5)
+
+    with pytest.raises(ValueError):
+        bad_label = np.ones([50, 50])
+        image.add_overlay(image_1, bad_label)
+
+    with pytest.raises(ValueError):
+        bad_label = np.ones([100, 100, 50])
+        image.add_overlay(image_1, bad_label)
+
+    with pytest.raises(ValueError):
+        image.split_signs(np.dstack([label_1, label_1, label_1]))
+
+
 
 
 def test_mask_exception():
