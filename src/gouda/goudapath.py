@@ -1,5 +1,6 @@
 """Path-like class for easier file navigation"""
 import glob
+import imghdr
 import os
 
 __author__ = "Sean Mullan"
@@ -19,7 +20,13 @@ class GoudaPath(os.PathLike):
         use_absolute : bool
             Whether to convert the path to the absolute path (the default is True)
         """
-        path = os.path.join(*path)
+        if len(path) == 1 and isinstance(path[0], GoudaPath):
+            path = path[0].path
+        elif len(path) == 1:
+            path = '.'
+        else:
+            path = os.path.join(*path)
+
         self.use_absolute = use_absolute
         if use_absolute:
             self.__path = os.path.abspath(path)
@@ -60,6 +67,9 @@ class GoudaPath(os.PathLike):
     def __repr__(self):
         return "GoudaPath('{}')".format(self.__path)
 
+    def __bytes__(self):
+        return self.abspath.encode()
+
     def __truediv__(self, path):
         """Shortcut method for __call__ with a single child path and use_absolute set to False"""
         return GoudaPath(self(path), use_absolute=False)
@@ -94,16 +104,22 @@ class GoudaPath(os.PathLike):
         else:
             return len(split_path)
 
-    def __fspath__(self):
-        return os.fspath(self.__path)
+    def __contains__(self, value):
+        return value in self.__path
 
-    def glob(self, pattern, basenames=False, recursive=False, sort=False):
+    def __fspath__(self):
+        """Note: fspath is always absolute path"""
+        return os.fspath(os.path.abspath(self.__path))
+
+    def glob(self, pattern, as_gouda=False, basenames=False, recursive=False, sort=False):
         """Make a glob call starting from the current path.
 
         Parameters
         ----------
         pattern : str
             Pattern to match with the glob
+        as_gouda : bool
+            Whether to return results as GoudaPath objects (the default is False)
         basenames : bool
             Whether to return only the basenames of results (the default is False)
         recursive : bool
@@ -115,7 +131,9 @@ class GoudaPath(os.PathLike):
         if basenames:
             results = [os.path.basename(item) for item in results]
         if sort:
-            return sorted(results)
+            results = sorted(results)
+        if as_gouda:
+            results = [GoudaPath(item, use_absolute=self.use_absolute) for item in results]
         return results
 
     def parent_dir(self):
@@ -125,14 +143,27 @@ class GoudaPath(os.PathLike):
             parent_dir = os.path.join(os.pardir, os.path.basename(os.path.abspath(parent_dir)))
         return GoudaPath(parent_dir, use_absolute=self.use_absolute)
 
-    def children(self, dirs_only=True, exclude_dirs=False, basenames=False):
+    def num_children(self, dirs_only=True, files_only=False, include_hidden=False):
+        """If the path is a directory, return a count of the child paths"""
+        if not self.is_dir():
+            raise NotADirectoryError("Not a directory: {}".format(self.__path))
+        children = [self(child) for child in os.listdir(self.__path)]
+        if not include_hidden:
+            children = [child for child in children if not child.is_hidden()]
+        if dirs_only:
+            children = [child for child in children if os.path.isdir(child)]
+        if files_only:
+            children = [child for child in children if os.path.isfile(child)]
+        return len(children)
+
+    def children(self, dirs_only=True, files_only=False, basenames=False, include_hidden=False):
         """If the path is a directory, get the child paths contained by it.
 
         Parameters
         ----------
         dirs_only: bool (default=True)
             Return only child directories
-        exclude_dirs: bool (default=False)
+        files_only: bool (default=False)
             Return only child non-directories
         basenames: bool (default=False)
             Return only the basename of the child paths
@@ -144,14 +175,34 @@ class GoudaPath(os.PathLike):
 
         if not self.is_dir():
             raise NotADirectoryError("Not a directory: {}".format(self.__path))
-        children = [self(child, use_absolute=self.use_absolute) for child in os.listdir(self.__path)]
+        children = os.listdir(self.__path)
+        children = [self(child) for child in children]
+        if not include_hidden:
+            children = [child for child in children if not child.is_hidden()]
         if dirs_only:
             children = list(filter(lambda x: os.path.isdir(x), children))
-        if exclude_dirs:
-            children = list(filter(lambda x: not os.path.isdir(x), children))
+        if files_only:
+            children = list(filter(lambda x: os.path.isfile(x), children))
         if basenames:
             children = [child.basename() for child in children]
         return children
+
+    def get_images(self):
+        """Return all images contained in the directory of the path"""
+        if not self.is_dir():
+            raise NotADirectoryError("Not a directory: {}".format(self.__path))
+        images = []
+        for item in os.listdir(self.__path):
+            try:
+                if imghdr.what(os.path.join(self.__path, item)) is not None:
+                    images.append(item)
+            except IsADirectoryError:
+                continue
+        return images
+
+    def resolve_links(self):
+        """Resolve any symbolic links in the path using realpath"""
+        self.__path = os.path.realpath(self.__path)
 
     @property
     def path(self):
@@ -161,14 +212,35 @@ class GoudaPath(os.PathLike):
     def abspath(self):
         return os.path.abspath(self.__path)
 
+    @property
+    def realpath(self):
+        return os.path.realpath(self.__path)
+
     def basename(self):
         return os.path.basename(self.__path)
 
     def is_dir(self):
+        """Check if the path is a directory"""
         return os.path.isdir(self.__path)
+
+    def is_image(self):
+        """Check if the path is an image (see imghdr.what for image types)"""
+        try:
+            return imghdr.what(self.__path) is not None
+        except (IsADirectoryError, FileNotFoundError):
+            return False
+
+    def is_hidden(self):
+        return self.basename().startswith('.')
 
     def extension(self):
         return '.' + self.__path.rsplit('.', 1)[-1]
 
     def exists(self):
         return os.path.exists(self)
+
+    def endswith(self, suffix):
+        return self.__path.endswith(suffix)
+
+    def startswith(self, prefix):
+        return self.__path.startswith(prefix)

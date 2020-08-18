@@ -192,6 +192,12 @@ class BinaryConfusionMatrix(object):
                 result = top / np.sqrt(bottom)
         return result
 
+    def precision(self):
+        """Return the precision for the true or 1 class [TN / (TP + FP)]"""
+        if self.__matrix[:, 1].sum() == 0:
+            return 0
+        return self.__matrix[1, 1] / self.__matrix[:, 1].sum()
+
     def reset(self, dtype=None):
         """Reset all matrix entries to 0"""
         if dtype is None:
@@ -199,13 +205,13 @@ class BinaryConfusionMatrix(object):
         self.__matrix = np.zeros([2, 2], dtype=dtype)
 
     def sensitivity(self):
-        """Return the sensitivity for the true or 1 class"""
+        """Return the sensitivity for the true or 1 class [TP / (TP + FN)]"""
         if self.__matrix[1].sum() == 0:
             return 0
         return self.__matrix[1, 1] / self.__matrix[1].sum()
 
     def specificity(self):
-        """Return the specificity for the true or 1 class"""
+        """Return the specificity for the true or 1 class [TN / (TN + FP)]"""
         if self.__matrix[0].sum() == 0:
             return 0
         return self.__matrix[0, 0] / self.__matrix[0].sum()

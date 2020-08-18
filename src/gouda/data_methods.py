@@ -83,9 +83,10 @@ def flip_dict(dict, unique_items=False, force_list_values=False):
 
 
 def normalize(data, axis=None):
-    """Return data normalized to [0, 1] along axis or axes indicated."""
-    data_range = data.max(axis=axis, keepdims=True) - data.min(axis=axis, keepdims=True)
-    return np.divide(data - data.min(axis=axis, keepdims=True), data_range, where=data_range > 0)
+    """Return data normalized to a z-score along axis or axes indicated."""
+    mean = data.mean(axis=axis, keepdims=True)
+    stddev = data.std(axis=axis, keepdims=True)
+    return np.divide(data - mean, stddev, where=stddev != 0)
 
 
 def num_digits(x):
@@ -145,7 +146,7 @@ def prime_overlap(x, y):
     fact_x = prime_factors(x)
     fact_y = prime_factors(y)
     overlap = []
-    for i in range(len(fact_x)):
+    for i in range(len(fact_x)):  # pragma: no branch
         item = fact_x.pop()
         if item in fact_y:
             overlap.append(item)
@@ -166,6 +167,13 @@ def rescale(data, new_min=0, new_max=1, axis=None):
 def sigmoid(x):
     """Return the sigmoid of the given value/array."""
     return 1.0 / (1.0 + np.exp(-x) + 1e-7)
+
+
+def softmax(x, axis=None):
+    s = np.max(x, axis=axis, keepdims=True)
+    e_x = np.exp(x - s)
+    div = np.sum(e_x, axis=axis, keepdims=True)
+    return np.divide(e_x, div, where=div != 0)
 
 
 def standardize(data, axis=None):

@@ -1,6 +1,7 @@
 """General file method and JSON handling"""
 import copy
 import json
+import imghdr
 import os
 import warnings
 
@@ -29,13 +30,16 @@ def ensure_dir(*paths):
     """
     full_path = ''
     for path in paths:
-        full_path = os.path.join(full_path, path)
+        if isinstance(path, GoudaPath):
+            full_path = os.path.join(full_path, path.path)
+        else:
+            full_path = os.path.join(full_path, path)
         if os.path.exists(full_path) and os.path.isdir(full_path):
             continue
         elif os.path.exists(full_path):
             raise ValueError("A file without an extension is blocking directory creation at {}".format(full_path))
         else:
-            os.mkdir(full_path)
+            os.makedirs(full_path, exist_ok=True)
     if isinstance(paths[0], GoudaPath):
         return GoudaPath(full_path, use_absolute=paths[0].use_absolute)
     return full_path
@@ -61,21 +65,33 @@ def load_json(filename):
     """Load a JSON file, and re-form any numpy arrays if :func:`~gouda.save_json` was used to write them."""
     with open(filename, 'r') as f:
         data = json.load(f)
-    if isinstance(data, list):
+    if isinstance(data, dict) and 'slice_start' in data:
+        data = slice(data['slice_start'], data['slice_stop'], data['slice_step'])
+    elif isinstance(data, list):
         if data[-1] == 'numpy':
             np_filename = filename.rsplit('.', 1)[0] + '_array.npz'
             arrays = np.load(np_filename)
+            data = data[:-1]
+            if len(data) == 1:
+                data = data[0]
         elif data[-1] == 'numpy_zip':
             np_filename = filename.rsplit('.', 1)[0] + '_arrayzip.npz'
             arrays = np.load(np_filename)
+            data = data[:-1]
+            if len(data) == 1:
+                data = data[0]
         elif data[-1] == 'numpy_embed':
+            data = data[:-1]
+            if len(data) == 1:
+                data = data[0]
             pass
-        else:
-            return data
+        # else:
+        #     return data
 
         def renumpy(_data):
             if isinstance(_data, list):
                 for i in range(len(_data)):
+                    print('here')
                     _data[i] = renumpy(_data[i])
             elif isinstance(_data, dict):
                 if 'numpy_array' in _data:
@@ -86,14 +102,15 @@ def load_json(filename):
                         if new_data.dtype != _data['dtype'] or list(new_data.shape) != _data['shape']:
                             raise ValueError("Numpy array file doesn't match expected stored numpy array data")
                     return new_data
+                elif 'slice_start' in _data:
+                    _data = slice(_data['slice_start'], _data['slice_stop'], _data['slice_step'])
                 else:
                     for key in _data.keys():
                         _data[key] = renumpy(_data[key])
             return _data
 
-        data = data[:-1]
-        if len(data) == 1:
-            data = data[0]
+        # if len(data) == 1:
+        #     data = data[0]
         data = renumpy(data)
     return data
 
@@ -131,6 +148,8 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
             new_data = {}
             for key in _data.keys():
                 new_data[key] = unnumpy(_data[key])
+        elif isinstance(_data, slice):
+            new_data = {'slice_start': _data.start, 'slice_stop': _data.stop, 'slice_step': _data.step}
         elif isinstance(_data, np.ndarray):
             used_numpy[0] = True
             if embed_arrays:
@@ -160,3 +179,13 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
             np.savez_compressed(np_filename + '_arrayzip.npz', **out_arrays)
         else:
             np.savez(np_filename + '_array.npz', **out_arrays)
+
+
+def is_image(path):
+    if isinstance(path, GoudaPath):
+        return path.is_image()
+    else:
+        try:
+            return imghdr.what(path) is not None
+        except IsADirectoryError:
+            return False

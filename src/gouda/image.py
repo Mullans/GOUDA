@@ -1,4 +1,6 @@
 """Methods/Shortcuts for modifying and handling image data."""
+import warnings
+
 import cv2
 import numpy as np
 
@@ -9,12 +11,7 @@ __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
-FULL_RANGE = 0
-TANH = 1
-SIGMOID = 2
-
-
-def imread(path, as_RGB=True, as_greyscale=False, unchanged=True):
+def imread(path, as_RGB=False, as_greyscale=False, unchanged=True):
     """SHORTCUT: Load an image from a path using OpenCV modified for RGB.
 
     Parameters
@@ -30,17 +27,17 @@ def imread(path, as_RGB=True, as_greyscale=False, unchanged=True):
 
     Note
     ----
-    * Priority for options is: unchanged > as_greyscale > as_RGB > default
+    * Priority for options is: as_greyscale > as_RGB > unchanged > default
     * Greyscale transforms input image based on perceived color. See [https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor]
     """
     if isinstance(path, GoudaPath):
         path = path.path
-    if unchanged:
-        return cv2.imread(path, -1)
-    elif as_greyscale:
+    if as_greyscale:
         return cv2.imread(path, 0)
     elif as_RGB:
         return cv2.imread(path)[:, :, ::-1]
+    elif unchanged:
+        return cv2.imread(path, -1)
     else:
         return cv2.imread(path)
 
@@ -60,12 +57,9 @@ def imwrite(path, image, as_RGB=True):
     if isinstance(path, GoudaPath):
         path = path.path
     if image.ndim == 2:
-        # image = np.dstack([image, image, image])
         image = image[:, :, np.newaxis]
         as_RGB = False
     elif image.ndim == 3 and image.shape[2] == 1:
-        # image = image[:, :, 0]
-        # image = np.dstack([image, image, image])
         as_RGB = False
     elif image.ndim == 3 and image.shape[2] == 3:
         pass
@@ -77,37 +71,19 @@ def imwrite(path, image, as_RGB=True):
         cv2.imwrite(path, image)
 
 
-def val_type(x):
-    """Get the normalization type used for a numpy array."""
-    if x.max() > 1 and x.max() <= 255 and x.min() >= 0:
-        return FULL_RANGE  # Values are in range 0-255, no norm
-    elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:
-        return TANH  # Values are in range [-1, 1], tanh norm
-    elif x.min() >= 0 and x.max() <= 1:
-        return SIGMOID  # Values are in range [0, 1], sigmoid norm
-    else:
-        raise ValueError(
-            "Given values are not in one of the valid image normalization ranges."
-        )
-
-
-def denorm(x, norm_type=None):
-    """Denormalize an image to [0, 255] based on specified or inferred normalization type."""
-    if norm_type is None:
-        if x.max() > 1 and x.max() <= 255 and x.min() >= 0:
-            norm_type = FULL_RANGE  # Values are in range [0, 255], no norm
-        elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:
-            norm_type = TANH  # Values are in range [-1, 1], tanh norm
-        elif x.min() >= 0 and x.max() <= 1:
-            norm_type = SIGMOID  # Values are in range [0, 1], sigmoid norm
-        else:
-            raise ValueError(
-                "Given values are not in one of the valid image normalization ranges."
-            )
-    if norm_type == TANH:
+def to_uint8(x):
+    """Convert an image to a uint8 type with range [0, 255] based on inferred normalization type."""
+    if x.dtype == np.uint8:
+        return x
+    if x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
+        pass
+    elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:  # input range [-1, 1]
         x = ((x * 127.5) + 127.5)
-    elif norm_type == SIGMOID:
+    elif x.min() >= 0 and x.max() <= 1:  # input range [0, 1]
         x = (x * 255.0)
+    else:
+        warnings.warn("Cannot determine input range. Rescaling to [0, 1]")
+        x = rescale(x, min_val=0, max_val=255)
     return x.astype(np.uint8)
 
 
@@ -133,23 +109,34 @@ def rescale(data, column_wise=False, max_val=1, min_val=0, return_type=np.float)
     return ((rescaled * (max_val - min_val)) + min_val).astype(return_type)
 
 
-def stack_label(label, should_denorm=True):
-    """Denormalize and change a 1d label to a 3d image.
+def stack_label(label, label_channel=0, as_uint8=True):
+    """Convert 2d label to 3d.
 
-    Note
-    ----
-        If should_denorm is True, return image is in range [0, 255].
+    Parameters
+    ----------
+    label : np.ndarray
+        2D label to stack
+    label_channel : int
+        The color channel for the label, or -1 to set all channels to the label (the default is 0)
+    as_uint8 : bool
+        Whether to convert the label to a uint8
     """
-    x = np.dstack([label, label, label])
-    if should_denorm:
-        x = denorm(x)
-    return x
+    label = np.squeeze(label)
+    if as_uint8:
+        label = to_uint8(label)
+    if label_channel < 0:
+        return np.dstack([label, label, label])
+    elif label_channel < 3:
+        to_stack = [np.zeros_like(label), np.zeros_like(label), np.zeros_like(label)]
+        to_stack[label_channel] = label
+        return np.dstack(to_stack)
+    else:
+        raise ValueError("Not a valid color channel index: {}".format(label_channel))
 
 
 def laplacian_var(image):
     """Return the laplacian variance of an image"""
     # Laplacian is the rate of change of pixel intensity (2nd order derivative)
-    image = denorm(image)
     blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
     grey = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
     return cv2.Laplacian(grey, cv2.CV_16S).var()
@@ -158,7 +145,6 @@ def laplacian_var(image):
 def sobel_var(image):
     """Return the sobal variance of an image"""
     # Sobel is the gradient of pixel intensity (1st order derivative)
-    image = denorm(image)
     blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
     grey = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
     grad_x = cv2.Sobel(grey, cv2.CV_16S, 1, 0, 3)
@@ -168,69 +154,57 @@ def sobel_var(image):
     return cv2.addWeighted(grad_x, 0.5, grad_y, 0.5, 0).var()
 
 
-def mask(img, mask, overlay=True, norm_type=None, renorm=True):
-    """Return img with the red channel replaced by mask.
+def split_signs(mask):
+    """Split a single channel image mask with +/- values into green/red color channels"""
+    mask = np.squeeze(mask)
+    if mask.ndim != 2:
+        raise ValueError("Single channel mask required for split_signs")
+    negative = np.clip(mask, -np.inf, 0) * -1
+    positive = np.clip(mask, 0, np.inf)
+    new_mask = np.dstack([negative, positive, np.zeros_like(positive)])
+    return new_mask
+
+
+def add_overlay(image, mask, label_channel=0, separate_signs=False):
+    """Return image with a mask overlay.
 
     Parameters
     ----------
-        img: np array
+        image: numpy.ndarray
             Image array with shape (x, y, channels)
-        mask: np array
+        mask: numpy.ndarray
             np array with shape (x, y) and range [0, 1]
-        overlay: bool
-            If true, the mask is overlaid on the image rather than replacing the red channel
-        norm_type: int | None
-            Type of normalization to undo on the input img. If None, it will be
-            inferred based on the value range of the array.
-        renorm: bool
-            Should the output image be normalized to the same range as the input
+        label_channel : int
+            The color channel to use for the overlay if separate_signs is False (the default is 0)
+        separate_signs : bool
+            Whether to separate +/- values of the mask into green/red channels
     """
-    output = np.copy(img)
-    if mask.ndim == 2:
-        mask = mask[:, :, np.newaxis]
-    elif mask.ndim == 3 and (mask.shape[2] == 3 or mask.shape[2] == 1):
-        mask = np.mean(mask, axis=2, keepdims=True)
-    else:
-        raise ValueError("Mask must have shape [x, y], [x, y, 1], or [x, y, 3], not {}".format(mask.shape))
-    if mask.max() > 1.0 or mask.min() < 0:
-        raise ValueError('Mask values must be in range [0, 1].')
-    mask = (mask * 255.0).astype(np.uint8)
+    output = np.squeeze(image)
+    mask = np.squeeze(mask)
 
-    if output.ndim == 2 or (output.ndim == 3 and output.shape[2] == 1):
-        # Image has to be RGB for output
+    if mask.shape[:2] != image.shape[:2]:
+        raise ValueError('Mask width/height does not match image width/height: {} != {}'.format(mask.shape[:2], image.shape[:2]))
+    if mask.ndim == 2:
+        if separate_signs:
+            mask = split_signs(mask)
+        else:
+            mask = stack_label(mask, label_channel, as_uint8=False)
+    elif mask.ndim == 3 and mask.shape[2] == 3:
+        pass
+    else:
+        raise ValueError("Mask must have shape [x, y] or [x, y, z], not {}".format(mask.shape))
+    if image.dtype == np.uint8:
+        mask = to_uint8(mask)
+
+    if output.ndim == 2:
         output = np.dstack([output, output, output])
 
-    if norm_type is None:
-        norm_type = val_type(output)
-    if norm_type == TANH:
-        output = ((output * 127.5) + 127.5).astype(np.uint8)
-    elif norm_type == SIGMOID:
-        output = (output * 255.0).astype(np.uint8)
-
-    if overlay:
-        overlay = cv2.addWeighted(
-            output,
-            0.8,
-            np.dstack([mask, np.zeros_like(mask), np.zeros_like(mask)]),
-            0.2,
-            0)
-        output = np.where(mask >= 127.5, overlay, output)
-    else:
-        output[:, :, :1] = mask
-
-    if renorm:
-        if norm_type == TANH:
-            output = output.astype(np.float)
-            output = (output - 127.5) / 127.5
-        elif norm_type == SIGMOID:
-            output = output.astype(np.float)
-            output = output / 255.0
-        else:
-            output = output.astype(img.dtype)
+    overlay = cv2.addWeighted(output, 0.5, mask, 0.5, 0)
+    output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
     return output
 
 
-def masked_lineup(image, label, norm_type=None):
+def masked_lineup(image, label):
     """Return a list of image, masked_image, mask.
 
     Note
@@ -249,7 +223,7 @@ def masked_lineup(image, label, norm_type=None):
     """
     return [
         image,
-        mask(image, label, norm_type=norm_type),
+        add_overlay(image, label),
         np.dstack([label * 255,
                    np.zeros_like(label),
                    np.zeros_like(label)]).astype(np.uint8)
@@ -279,7 +253,6 @@ def grabCut(image, labels, use_tresholds=True, thresholds=(0.2, 0.6, 0.8), itera
     The GrabCut masked image and the generated mask : numpy.ndarray, numpy.ndarray
 
     """
-    image = denorm(image)
     if labels.max() <= 1:
         mask = np.zeros_like(labels, dtype=np.uint8)
         mask += cv2.GC_BGD
