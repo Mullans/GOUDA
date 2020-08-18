@@ -135,14 +135,23 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
 
 def print_image(image, figsize=(8, 6.5), toFile=None, show=True, **kwargs):
     """Similar to pyplot.imshow, but with axes and margins for a single image."""
-    defaults = {'hspace': 0, 'wspace': 0, 'left': 0, 'bottom': 0, 'right': 1, 'top': 1}
+    defaults = {
+        'hspace': 0,
+        'wspace': 0,
+        'left': 0,
+        'bottom': 0,
+        'right': 1,
+        'top': 1,
+        'cmap': 'bone'
+    }
+
     for item in defaults:
         if item not in kwargs:
             kwargs[item] = defaults[item]
     image = np.squeeze(image)
     fig = plt.figure(figsize=figsize)
     if image.ndim == 2:
-        cmap = kwargs['cmap'] if 'cmap' in kwargs else 'bone'
+        cmap = kwargs['cmap']
         plt.imshow(image, cmap=cmap)
     else:
         plt.imshow(image)
@@ -158,7 +167,7 @@ def print_image(image, figsize=(8, 6.5), toFile=None, show=True, **kwargs):
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
     if toFile is not None:
-        plt.savefig(kwargs['toFile'], dpi=fig.dpi)
+        plt.savefig(toFile, dpi=fig.dpi)
     if show:  # pragma: no cover
         # Check manually
         plt.show()

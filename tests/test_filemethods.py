@@ -87,8 +87,6 @@ def test_save_json_load_json_numpy():
     assert os.path.isfile('test2_array.npz')
     assert os.path.isfile('test3.json')
     assert os.path.isfile('test3_arrayzip.npz')
-    assert os.path.isfile('test4.json')
-    assert os.path.isfile('test4_arrayzip.npz')
 
     with open('testx.json', 'r') as f:
         data = json.load(f)
@@ -99,26 +97,19 @@ def test_save_json_load_json_numpy():
     with open('test3.json', 'r') as f:
         data = json.load(f)
         assert data[-1] == 'numpy_zip'
-    with open('test4.json', 'r') as f:
-        data = json.load(f)
-        assert data[-1] == 'numpy_zip'
 
     check_data = gouda.load_json('testx.json')
     check_data2 = gouda.load_json('test2.json')
     check_data3 = gouda.load_json('test3.json')
-    check_data4 = gouda.load_json('test4.json')
     np.testing.assert_array_equal(temp_data, check_data)
     np.testing.assert_array_equal(temp_data, check_data2)
     np.testing.assert_array_equal(temp_data, check_data3)
-    np.testing.assert_array_equal(temp_data, check_data4[0])
 
     os.remove('testx.json')
     os.remove('test2.json')
     os.remove('test3.json')
-    os.remove('test4.json')
     os.remove('test2_array.npz')
     os.remove('test3_arrayzip.npz')
-    os.remove('test4_arrayzip.npz')
 
 
 def test_save_load_json_list_numpy():
@@ -138,7 +129,6 @@ def test_save_load_json_list_numpy():
     np.testing.assert_array_equal(temp_data, check1[0])
     np.testing.assert_array_equal(temp_data, check2[0])
     np.testing.assert_array_equal(temp_data, check3[0])
-
 
 
 def test_save_load_json_numpy_list():

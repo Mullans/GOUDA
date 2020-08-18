@@ -71,20 +71,13 @@ def load_json(filename):
         if data[-1] == 'numpy':
             np_filename = filename.rsplit('.', 1)[0] + '_array.npz'
             arrays = np.load(np_filename)
-            data = data[:-1]
-            if len(data) == 1:
-                data = data[0]
+            data = data[0]
         elif data[-1] == 'numpy_zip':
             np_filename = filename.rsplit('.', 1)[0] + '_arrayzip.npz'
             arrays = np.load(np_filename)
-            data = data[:-1]
-            if len(data) == 1:
-                data = data[0]
+            data = data[0]
         elif data[-1] == 'numpy_embed':
-            data = data[:-1]
-            if len(data) == 1:
-                data = data[0]
-            pass
+            data = data[0]
         # else:
         #     return data
 
@@ -163,8 +156,7 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
 
     data = unnumpy(data)
     if used_numpy[0]:
-        if not isinstance(data, list):
-            data = [data]
+        data = [data]
         if compressed:
             data.append('numpy_zip')
         elif embed_arrays:

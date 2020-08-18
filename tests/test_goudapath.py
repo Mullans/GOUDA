@@ -28,7 +28,7 @@ from gouda import GoudaPath
 
 
 def test_init_call():
-    test_basic = gouda.GoudaPath()
+    test_basic = gouda.GoudaPath(use_absolute=False)
     assert test_basic.path == '.'
 
     test_abs = GoudaPath('absolute', use_absolute=True)
@@ -80,6 +80,7 @@ def test_representations():
 
 def test_navigation():
     test_rel = GoudaPath('relative', use_absolute=False)
+    assert test_rel().path == test_rel.basename()
     assert (test_rel / 'check').path == os.path.join('relative', 'check')
     assert (test_rel // 'check').path == os.path.abspath(os.path.join('relative', 'check'))
     assert (test_rel + 'check').path == test_rel.path + 'check'
@@ -88,6 +89,15 @@ def test_navigation():
     assert (test_rel // 'check')[1:2] == os.path.sep.join(os.path.abspath(os.path.join('relative', 'check'))[1:].split(os.path.sep)[1:2])
     assert len(test_rel) == 1
     assert len(test_rel(use_absolute=True)) == len(os.path.abspath('relative')[1:].split(os.path.sep))
+
+    multiples = test_rel(['a', 'b', 'c'])
+    assert len(multiples) == 3
+    assert multiples[0].path == test_rel('a').path
+    assert multiples[2].path == test_rel('c').path
+    child_check1 = test_rel('a', use_absolute=False)
+    child_check2 = test_rel('a', use_absolute=True)
+    assert child_check1.path != child_check2.path
+    assert child_check1.abspath == child_check2.path
 
 
 def test_relation():

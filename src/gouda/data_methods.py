@@ -82,13 +82,6 @@ def flip_dict(dict, unique_items=False, force_list_values=False):
         return new_dict
 
 
-def normalize(data, axis=None):
-    """Return data normalized to a z-score along axis or axes indicated."""
-    mean = data.mean(axis=axis, keepdims=True)
-    stddev = data.std(axis=axis, keepdims=True)
-    return np.divide(data - mean, stddev, where=stddev != 0)
-
-
 def num_digits(x):
     if x == 0:
         return 1
@@ -176,7 +169,8 @@ def softmax(x, axis=None):
     return np.divide(e_x, div, where=div != 0)
 
 
-def standardize(data, axis=None):
-    """Standardize data to have zero mean and unit variance along axis or axes indicated."""
-    stds = data.std(axis=axis, keepdims=True)
-    return np.divide(data - data.mean(axis=axis, keepdims=True), stds, where=stds > 0)
+def normalize(data, axis=None):
+    """Return data normalized to have zero mean and unit variance along axis or axes indicated."""
+    mean = data.mean(axis=axis, keepdims=True)
+    stddev = data.std(axis=axis, keepdims=True)
+    return np.divide(data - mean, stddev, where=stddev != 0)

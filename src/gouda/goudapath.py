@@ -22,7 +22,7 @@ class GoudaPath(os.PathLike):
         """
         if len(path) == 1 and isinstance(path[0], GoudaPath):
             path = path[0].path
-        elif len(path) == 1:
+        elif len(path) == 0:
             path = '.'
         else:
             path = os.path.join(*path)
