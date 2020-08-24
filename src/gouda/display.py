@@ -43,6 +43,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
 
     if len(images) == 1:
         images = images[0]
+    if hasattr(images, '__array__'):
+        images = np.array(images)
     if isinstance(images, (list, tuple)):
         if isinstance(images[0], (list, tuple)):
             # list of lists of images
@@ -133,8 +135,24 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
         return rows, cols
 
 
-def print_image(image, figsize=(8, 6.5), toFile=None, show=True, **kwargs):
-    """Similar to pyplot.imshow, but with axes and margins for a single image."""
+def print_image(image, figsize=(8, 6.5), toFile=None, show=True, allow_interpolation=False, imshow_args={}, **kwargs):
+    """Similar to pyplot.imshow, but with axes and margins for a single image.
+
+    Parameters
+    ----------
+    image : numpy.ndarray
+        Input image to display
+    figsize : (float, float)
+        The size in inches of the image to display (the default is (8, 6.5))
+    toFile : str | None
+        The path to save the displayed figure to, or None to not save (the default is None)
+    show : bool
+        Whether to call pyplot.show to display the image (the default is True)
+    allow_interpolation : bool
+        Whether to allow automatic interpolation (nearest neighbor and automatic aspect ratio) when either height or width is 10x larger than the other (the default is False)
+    imshow_args : dict
+        Extra args to pass directly to the pyplot.imshow call (the default is {})
+    """
     defaults = {
         'hspace': 0,
         'wspace': 0,
@@ -150,11 +168,13 @@ def print_image(image, figsize=(8, 6.5), toFile=None, show=True, **kwargs):
             kwargs[item] = defaults[item]
     image = np.squeeze(image)
     fig = plt.figure(figsize=figsize)
+    if max(image.shape[:2]) / min(image.shape[:2]) > 10 and allow_interpolation:
+        imshow_args['interpolation'] = 'nearest'
+        imshow_args['aspect'] = 'auto'
     if image.ndim == 2:
-        cmap = kwargs['cmap']
-        plt.imshow(image, cmap=cmap)
-    else:
-        plt.imshow(image)
+        imshow_args['cmap'] = kwargs['cmap']
+
+    plt.imshow(image, **imshow_args)
     plt.gca().set_axis_off()
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.subplots_adjust(top=kwargs['top'],
