@@ -174,6 +174,7 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
 
 
 def is_image(path):
+    """Check if the path is an image file"""
     if isinstance(path, GoudaPath):
         return path.is_image()
     else:
@@ -181,3 +182,8 @@ def is_image(path):
             return imghdr.what(path) is not None
         except IsADirectoryError:
             return False
+
+
+def basicname(path):
+    """Return the basename of the path without the extension"""
+    return os.path.splitext(os.path.basename(path))[0]
