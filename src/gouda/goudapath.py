@@ -2,6 +2,8 @@
 import glob
 import imghdr
 import os
+import re
+
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -187,21 +189,40 @@ class GoudaPath(os.PathLike):
             children = [child.basename() for child in children]
         return children
 
-    def get_images(self, sort=False, basenames=False):
-        """Return all images contained in the directory of the path"""
+    def get_images(self, sort=False, basenames=False, fast_check=False):
+        """Return all images contained in the directory of the path
+
+        Parameters
+        ----------
+        sort : bool
+            Whether to sort the results by basename
+        basenames : bool
+            Whether to return the image paths as basenames or fullpaths
+        fast_check : bool
+            If true, this only checks the file extension for jpg, jpeg, png,
+            tiff, gif, and bmp extensions. If false, this uses imghdr to check
+            the content of each file for image data.
+        """
         if not self.is_dir():
             raise NotADirectoryError("Not a directory: {}".format(self.__path))
         images = []
-        for item in os.listdir(self.__path):
-            try:
-                check_item = os.path.join(self.__path, item)
-                if imghdr.what(check_item) is not None:
-                    if basenames:
-                        images.append(item)
-                    else:
-                        images.append(check_item)
-            except IsADirectoryError:
-                continue
+        if fast_check:
+            pattern = '|'.join(['\.jpe?g', '\.png', '.tiff', '.gif', '.bmp'])  # noqa W605
+            regex = re.compile(r'({})$)'.format(pattern), re.I)
+            for item in os.scandir(self.__path):
+                if bool(regex.findall(item.name)):
+                    images.append(item.name if basenames else item.path)
+        else:
+            for item in os.listdir(self.__path):
+                try:
+                    check_item = os.path.join(self.__path, item)
+                    if imghdr.what(check_item) is not None:
+                        if basenames:
+                            images.append(item)
+                        else:
+                            images.append(check_item)
+                except IsADirectoryError:
+                    continue
         if sort:
             images = sorted(images, key=lambda x: os.path.basename(x))
         return images
