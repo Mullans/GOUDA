@@ -208,7 +208,7 @@ class GoudaPath(os.PathLike):
         images = []
         if fast_check:
             pattern = '|'.join(['\.jpe?g', '\.png', '.tiff', '.gif', '.bmp'])  # noqa W605
-            regex = re.compile(r'({})$)'.format(pattern), re.I)
+            regex = re.compile(r'({})$'.format(pattern), re.I)
             for item in os.scandir(self.__path):
                 if bool(regex.findall(item.name)):
                     images.append(item.name if basenames else item.path)

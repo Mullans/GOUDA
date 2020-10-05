@@ -11,7 +11,7 @@ __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
-def imread(path, as_RGB=False, as_greyscale=False, unchanged=True):
+def imread(path, as_RGB=True, as_greyscale=False, unchanged=False):
     """SHORTCUT: Load an image from a path using OpenCV modified for RGB.
 
     Parameters
@@ -23,7 +23,7 @@ def imread(path, as_RGB=False, as_greyscale=False, unchanged=True):
     as_greyscale: bool
         If true, reads the image as greyscale (the default is False)
     unchanged: bool
-        If true, reads in the image without constraining to 3-channel uint8 format. (the default is True)
+        If true, reads in the image without constraining to 3-channel uint8 format. (the default is False)
 
     Note
     ----
