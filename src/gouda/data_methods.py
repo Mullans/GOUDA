@@ -152,7 +152,7 @@ def prime_overlap(x, y):
 def rescale(data, new_min=0, new_max=1, axis=None):
     """Rescales data to have range [new_min, new_max] along axis or axes indicated."""
     data_range = data.max(axis=axis, keepdims=True) - data.min(axis=axis, keepdims=True)
-    x = np.divide(data - data.min(axis=axis, keepdims=True), data_range, where=data_range > 0)
+    x = np.divide(data - data.min(axis=axis, keepdims=True), data_range, where=data_range > 0, out=np.zeros_like(data))
     new_range = new_max - new_min
     return (x * new_range) + new_min
 
@@ -166,14 +166,14 @@ def softmax(x, axis=None):
     s = np.max(x, axis=axis, keepdims=True)
     e_x = np.exp(x - s)
     div = np.sum(e_x, axis=axis, keepdims=True)
-    return np.divide(e_x, div, where=div != 0)
+    return np.divide(e_x, div, where=div != 0, out=np.zeros_like(div))
 
 
 def normalize(data, axis=None):
     """Return data normalized to have zero mean and unit variance along axis or axes indicated."""
     mean = data.mean(axis=axis, keepdims=True)
     stddev = data.std(axis=axis, keepdims=True)
-    return np.divide(data - mean, stddev, where=stddev != 0)
+    return np.divide(data - mean, stddev, where=stddev != 0, out=np.zeros_like(data))
 
 
 def roc_curve(label, pred, as_rates=True):

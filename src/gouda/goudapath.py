@@ -98,6 +98,14 @@ class GoudaPath(os.PathLike):
             return os.path.join(*split_path[index])
         return split_path[index]
 
+    def __setitem__(self, index, value):
+        """Change part of the current path hierarchy."""
+        split_path = self.__path.split(os.path.sep)
+        if len(split_path[0]) == 0:
+            split_path = split_path[1:]
+        split_path[index] = value
+        self.__path = os.path.join(*split_path)
+
     def __len__(self):
         """Get the length of the current path hierarchy."""
         split_path = self.__path.split(os.path.sep)
@@ -271,6 +279,9 @@ class GoudaPath(os.PathLike):
 
     def endswith(self, suffix):
         return self.__path.endswith(suffix)
+
+    def replace(self, old, new):
+        return GoudaPath(self.__path.replace(old, new), use_absolute=self.use_absolute)
 
     def rstrip(self, chars=None):
         return GoudaPath(self.__path.rstrip(chars), use_absolute=self.use_absolute)
