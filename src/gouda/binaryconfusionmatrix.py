@@ -152,13 +152,21 @@ class BinaryConfusionMatrix(object):
             raise ValueError("Predictions and labels must have the same length/shape")
         labels = np.reshape(labels, [-1])
         predictions = np.reshape(predictions, [-1])
-        merged = np.stack([labels, predictions])
-        points, counts = np.unique(merged, axis=1, return_counts=True)
-        for i in range(points.shape[1]):
-            self.__matrix[points[0, i], points[1, i]] += counts[i]
+        # merged = np.stack([labels, predictions])
+        # points, counts = np.unique(merged, axis=1, return_counts=True)
+        # for i in range(points.shape[1]):
+        #     self.__matrix[points[0, i], points[1, i]] += counts[i]
+        tp = np.logical_and(labels, predictions).sum()
+        tn = np.logical_and(1 - labels, 1 - predictions).sum()
+        fp = predictions.sum() - tp
+        fn = (1 - predictions).sum() - tn
+        self.__matrix += np.array([[tn, fp], [fn, tp]])
 
     def add_matrix(self, binary_matrix):
-        self.__matrix += binary_matrix.matrix
+        if isinstance(binary_matrix, BinaryConfusionMatrix):
+            self.__matrix += binary_matrix.matrix
+        elif isinstance(binary_matrix, np.ndarray):
+            self.__matrix += binary_matrix
 
     def copy(self):
         new_mat = BinaryConfusionMatrix(threshold=self.threshold, dtype=self.dtype)
