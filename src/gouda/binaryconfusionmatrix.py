@@ -27,7 +27,7 @@ class BinaryConfusionMatrix(object):
     labels : type
         Optional initial lables for the matrix. (the default is None)
     threshold : float
-        Threshold to use for binary labels with continuous predictions
+        Threshold to use for binary labels with continuous predictions (the default is 0.5)
     dtype : numpy.dtype
         Numpy variable type to use for the matrix. (the default is np.int)
 
@@ -38,11 +38,13 @@ class BinaryConfusionMatrix(object):
     * Dtype may be set to change memory usage, but will always be treated as an int. No checking is done to prevent overflow if dtype is manually set.
 
     """
-    def __init__(self, predictions=None, labels=None, threshold=None, dtype=np.int):
+    def __init__(self, predictions=None, labels=None, threshold=0.5, dtype=np.int, pos_label='True', neg_label='False'):
         self.threshold = threshold
         self.reset(dtype)
         if predictions is not None:
             self.add(predictions, labels)
+        self.pos_label = pos_label
+        self.neg_label = neg_label
 
     @property
     def dtype(self):
@@ -167,6 +169,8 @@ class BinaryConfusionMatrix(object):
             self.__matrix += binary_matrix.matrix
         elif isinstance(binary_matrix, np.ndarray):
             self.__matrix += binary_matrix
+        else:
+            raise ValueError("Unknown matrix type {} cannot be added as a matrix".format(type(binary_matrix)))
 
     def copy(self):
         new_mat = BinaryConfusionMatrix(threshold=self.threshold, dtype=self.dtype)
@@ -207,16 +211,10 @@ class BinaryConfusionMatrix(object):
         return result
 
     def precision(self):
-        """Return the precision for the true or 1 class [TN / (TP + FP)]"""
+        """Return the precision for the true or 1 class [TP / (TP + FP)]"""
         if self.__matrix[:, 1].sum() == 0:
             return 0
         return self.__matrix[1, 1] / self.__matrix[:, 1].sum()
-
-    def reset(self, dtype=None):
-        """Reset all matrix entries to 0"""
-        if dtype is None:
-            dtype = self.__matrix.dtype
-        self.__matrix = np.zeros([2, 2], dtype=dtype)
 
     def sensitivity(self):
         """Return the sensitivity for the true or 1 class [TP / (TP + FN)]"""
@@ -236,19 +234,63 @@ class BinaryConfusionMatrix(object):
             return 0
         return np.max(self.__matrix.sum(axis=1) / self.__matrix.sum())
 
-    def print(self, show_specificity=False, show_sensitivity=False, show_accuracy=False, as_bool=True, return_string=False):
+    def reset(self, dtype=None):
+        """Reset all matrix entries to 0"""
+        if dtype is None:
+            dtype = self.__matrix.dtype
+        self.__matrix = np.zeros([2, 2], dtype=dtype)
+
+    def save(self, path, title='BinaryConfusionMatrix'):
+        with open(path, 'w') as f:
+            f.write(title + '\n')
+            f.write('Threshold: {}\n'.format(self.threshold))
+            f.write('Datatype: {}\n'.format(str(self.dtype)))
+            f.write(self.print(return_string=True))
+
+    @staticmethod
+    def load(path):
+        with open('test.txt', 'r') as f:
+            title = f.readline().strip()
+            threshold = float(f.readline()[11:].strip())
+            datatype = np.dtype(f.readline()[10:].strip())
+            f.readline()
+            next_line = f.readline()
+            _, neg_label, pos_label = next_line.split('|')
+            neg_label = neg_label.strip()
+            pos_label = pos_label.strip()
+            next_line = f.readline().split('|')
+            tn = int(next_line[1].strip())
+            fp = int(next_line[2].strip())
+            next_line = f.readline().split('|')
+            fn = int(next_line[1].strip())
+            tp = int(next_line[2].strip())
+        new_matrix = BinaryConfusionMatrix(threshold=threshold, pos_label=pos_label, neg_label=neg_label, dtype=datatype)
+        new_matrix.add_matrix(np.array([[tn, fp], [fn, tp]]))
+        return new_matrix
+
+    def print(self, show_specificity=False, show_sensitivity=False, show_accuracy=False, as_label=True, pos_label=None, neg_label=None, return_string=False):
         """Format and print the confusion matrix
 
         Parameters
         ----------
-        show_specificities : bool
-            Whether to include specificities at end of columns
-        show_sensitivities : bool
-            Whether to include sensitivities at end of rows
-        as_bool : bool
-            Whether to print "True"/"False" instead of 0/1
+        show_specificity : bool
+            Whether to include specificities at end of columns (the default is False)
+        show_sensitivity : bool
+            Whether to include sensitivities at end of rows (the default is False)
+        show_accuracy : bool
+            Whether to include accuracies at the end of rows (the default is False)
+        as_label : bool
+            Whether to print class labels instead of 0/1 (the default is True)
+        pos_label : str
+            The label to print for class 1 when as_label is true (the default is None)
+        neg_label : str
+            The label to print for class 0 when as_label is true (the default is None)
         return_string : bool
             Whether to return a plain-text version of the matrix (the default is False).
+
+        Note
+        ----
+        pos_label and neg_label default the class variables if they are None
 
         Returns
         -------
@@ -260,21 +302,27 @@ class BinaryConfusionMatrix(object):
         predicted_string = u"\u2192" + "  Predicted"
         leading_space = "            "
         confusion_string = "         "
+
+        if pos_label is None:
+            pos_label = self.pos_label
+        if neg_label is None:
+            neg_label = self.neg_label
+
         if self.__matrix.max() == 0:
             item_width = 1
         else:
             item_width = np.ceil(np.log10(self.__matrix.max())).astype(np.int)
-        if as_bool:
-            item_width = max(item_width, 6)
+        if as_label:
+            item_width = max(item_width, len(pos_label), len(neg_label))
         item_width = str(item_width)
-        if as_bool:
-            header_string = "        " + ('| {:^' + item_width + '} ').format('False') + ('| {:^' + item_width + '} ').format("True")
+        if as_label:
+            header_string = " " * (int(item_width) + 3) + ('| {:^' + item_width + '} ').format(neg_label) + ('| {:^' + item_width + '} ').format(pos_label)
         else:
             header_string = "        " + ('| {:^' + item_width + 'd} ').format(0) + ('| {:^' + item_width + 'd} ').format(1)
         confusion_string += predicted_string + "\n" + expected_string + "  " + underline(header_string) + '\n'
-        if as_bool:
-            line_string_1 = "  False |"
-            line_string_2 = "  True  |"
+        if as_label:
+            line_string_1 = ("  {:^" + item_width + "} |").format(neg_label)
+            line_string_2 = ("  {:^" + item_width + "} |").format(pos_label)
         else:
             line_string_1 = "    0   |"
             line_string_2 = "    1   |"
@@ -299,8 +347,9 @@ class BinaryConfusionMatrix(object):
         if show_specificity:
             confusion_string += '\nSpecificity: {:.4f}'.format(self.specificity())
 
-        print(confusion_string)
         if return_string:
             for item in [colorama.Fore.GREEN, colorama.Style.RESET_ALL, '\033[4m', '\033[0m']:
                 confusion_string = confusion_string.replace(item, '')
             return confusion_string
+        else:
+            print(confusion_string)
