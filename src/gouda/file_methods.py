@@ -187,3 +187,14 @@ def is_image(path):
 def basicname(path):
     """Return the basename of the path without the extension"""
     return os.path.splitext(os.path.basename(path))[0]
+
+
+def get_sorted_filenames(pattern, sep='_', reverse=False):
+    """Sort filenames based on ending digits"""
+    def get_file_copy_number(x):
+        check = os.path.splitext(os.path.basename(x))[0].rsplit(sep, 1)[1]
+        if str.isdigit(check):
+            return int(check)
+        else:
+            return -1
+    return sorted(glob.glob(pattern), key=get_file_copy_number, reverse=reverse)
