@@ -174,3 +174,116 @@ def normalize(data, axis=None):
     mean = data.mean(axis=axis, keepdims=True)
     stddev = data.std(axis=axis, keepdims=True)
     return np.divide(data - mean, stddev, where=stddev != 0)
+
+
+def roc_curve(label, pred, as_rates=True):
+    """Get the ROC curve for the data.
+
+    Parameters
+    ----------
+    label : numpy.ndarray
+        The ground truth values
+    pred : numpy.ndarray
+        The predicted values
+    as_rate : bool
+        Whether to return true/false positive rates or scores (the default is True)
+    """
+    desc_score_indices = np.argsort(pred, kind='mergesort')[::-1]
+    y_score = pred[desc_score_indices]
+    y_true = label[desc_score_indices]
+
+    distinct_idx = np.where(np.diff(y_score))[0]
+    thresh_idx = np.concatenate([distinct_idx, [y_true.size - 1]])
+
+    tps = np.cumsum(y_true)
+    expected = np.sum(y_true)
+
+    tps = tps[thresh_idx]
+    fps = 1 + thresh_idx - tps
+    thresh = y_score[thresh_idx]
+
+    tps = np.concatenate(([0], tps))
+    fps = np.concatenate(([0], fps))
+    thresh = np.concatenate(([0], thresh))
+    if as_rates:
+        fpr = fps / fps[-1]
+        tpr = tps / tps[-1]
+        return fpr, tpr, thresh
+    else:
+        return fps, tps, thresh
+
+
+def mcc_curve(label, pred):
+    """Get the Matthew's Correlation Coefficient for different thresholds"""
+    fps, tps, thresh = roc_curve(label, pred, as_rates=False)
+    pos_count = tps[-1]
+    pred_pos = tps + fps
+    N = pred.size
+    S = tps[-1] / N
+    P = (fps + tps) / N
+    top = (tps / N) - (S * P)
+    bottom = np.sqrt(P * S * (1 - S) * (1 - P))
+    mcc = np.divide(top, bottom, out=np.zeros_like(top), where=bottom != 0)
+    return mcc, thresh
+
+
+def optimal_mcc(label, pred):
+    """Find the threshold and value for the peak Matthews Correlation Coefficient"""
+    mcc_vals, mcc_thresholds = mcc_curve(predicted, expected)
+    best = np.argmax(mcc_vals)
+    return mcc_vals[best], mcc_thresholds[best]
+
+
+def spec_at_sens(expected, predicted, sensitivities=[0.95]):
+    """Get the peak specificity for each sensitivity."""
+    fpr, tpr, thresholds = roc_curve(expected, predicted)
+    specs = [np.max((1 - fpr)[tpr > min_sens]) for min_sens in sensitivities]
+    return specs
+
+
+def get_confusion_stats(label, pred, threshold=0.5):
+    label_bool = exp.astype(np.bool)
+    pred_bool = pred > threshold
+    true_pos = np.logical_and(label_bool, pred_bool).sum()
+    true_neg = np.logical_and(~label_bool, ~pred_bool).sum()
+    false_pos = pred_bool.sum() - true_pos
+    false_neg = (~pred_bool).sum() - true_neg
+    return true_pos, false_pos, true_neg, false_neg
+
+
+def dice_coef(label, pred, threshold=0.5):
+    """Get the Sorenson Dice Coefficient for the given data"""
+    tp, fp, tn, fn = get_confusion_stats(label, pred, threshold)
+    return (tp * 2) / (tp * 2 + fp + fn)
+
+
+def jaccard_coef(label, pred, threshold=0.5):
+    """Get the Jaccard Coefficient for the given data"""
+    tp, fp, tn, fn = get_confusion_stats(label, pred, threshold)
+    return tp / (tp + fn + fp)
+
+
+def value_crossing(array, threshold=0, positive_crossing=True, negative_crossing=True):
+    """Get the count of instances where a series crosses a value.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        A sequential array of values
+    threshold : int | float
+        The value used as a crossing point (the default is 0)
+    positive_crossing : bool
+        Whether to count when the sequence goes from less than to greater than the threshold value (the default is True)
+    negative_crossing : bool
+        Whether to count when the sequence goes from greater than to less than the threshold value (the default is True)
+    """
+
+    positive = array > threshold
+    npos = ~pos
+    if positive_crossing and negative_crossing:
+        crossing = (pos[:-1] & npos[1:]) | (npos[:-1] & pos[1:])
+    elif positive_crossing:
+        crossing = (pos[:-1] & npos[1:])
+    elif negative_crossing:
+        crossing = (npos[:-1] & pos[1:])
+    return crossing.nonzero()[0]
