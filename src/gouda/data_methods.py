@@ -213,9 +213,36 @@ def roc_curve(label, pred, as_rates=True):
         return fps, tps, thresh
 
 
-def mcc_curve(label, pred):
-    """Get the Matthew's Correlation Coefficient for different thresholds"""
+def mcc_curve(label, pred, optimal_only=False):
+    """Get the Matthew's Correlation Coefficient for different thresholds
+
+    Parameters
+    ----------
+    label : numpy.ndarray
+        Expected labels for the data samples
+    pred : numpy.ndarray
+        Predicted labels for the data samples
+    optimal_only : bool
+        If true, returns only the value and threshold for the greatest MCC value
+    """
     fps, tps, thresh = roc_curve(label, pred, as_rates=False)
+    return optimal_mcc_from_roc(fps, tps, thresh, optimal_only=optimal_only)
+
+
+def optimal_mcc_from_roc(fps, tps, thresholds, optimal_only=True):
+    """Get the Matthew's Correlation Coefficient for different thresholds
+
+    Parameters
+    ----------
+    fps : numpy.ndarray
+        False positive scores from the roc curve
+    tps : numpy.ndarray
+        True positive scores from the roc curve
+    thresholds : numpy.ndarray
+        Thresholds from the roc curve
+    optimal_only : bool
+        If true, returns only the value and threshold for the greatest MCC value
+    """
     pos_count = tps[-1]
     pred_pos = tps + fps
     N = pred.size
@@ -224,14 +251,10 @@ def mcc_curve(label, pred):
     top = (tps / N) - (S * P)
     bottom = np.sqrt(P * S * (1 - S) * (1 - P))
     mcc = np.divide(top, bottom, out=np.zeros_like(top), where=bottom != 0)
+    if optimal_only:
+        best = np.argmax(mcc)
+        return mcc[best], thresh[best]
     return mcc, thresh
-
-
-def optimal_mcc(label, pred):
-    """Find the threshold and value for the peak Matthews Correlation Coefficient"""
-    mcc_vals, mcc_thresholds = mcc_curve(predicted, expected)
-    best = np.argmax(mcc_vals)
-    return mcc_vals[best], mcc_thresholds[best]
 
 
 def spec_at_sens(expected, predicted, sensitivities=[0.95]):
