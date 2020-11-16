@@ -81,30 +81,32 @@ def load_json(filename):
         # else:
         #     return data
 
-        def renumpy(_data):
-            if isinstance(_data, list):
+    def renumpy(_data):
+        if isinstance(_data, list):
+            if len(data) == 2 and 'numpy.' in _data[0]:
+                _data = np.dtype(_data[0][6:]).type(_data[1])
+            else:
                 for i in range(len(_data)):
-                    print('here')
                     _data[i] = renumpy(_data[i])
-            elif isinstance(_data, dict):
-                if 'numpy_array' in _data:
-                    if isinstance(_data['numpy_array'], list):
-                        new_data = np.array(_data['numpy_array'], dtype=_data['dtype']).reshape(_data['shape'])
-                    else:
-                        new_data = arrays[_data['numpy_array']]
-                        if new_data.dtype != _data['dtype'] or list(new_data.shape) != _data['shape']:
-                            raise ValueError("Numpy array file doesn't match expected stored numpy array data")
-                    return new_data
-                elif 'slice_start' in _data:
-                    _data = slice(_data['slice_start'], _data['slice_stop'], _data['slice_step'])
+        elif isinstance(_data, dict):
+            if 'numpy_array' in _data:
+                if isinstance(_data['numpy_array'], list):
+                    new_data = np.array(_data['numpy_array'], dtype=_data['dtype']).reshape(_data['shape'])
                 else:
-                    for key in _data.keys():
-                        _data[key] = renumpy(_data[key])
-            return _data
+                    new_data = arrays[_data['numpy_array']]
+                    if new_data.dtype != _data['dtype'] or list(new_data.shape) != _data['shape']:
+                        raise ValueError("Numpy array file doesn't match expected stored numpy array data")
+                return new_data
+            elif 'slice_start' in _data:
+                _data = slice(_data['slice_start'], _data['slice_stop'], _data['slice_step'])
+            else:
+                for key in _data.keys():
+                    _data[key] = renumpy(_data[key])
+        return _data
 
         # if len(data) == 1:
         #     data = data[0]
-        data = renumpy(data)
+    data = renumpy(data)
     return data
 
 
@@ -127,7 +129,7 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
     JSON files saved this way can be read with any JSON reader, but will have an extra numpy tag at the end that is used to tell :func:`~gouda.load_json` how to read the arrays back in.
     """
     out_arrays = {}
-    used_numpy = [False]
+    used_arrays = [False]
     if embed_arrays and compressed:
         warnings.warn('Cannot compress an array that is embedded in a JSON', UserWarning)
         compressed = False
@@ -144,18 +146,25 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
         elif isinstance(_data, slice):
             new_data = {'slice_start': _data.start, 'slice_stop': _data.stop, 'slice_step': _data.step}
         elif isinstance(_data, np.ndarray):
-            used_numpy[0] = True
+            used_arrays[0] = True
             if embed_arrays:
                 new_data = {"numpy_array": _data.tolist(), "dtype": str(_data.dtype), "shape": _data.shape}
             else:
                 new_data = {"numpy_array": 'array_{}'.format(len(out_arrays)), 'dtype': str(_data.dtype), 'shape': _data.shape}
                 out_arrays['array_{}'.format(len(out_arrays))] = _data
+        elif 'numpy' in str(type(_data)):
+            dtype = str(_data.dtype)
+            if np.issubdtype(_data, np.integer):
+                _data = int(_data)
+            elif np.issubdtype(_data, np.floating):
+                _data = float(_data)
+            new_data = ['numpy.' + dtype, _data]
         else:
             new_data = copy.copy(_data)
         return new_data
 
     data = unnumpy(data)
-    if used_numpy[0]:
+    if used_arrays[0]:
         data = [data]
         if compressed:
             data.append('numpy_zip')

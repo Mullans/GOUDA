@@ -354,7 +354,7 @@ def get_bounds(mask):
     return (x0, y0), (x1, y1)
 
 
-def crop_to_content(image):
+def crop_to_content(image, return_bounds=False):
     """Crop image to only be as large as the contained image excluding black space."""
     vert = np.mean(image, axis=(-1, 0))
     y_range = np.where(vert > 0)
@@ -362,6 +362,8 @@ def crop_to_content(image):
     x_range = np.where(horiz > 0)
     x0, x1 = x_range[0][0], x_range[0][-1]
     y0, y1 = y_range[0][0], y_range[0][-1]
+    if return_bounds:
+        return (x0, x1), (y0, y1)
     return image[x0:x1, y0:y1]
 
 
