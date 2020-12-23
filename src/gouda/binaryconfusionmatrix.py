@@ -146,7 +146,7 @@ class BinaryConfusionMatrix(object):
         if predictions.max() > 1 or predictions.min() < 0 or labels.max() > 1 or labels.min() < 0:
             raise ValueError("All values must be between 0 and 1")
         labels = np.round(labels).astype(np.int)
-        predictions = (predictions > self.threshold).astype(np.int)
+        predictions = (predictions >= self.threshold).astype(np.int)
         if labels.shape != predictions.shape:
             raise ValueError("Predictions and labels must have the same length/shape")
         labels = np.reshape(labels, [-1])

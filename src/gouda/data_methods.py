@@ -165,6 +165,15 @@ def sigmoid(x):
 
 
 def softmax(x, axis=None):
+    """Return the softmax of the array
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        The data to apply the softmax to
+    axis : int | list of ints
+        The axis or axes to apply softmax across
+    """
     if np.issubdtype(x.dtype, np.integer):
         x = x.astype(np.float)
     s = np.max(x, axis=axis, keepdims=True)
@@ -267,14 +276,21 @@ def optimal_mcc_from_roc(fps, tps, thresholds, optimal_only=True):
 
 def spec_at_sens(expected, predicted, sensitivities=[0.95]):
     """Get the peak specificity for each sensitivity."""
+    if not hasattr(sensitivities, '__iter__'):
+        sensitivities = [sensitivities]
     fpr, tpr, thresholds = roc_curve(expected, predicted)
-    specs = [np.max((1 - fpr)[tpr > min_sens]) for min_sens in sensitivities]
+    specs = [np.max((1 - fpr)[tpr >= min_sens]) for min_sens in sensitivities]
     return specs
 
 
 def get_confusion_stats(label, pred, threshold=0.5):
-    label_bool = exp.astype(np.bool)
-    pred_bool = pred > threshold
+    """Get the true positive, false positive, true negative, and false negative values for the given data"""
+    if not isinstance(label, np.ndarray):
+        label = np.array(label)
+    if not isinstance(pred, np.ndarray):
+        pred = np.array(pred)
+    label_bool = label.astype(np.bool)
+    pred_bool = pred >= threshold
     true_pos = np.logical_and(label_bool, pred_bool).sum()
     true_neg = np.logical_and(~label_bool, ~pred_bool).sum()
     false_pos = pred_bool.sum() - true_pos
@@ -294,7 +310,7 @@ def jaccard_coef(label, pred, threshold=0.5):
     return tp / (tp + fn + fp)
 
 
-def value_crossing(array, threshold=0, positive_crossing=True, negative_crossing=True):
+def value_crossing(array, threshold=0, positive_crossing=True, negative_crossing=True, return_indices=False):
     """Get the count of instances where a series crosses a value.
 
     Parameters
@@ -307,14 +323,25 @@ def value_crossing(array, threshold=0, positive_crossing=True, negative_crossing
         Whether to count when the sequence goes from less than to greater than the threshold value (the default is True)
     negative_crossing : bool
         Whether to count when the sequence goes from greater than to less than the threshold value (the default is True)
+    return_indices : bool
+        Whether to return the indices of the points immediately before the crossings
     """
 
-    positive = array > threshold
+    if not isinstance(array, np.ndarray):
+        array = np.array(array)
+    if return_indices:
+        idxs = np.arange(array.size)[array != threshold]
+    array = array[array != threshold]
+    pos = array > threshold
     npos = ~pos
     if positive_crossing and negative_crossing:
         crossing = (pos[:-1] & npos[1:]) | (npos[:-1] & pos[1:])
-    elif positive_crossing:
-        crossing = (pos[:-1] & npos[1:])
     elif negative_crossing:
+        crossing = (pos[:-1] & npos[1:])
+    elif positive_crossing:
         crossing = (npos[:-1] & pos[1:])
-    return crossing.nonzero()[0]
+    else:
+        raise ValueError('Either positive and/or negative crossings must be used') 
+    if return_indices:
+        return idxs[np.concatenate([crossing, [False]])]
+    return crossing.sum()

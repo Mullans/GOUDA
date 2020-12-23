@@ -192,3 +192,51 @@ def test_roc_mcc():
     curve, mcc_thresh2 = gouda.mcc_curve(label, pred)
     np.testing.assert_array_equal(all_mcc, curve)
     np.testing.assert_array_equal(mcc_thresh, mcc_thresh2)
+
+
+def test_spec_at_sens():
+    label = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    pred = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.2]
+    fps, tps, thresh = gouda.roc_curve(label, pred, as_rates=False)
+
+    low_spec, med_spec, high_spec = gouda.spec_at_sens(label, pred, sensitivities=[0, 0.9, 1])
+    assert low_spec == 1.0
+    assert med_spec == 0.4
+    assert high_spec == 0.4
+
+    [med_alt] = gouda.spec_at_sens(np.array(label), np.array(pred), sensitivities=0.9)
+    assert med_spec == med_alt
+
+
+def test_get_confusion_stats_dice_jacaard():
+    label = [0, 0, 0, 0, 1, 1, 1, 1, 1]
+    pred = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.2]
+    true_pos, false_pos, true_neg, false_neg = gouda.get_confusion_stats(label, pred, threshold=0.5)
+    assert true_pos == 4
+    assert false_pos == 0
+    assert true_neg == 4
+    assert false_neg == 1
+
+    true_pos, false_pos, true_neg, false_neg = gouda.get_confusion_stats(np.array(label), np.array(pred), threshold=0.2)
+    assert true_pos == 5
+    assert false_pos == 3
+    assert true_neg == 1
+    assert false_neg == 0
+
+    assert gouda.dice_coef(label, pred, 0.5) == 8 / (8 + 0 + 1)
+    assert gouda.jaccard_coef(label, pred, 0.5) == 4 / (4 + 1 + 0)
+
+
+def test_value_crossing():
+    data = [-1, -1, 0, 1, 0, -1, -1, 0, 0, -1, 0, 1, 0, 1]
+    counts = gouda.value_crossing(np.array(data))
+    idx = gouda.value_crossing(data, return_indices=True)
+    assert counts == idx.size
+    pos_only = gouda.value_crossing(data, negative_crossing=False)
+    neg_only = gouda.value_crossing(data, positive_crossing=False)
+    assert pos_only == 2
+    assert neg_only == 1
+    assert pos_only + neg_only == counts
+
+    with pytest.raises(ValueError):
+        gouda.value_crossing(data, negative_crossing=False, positive_crossing=False)
