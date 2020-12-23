@@ -194,6 +194,10 @@ def roc_curve(label, pred, as_rates=True):
     as_rate : bool
         Whether to return true/false positive rates or scores (the default is True)
     """
+    if not isinstance(label, np.ndarray):
+        label = np.array(label)
+    if not isinstance(pred, np.ndarray):
+        pred = np.array(pred)
     desc_score_indices = np.argsort(pred, kind='mergesort')[::-1]
     y_score = pred[desc_score_indices]
     y_true = label[desc_score_indices]
@@ -210,7 +214,7 @@ def roc_curve(label, pred, as_rates=True):
 
     tps = np.concatenate(([0], tps))
     fps = np.concatenate(([0], fps))
-    thresh = np.concatenate(([0], thresh))
+    thresh = np.concatenate(([1], thresh))
     if as_rates:
         fpr = fps / fps[-1]
         tpr = tps / tps[-1]
@@ -249,9 +253,7 @@ def optimal_mcc_from_roc(fps, tps, thresholds, optimal_only=True):
     optimal_only : bool
         If true, returns only the value and threshold for the greatest MCC value
     """
-    pos_count = tps[-1]
-    pred_pos = tps + fps
-    N = pred.size
+    N = tps[-1] + fps[-1]
     S = tps[-1] / N
     P = (fps + tps) / N
     top = (tps / N) - (S * P)
@@ -259,8 +261,8 @@ def optimal_mcc_from_roc(fps, tps, thresholds, optimal_only=True):
     mcc = np.divide(top, bottom, out=np.zeros_like(top), where=bottom != 0)
     if optimal_only:
         best = np.argmax(mcc)
-        return mcc[best], thresh[best]
-    return mcc, thresh
+        return mcc[best], thresholds[best]
+    return mcc, thresholds
 
 
 def spec_at_sens(expected, predicted, sensitivities=[0.95]):

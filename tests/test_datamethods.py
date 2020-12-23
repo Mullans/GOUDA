@@ -37,10 +37,13 @@ def test_sigmoid():
 
 
 def test_normalize():
-    test_data = np.arange(1000, dtype=np.float).reshape([10, 10, 10])
+    test_data = np.arange(1000).reshape([10, 10, 10])
     normed_1 = gouda.normalize(test_data)
     np.testing.assert_almost_equal(normed_1.std(), 1)
     assert normed_1.mean() == 0
+
+    normed_alt = gouda.normalize(test_data.astype(np.float))
+    np.testing.assert_equal(normed_1, normed_alt)
 
     normed_2 = gouda.normalize(test_data, axis=1)
     np.testing.assert_array_almost_equal(normed_2.mean(axis=1), np.zeros([10, 10]))
@@ -56,6 +59,8 @@ def test_rescale():
     scaled_1 = gouda.rescale(test_data, new_min=0, new_max=1, axis=1)
     manual = (test_data - test_data.min(axis=1, keepdims=True)) / (test_data.max(axis=1, keepdims=True) - test_data.min(axis=1, keepdims=True))
     np.testing.assert_array_equal(scaled_1, manual)
+    scaled_alt = gouda.rescale(test_data.astype(np.float), new_min=0, new_max=1, axis=1)
+    np.testing.assert_array_equal(scaled_1, scaled_alt)
 
     scaled_2 = gouda.rescale(test_data, new_min=-1, new_max=2)
     assert scaled_2.max() == 2
@@ -151,3 +156,39 @@ def test_softmax():
     assert gouda.softmax(data).sum() == 1
     assert gouda.softmax(data, axis=0).sum() == 2
     assert gouda.softmax(data, axis=1).sum() == 5
+
+    np.testing.assert_array_equal(gouda.softmax(data), gouda.softmax(data.astype(np.float)))
+
+
+def test_roc_mcc():
+    label = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    pred = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    fps, tps, thresh = gouda.roc_curve(label, pred, as_rates=False)
+    np.testing.assert_array_equal(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5]), fps)
+    np.testing.assert_array_equal(np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5]), tps)
+    np.testing.assert_array_equal(np.array([1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]), thresh)
+
+    label_alt = np.array(label)
+    pred_alt = np.array(pred)
+    fps_alt, tps_alt, thresh_alt = gouda.roc_curve(label_alt, pred_alt, as_rates=False)
+    np.testing.assert_array_equal(fps, fps_alt)
+    np.testing.assert_array_equal(tps, tps_alt)
+    np.testing.assert_array_equal(thresh, thresh_alt)
+
+    fpr, tpr, thresh2 = gouda.roc_curve(label, pred, as_rates=True)
+    np.testing.assert_array_equal(fps / 5, fpr)
+    np.testing.assert_array_equal(tps / 5, tpr)
+    np.testing.assert_array_equal(thresh, thresh2)
+
+    opt_mcc, opt_thresh = gouda.optimal_mcc_from_roc(fps, tps, thresh, optimal_only=True)
+    assert opt_mcc == 1
+    assert opt_thresh == 0.5
+
+    all_mcc, mcc_thresh = gouda.optimal_mcc_from_roc(fps, tps, thresh, optimal_only=False)
+    check_arr = np.array([0.0000, 0.3333, 0.5000, 0.6547, 0.8165, 1.0000, 0.8165, 0.6547, 0.5000, 0.3333, 0.0000])
+    np.testing.assert_array_almost_equal(all_mcc, check_arr, decimal=4)
+    np.testing.assert_array_equal(mcc_thresh, thresh)
+
+    curve, mcc_thresh2 = gouda.mcc_curve(label, pred)
+    np.testing.assert_array_equal(all_mcc, curve)
+    np.testing.assert_array_equal(mcc_thresh, mcc_thresh2)
