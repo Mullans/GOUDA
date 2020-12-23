@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 from gouda import BinaryConfusionMatrix
+import gouda.binaryconfusionmatrix as bcm
 
 
 def test_init():
@@ -81,7 +82,7 @@ def test_add():
 
 def test_parameters():
     test_mat = BinaryConfusionMatrix()
-    assert test_mat.print(return_string=True, as_bool=False) == '         →  Predicted\n↓ Expected          | 0 | 1 \n                0   | 0 | 0 |\n                1   | 0 | 0 |\n'
+    assert test_mat.print(return_string=True, as_label=False) == '         →  Predicted\n↓ Expected          | 0 | 1 \n                0   | 0 | 0 |\n                1   | 0 | 0 |\n'
 
     test_mat.add(np.array([[1, 1, 1, 1], [1, 1, 1, 1]]))
     test_mat.add(np.array([[1, 1, 1], [0, 0, 0]]))
@@ -100,7 +101,8 @@ def test_parameters():
     assert str(test_mat) == '[[2 3]\n [1 4]]'
     assert repr(test_mat) == 'BinaryConfusionMatrix([2, 3]\n                      [1, 4])'
     test_mat.print()
-    assert test_mat.print(as_bool=True, return_string=True, show_specificity=True, show_accuracy=True, show_sensitivity=True) == '         →  Predicted\n↓ Expected          | False  |  True  \n              False |      2 |      3 |\n              True  |      1 |      4 |\n\nAccuracy:    0.6000\nSensitivity: 0.8000\nSpecificity: 0.4000'
+    test_string = '         →  Predicted\n↓ Expected          | False | True  \n              False |     2 |     3 |\n              True  |     1 |     4 |\n\nAccuracy:    0.6000\nSensitivity: 0.8000\nSpecificity: 0.4000'
+    assert test_mat.print(as_label=True, return_string=True, show_specificity=True, show_accuracy=True, show_sensitivity=True) == test_string
 
 
 def test_math():
@@ -144,3 +146,11 @@ def test_array():
     test_mat = BinaryConfusionMatrix()
     assert test_mat.__array__().dtype == test_mat.dtype
     assert test_mat.__array__(np.uint8).dtype == np.uint8
+
+
+def test_underline():
+    test_string = 'hello'
+    underlined = bcm.underline(test_string)
+    assert underlined[:4] == '\033[4m'
+    assert underlined[-4:] == '\033[0m'
+    assert underlined[4:-4] == test_string

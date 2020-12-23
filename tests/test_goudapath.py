@@ -104,11 +104,15 @@ def test_navigation():
 
 def test_relation():
     test_dir = GoudaPath('goudapath_test_directory')
-    os.mkdir(test_dir)
-    os.mkdir(test_dir / 'check_dir1')
-    os.mkdir(test_dir / 'check_dir2')
+    gouda.ensure_dir(test_dir)
+    gouda.ensure_dir(test_dir / 'check_dir1')
+    gouda.ensure_dir(test_dir / 'check_dir2')
     with open(test_dir / 'check_file.txt', 'w') as _:
         pass
+    if test_dir('image1.png').exists():
+        os.remove(test_dir('image1.png'))
+    if test_dir('image2.png').exists():
+        os.remove(test_dir('image2.png'))
 
     assert test_dir('check_dir1').exists()
     assert test_dir('check_dir1').is_dir()

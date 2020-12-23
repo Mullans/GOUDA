@@ -60,3 +60,5 @@ src/gouda/deprecated.py
 test1_array.npz
 test1.json
 test3_arrayzip.npz
+goudapath_test_directory
+test_*.png

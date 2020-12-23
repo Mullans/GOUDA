@@ -37,7 +37,7 @@ def test_sigmoid():
 
 
 def test_normalize():
-    test_data = np.arange(1000).reshape([10, 10, 10])
+    test_data = np.arange(1000, dtype=np.float).reshape([10, 10, 10])
     normed_1 = gouda.normalize(test_data)
     np.testing.assert_almost_equal(normed_1.std(), 1)
     assert normed_1.mean() == 0
@@ -47,7 +47,7 @@ def test_normalize():
     np.testing.assert_equal(normed_2.std(axis=1), np.ones([10, 10]))
 
     normed_3 = gouda.normalize(test_data, axis=(0, 1))
-    np.testing.assert_array_almost_equal(normed_3.mean(axis=(0, 1)), np.zeros([10,]))
+    np.testing.assert_array_almost_equal(normed_3.mean(axis=(0, 1)), np.zeros([10, ]))
     np.testing.assert_equal(normed_3.std(axis=(0, 1)), 1)
 
 
