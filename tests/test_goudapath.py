@@ -103,7 +103,7 @@ def test_navigation():
 
 
 def test_relation():
-    test_dir = GoudaPath('goudapath_test_directory')
+    test_dir = GoudaPath('ScratchFiles/goudapath_test_directory')
     gouda.ensure_dir(test_dir)
     gouda.ensure_dir(test_dir / 'check_dir1')
     gouda.ensure_dir(test_dir / 'check_dir2')

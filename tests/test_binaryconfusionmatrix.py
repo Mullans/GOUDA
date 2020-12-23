@@ -2,8 +2,8 @@ import pytest
 
 import numpy as np
 
+import gouda
 from gouda import BinaryConfusionMatrix
-import gouda.binaryconfusionmatrix as bcm
 
 
 def test_init():
@@ -80,6 +80,33 @@ def test_add():
     np.testing.assert_array_equal(test_mat3.matrix, np.array([[2, 3], [2, 3]]))
 
 
+def test_add_matrix():
+    test_mat = BinaryConfusionMatrix()
+    test_arr = np.array([[0, 1, 0], [1, 1, 0]])
+    test_mat.add(test_arr)
+    np.testing.assert_array_equal(test_mat.matrix, np.array([[1, 0], [1, 1]]))
+
+    test_mat2 = BinaryConfusionMatrix()
+    test_arr2 = np.array([[0, 0, 0], [0, 0, 0]])
+    test_mat2.add(test_arr2)
+    np.testing.assert_array_equal(test_mat2.matrix, np.array([[3, 0], [0, 0]]))
+
+    test_mat.add_matrix(test_mat2)
+    np.testing.assert_array_equal(test_mat.matrix, np.array([[4, 0], [1, 1]]))
+    np.testing.assert_array_equal(test_mat2.matrix, np.array([[3, 0], [0, 0]]))
+
+    test_mat3 = BinaryConfusionMatrix()
+    test_arr3 = np.array([[1, 1, 1], [1, 1, 1]])
+    test_mat3.add(test_arr3)
+    np.testing.assert_array_equal(test_mat3.matrix, np.array([[0, 0], [0, 3]]))
+    test_mat.add_matrix(test_mat3)
+    np.testing.assert_array_equal(test_mat.matrix, np.array([[4, 0], [1, 4]]))
+    np.testing.assert_array_equal(test_mat3.matrix, np.array([[0, 0], [0, 3]]))
+
+    with pytest.raises(ValueError):
+        test_mat.add_matrix([[1, 1, 1], [1, 0, 1]])
+
+
 def test_parameters():
     test_mat = BinaryConfusionMatrix()
     assert test_mat.print(return_string=True, as_label=False) == '         →  Predicted\n↓ Expected          | 0 | 1 \n                0   | 0 | 0 |\n                1   | 0 | 0 |\n'
@@ -103,6 +130,9 @@ def test_parameters():
     test_mat.print()
     test_string = '         →  Predicted\n↓ Expected          | False | True  \n              False |     2 |     3 |\n              True  |     1 |     4 |\n\nAccuracy:    0.6000\nSensitivity: 0.8000\nSpecificity: 0.4000'
     assert test_mat.print(as_label=True, return_string=True, show_specificity=True, show_accuracy=True, show_sensitivity=True) == test_string
+
+    test_string2 = '         →  Predicted\n↓ Expected        | No  | Yes \n              No  |   2 |   3 |\n              Yes |   1 |   4 |\n\nAccuracy:    0.6000\nSensitivity: 0.8000\nSpecificity: 0.4000'
+    assert test_mat.print(pos_label='Yes', neg_label='No', as_label=True, return_string=True, show_specificity=True, show_accuracy=True, show_sensitivity=True) == test_string2
 
 
 def test_math():
@@ -150,7 +180,18 @@ def test_array():
 
 def test_underline():
     test_string = 'hello'
-    underlined = bcm.underline(test_string)
+    underlined = gouda.binaryconfusionmatrix.underline(test_string)
     assert underlined[:4] == '\033[4m'
     assert underlined[-4:] == '\033[0m'
     assert underlined[4:-4] == test_string
+
+
+def test_save_load():
+    test_mat = BinaryConfusionMatrix()
+    test_arr = np.array([[1, 1, 0], [1, 1, 0]])
+    test_mat.add(test_arr)
+    np.testing.assert_array_equal(test_mat.matrix, np.array([[1, 0], [0, 2]]))
+    test_mat.save('ScratchFiles/test_mat.txt')
+
+    test_mat2 = BinaryConfusionMatrix.load('ScratchFiles/test_mat.txt')
+    np.testing.assert_array_equal(test_mat.matrix, test_mat2.matrix)

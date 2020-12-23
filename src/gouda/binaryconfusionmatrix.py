@@ -146,10 +146,7 @@ class BinaryConfusionMatrix(object):
         if predictions.max() > 1 or predictions.min() < 0 or labels.max() > 1 or labels.min() < 0:
             raise ValueError("All values must be between 0 and 1")
         labels = np.round(labels).astype(np.int)
-        if self.threshold is None:
-            predictions = np.round(predictions).astype(np.int)
-        else:
-            predictions = (predictions > self.threshold).astype(np.int)
+        predictions = (predictions > self.threshold).astype(np.int)
         if labels.shape != predictions.shape:
             raise ValueError("Predictions and labels must have the same length/shape")
         labels = np.reshape(labels, [-1])
@@ -249,7 +246,7 @@ class BinaryConfusionMatrix(object):
 
     @staticmethod
     def load(path):
-        with open('test.txt', 'r') as f:
+        with open(path, 'r') as f:
             title = f.readline().strip()
             threshold = float(f.readline()[11:].strip())
             datatype = np.dtype(f.readline()[10:].strip())

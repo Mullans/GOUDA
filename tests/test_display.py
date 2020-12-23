@@ -70,7 +70,7 @@ def test_print_grid():
     assert display.print_grid(image_0c[np.newaxis, np.newaxis], show=False, return_grid_shape=True) == (1, 1)
     plt.close()
     assert display.print_grid(np.stack([image_0c, image_0c], axis=0)[np.newaxis],
-                      show=False, return_grid_shape=True) == (1, 2)
+                              show=False, return_grid_shape=True) == (1, 2)
     plt.close()
     assert display.print_grid(np.stack([image_0c[np.newaxis], image_0c[np.newaxis]], axis=0),
                               show=False, return_grid_shape=True) == (2, 1)
@@ -78,7 +78,7 @@ def test_print_grid():
     assert display.print_grid(np.stack([
         np.stack([image_0c, image_0c], axis=0),
         np.stack([image_0c, image_0c], axis=0)]),
-                              show=False, return_grid_shape=True) == (2, 2)
+        show=False, return_grid_shape=True) == (2, 2)
     plt.close()
 
     assert display.print_grid(image_1c[np.newaxis, np.newaxis],
@@ -93,7 +93,7 @@ def test_print_grid():
     assert display.print_grid(np.stack([
         np.stack([image_1c, image_1c], axis=0),
         np.stack([image_1c, image_1c], axis=0)]),
-                              show=False, return_grid_shape=True) == (2, 2)
+        show=False, return_grid_shape=True) == (2, 2)
     plt.close()
 
     assert display.print_grid(image_3c[np.newaxis, np.newaxis],
@@ -108,7 +108,7 @@ def test_print_grid():
     assert display.print_grid(np.stack([
         np.stack([image_3c, image_3c], axis=0),
         np.stack([image_3c, image_3c], axis=0)]),
-                              show=False, return_grid_shape=True) == (2, 2)
+        show=False, return_grid_shape=True) == (2, 2)
     plt.close()
 
     test_image = {'image': image_3c}
@@ -122,10 +122,10 @@ def test_print_grid():
 
 def test_print_grid_tofile():
     test_image = np.ones([10, 10])
-    display.print_grid(test_image, show=False, toFile='testprintgrid.png')
-    assert os.path.exists('testprintgrid.png')
-    os.remove('testprintgrid.png')
-    assert not os.path.exists('testprintgrid.png')
+    display.print_grid(test_image, show=False, toFile='ScratchFiles/testprintgrid.png')
+    assert os.path.exists('ScratchFiles/testprintgrid.png')
+    os.remove('ScratchFiles/testprintgrid.png')
+    assert not os.path.exists('ScratchFiles/testprintgrid.png')
 
 
 def test_print_grid_exceptions():
@@ -147,8 +147,8 @@ def test_print_image():
 
     test_image = np.ones([100, 100, 3], dtype=np.uint8) * 255
     test_image[25:75, 25:75] = 0
-    display.print_image(test_image, toFile='test_image.png', show=False)
+    display.print_image(test_image, toFile='ScratchFiles/test_image.png', show=False)
     plt.close()
-    assert os.path.exists('test_image.png')
-    os.remove('test_image.png')
-    assert not os.path.exists('test_image.png')
+    assert os.path.exists('ScratchFiles/test_image.png')
+    os.remove('ScratchFiles/test_image.png')
+    assert not os.path.exists('ScratchFiles/test_image.png')

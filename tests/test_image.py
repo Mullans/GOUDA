@@ -15,45 +15,45 @@ def test_imwrite_imread():
     image_test *= 255
 
     assert image_test[:, :, 2].sum() == 0
-    image.imwrite(GoudaPath('test_RGB.png'), image_test)
-    image.imwrite('test_BGR.png', image_test, as_RGB=False)
-    image.imwrite('test_singleChannel.png', image_test[:, :, :1])
-    image.imwrite('test_2D.png', image_test[:, :, 0])
-    image.imwrite('test_uint16.png', image_test.astype(np.uint16))
+    image.imwrite(GoudaPath('ScratchFiles/test_RGB.png'), image_test)
+    image.imwrite('ScratchFiles/test_BGR.png', image_test, as_RGB=False)
+    image.imwrite('ScratchFiles/test_singleChannel.png', image_test[:, :, :1])
+    image.imwrite('ScratchFiles/test_2D.png', image_test[:, :, 0])
+    image.imwrite('ScratchFiles/test_uint16.png', image_test.astype(np.uint16))
     with pytest.raises(ValueError):
-        assert image.imwrite('failure.png', image_test[:, :, :2])
+        assert image.imwrite('ScratchFiles/failure.png', image_test[:, :, :2])
 
-    assert os.path.isfile('test_RGB.png')
-    assert os.path.isfile('test_BGR.png')
-    assert os.path.isfile('test_singleChannel.png')
-    assert os.path.isfile('test_2D.png')
-    assert os.path.isfile('test_uint16.png')
-    assert not os.path.isfile('failure.png')
+    assert os.path.isfile('ScratchFiles/test_RGB.png')
+    assert os.path.isfile('ScratchFiles/test_BGR.png')
+    assert os.path.isfile('ScratchFiles/test_singleChannel.png')
+    assert os.path.isfile('ScratchFiles/test_2D.png')
+    assert os.path.isfile('ScratchFiles/test_uint16.png')
+    assert not os.path.isfile('ScratchFiles/failure.png')
 
-    image_test_in_1 = image.imread(GoudaPath('test_RGB.png'), flag=RGB)
-    image_test_in_2 = image.imread('test_RGB.png', flag=None)
-    image_test_in_3 = image.imread('test_BGR.png', flag=RGB)
-    image_test_in_4 = image.imread('test_BGR.png', flag=None)
+    image_test_in_1 = image.imread(GoudaPath('ScratchFiles/test_RGB.png'), flag=RGB)
+    image_test_in_2 = image.imread('ScratchFiles/test_RGB.png', flag=None)
+    image_test_in_3 = image.imread('ScratchFiles/test_BGR.png', flag=RGB)
+    image_test_in_4 = image.imread('ScratchFiles/test_BGR.png', flag=None)
     np.testing.assert_array_equal(image_test_in_1, image_test_in_4)
     np.testing.assert_array_equal(image_test_in_2, image_test_in_3)
 
-    image_test_in_5 = image.imread('test_singleChannel.png')
-    image_test_in_6 = image.imread('test_singleChannel.png')
+    image_test_in_5 = image.imread('ScratchFiles/test_singleChannel.png')
+    image_test_in_6 = image.imread('ScratchFiles/test_singleChannel.png')
 
     np.testing.assert_array_equal(image_test_in_5, image_test_in_6)
 
-    image_test_in_7 = image.imread('test_uint16.png', flag=UNCHANGED)
+    image_test_in_7 = image.imread('ScratchFiles/test_uint16.png', flag=UNCHANGED)
     assert image_test_in_7.dtype == np.uint16
 
-    image_test_in_8 = image.imread('test_RGB.png', flag=GRAYSCALE)
+    image_test_in_8 = image.imread('ScratchFiles/test_RGB.png', flag=GRAYSCALE)
     assert image_test_in_8.shape == (100, 100)
     np.testing.assert_allclose(image_test_in_8, cv2.cvtColor(image_test, cv2.COLOR_RGB2GRAY), rtol=0, atol=1)
 
-    os.remove('test_RGB.png')
-    os.remove('test_BGR.png')
-    os.remove('test_singleChannel.png')
-    os.remove('test_2D.png')
-    os.remove('test_uint16.png')
+    os.remove('ScratchFiles/test_RGB.png')
+    os.remove('ScratchFiles/test_BGR.png')
+    os.remove('ScratchFiles/test_singleChannel.png')
+    os.remove('ScratchFiles/test_2D.png')
+    os.remove('ScratchFiles/test_uint16.png')
 
 
 def test_rescale():
@@ -166,9 +166,6 @@ def test_add_overlay():
     np.testing.assert_array_equal(overlay6[0, 0], np.array([0, 128, 0]))
     np.testing.assert_array_equal(overlay6[-1, -1], np.array([128, 0, 0]))
 
-
-
-
     label_5 = label_3 * 10
     with pytest.warns(UserWarning):
         image.to_uint8(label_5)
@@ -183,8 +180,6 @@ def test_add_overlay():
 
     with pytest.raises(ValueError):
         image.split_signs(np.dstack([label_1, label_1, label_1]))
-
-
 
 
 def test_mask_exception():
@@ -317,13 +312,13 @@ def test_rotate_allow_resize():
 
 def test_padded_resize():
     image_test = np.ones([50, 50, 3], dtype=np.uint8)
-    image.imwrite("test.png", image_test)
+    image.imwrite("ScratchFiles/test.png", image_test)
     pad_test = image.padded_resize(image_test, size=[50, 50])
-    pad_test_file = image.padded_resize("test.png", size=[50, 50])
+    pad_test_file = image.padded_resize("ScratchFiles/test.png", size=[50, 50])
     assert pad_test.shape == (50, 50, 3)
     np.testing.assert_array_equal(image_test, pad_test)
     np.testing.assert_array_equal(pad_test_file, pad_test)
-    os.remove('test.png')
+    os.remove('ScratchFiles/test.png')
 
     pad_test_2 = image.padded_resize(image_test, size=[50, 75])
     assert pad_test_2.shape == (50, 75, 3)

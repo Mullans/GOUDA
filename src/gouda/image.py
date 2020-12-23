@@ -407,7 +407,7 @@ def padded_resize(image, size=[960, 540], allow_rotate=True):
         Whether the image can be rotated to minimize required padding or if orientation should be preserved
     Input image number of channels does not matter as long as the first two dimensions are x and y.
     """
-    if type(image) == str:
+    if isinstance(image, (str, GoudaPath)):
         image = imread(image, flag=RGB)
     data_type = image.dtype
     if image.ndim == 2:
