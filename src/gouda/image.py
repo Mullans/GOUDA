@@ -5,45 +5,42 @@ import cv2
 import numpy as np
 
 from .goudapath import GoudaPath
+from .constants import UNCHANGED, GRAYSCALE, RGB
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
-def imread(path, as_RGB=True, as_greyscale=False, unchanged=False):
-    """SHORTCUT: Load an image from a path using OpenCV modified for RGB.
+def imread(path, flag=RGB):
+    """Shortcut method: Load an image from a path using OpenCV modified for RGB.
 
     Parameters
     ----------
     path: string
         Path to image file
-    as_RGB: bool
-        If true, assumes an RGB image and flips the channels. (OpenCV uses BGR by default) (the default is True)
-    as_greyscale: bool
-        If true, reads the image as greyscale (the default is False)
-    unchanged: bool
-        If true, reads in the image without constraining to 3-channel uint8 format. (the default is False)
+    flag: int
+        The way to read the image (the default is :data:`gouda.constants.RGB`)
 
     Note
     ----
-    * Priority for options is: as_greyscale > as_RGB > unchanged > default
-    * Greyscale transforms input image based on perceived color. See [https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor]
+    * Valid flags are :data:`gouda.constants.UNCHANGED`, :data:`gouda.constants.RGB`, and :data:`gouda.constants.GRAYSCALE`. Any other flags will perform the default opencv.imread without additional arguments
+    * Grayscale transforms input image based on perceived color. See [https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor]
     """
     if isinstance(path, GoudaPath):
         path = path.path
-    if as_greyscale:
+    if flag == GRAYSCALE:
         return cv2.imread(path, 0)
-    elif as_RGB:
+    elif flag == RGB:
         return cv2.imread(path)[:, :, ::-1]
-    elif unchanged:
+    elif flag == UNCHANGED:
         return cv2.imread(path, -1)
     else:
         return cv2.imread(path)
 
 
 def imwrite(path, image, as_RGB=True):
-    """SHORTCUT: Write an image to a path using OpenCV modified for RGB.
+    """Shortcut method: Write an image to a path using OpenCV modified for RGB.
 
     Parameters
     ----------
@@ -411,7 +408,7 @@ def padded_resize(image, size=[960, 540], allow_rotate=True):
     Input image number of channels does not matter as long as the first two dimensions are x and y.
     """
     if type(image) == str:
-        image = imread(image, as_RGB=True)
+        image = imread(image, flag=RGB)
     data_type = image.dtype
     if image.ndim == 2:
         x, y = image.shape

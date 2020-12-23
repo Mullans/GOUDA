@@ -165,7 +165,7 @@ def test_relation():
     test_img = np.ones([50, 50, 3])
     gouda.image.imwrite(test_dir / 'image1.png', test_img)
     gouda.image.imwrite(test_dir / 'image2.png', test_img)
-    image_results = test_dir.get_images()
+    image_results = test_dir.get_images(basenames=True)
     assert 'image1.png' in image_results
     assert 'image2.png' in image_results
     assert 'check_file.txt' not in image_results
@@ -199,7 +199,7 @@ def test_strings():
     assert path.startswith('tester') is False
     assert path.endswith('path')
 
-    path = gouda.GoudaPath('test  ')
+    path = gouda.GoudaPath('test  ', use_absolute=False)
     assert path.rstrip().path == 'test'
     assert path.rstrip('.').path == path.path
 

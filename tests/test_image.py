@@ -5,7 +5,7 @@ import pytest
 import cv2
 import numpy as np
 
-from gouda import GoudaPath, image
+from gouda import GoudaPath, image, RGB, GRAYSCALE, UNCHANGED
 
 
 def test_imwrite_imread():
@@ -30,10 +30,10 @@ def test_imwrite_imread():
     assert os.path.isfile('test_uint16.png')
     assert not os.path.isfile('failure.png')
 
-    image_test_in_1 = image.imread(GoudaPath('test_RGB.png'), as_RGB=True, unchanged=False)
-    image_test_in_2 = image.imread('test_RGB.png', as_RGB=False, unchanged=False)
-    image_test_in_3 = image.imread('test_BGR.png', as_RGB=True, unchanged=False)
-    image_test_in_4 = image.imread('test_BGR.png', as_RGB=False, unchanged=False)
+    image_test_in_1 = image.imread(GoudaPath('test_RGB.png'), flag=RGB)
+    image_test_in_2 = image.imread('test_RGB.png', flag=None)
+    image_test_in_3 = image.imread('test_BGR.png', flag=RGB)
+    image_test_in_4 = image.imread('test_BGR.png', flag=None)
     np.testing.assert_array_equal(image_test_in_1, image_test_in_4)
     np.testing.assert_array_equal(image_test_in_2, image_test_in_3)
 
@@ -42,10 +42,10 @@ def test_imwrite_imread():
 
     np.testing.assert_array_equal(image_test_in_5, image_test_in_6)
 
-    image_test_in_7 = image.imread('test_uint16.png', unchanged=True)
+    image_test_in_7 = image.imread('test_uint16.png', flag=UNCHANGED)
     assert image_test_in_7.dtype == np.uint16
 
-    image_test_in_8 = image.imread('test_RGB.png', as_greyscale=True, unchanged=False)
+    image_test_in_8 = image.imread('test_RGB.png', flag=GRAYSCALE)
     assert image_test_in_8.shape == (100, 100)
     np.testing.assert_allclose(image_test_in_8, cv2.cvtColor(image_test, cv2.COLOR_RGB2GRAY), rtol=0, atol=1)
 
