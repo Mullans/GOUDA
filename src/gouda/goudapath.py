@@ -241,20 +241,25 @@ class GoudaPath(os.PathLike):
 
     @property
     def path(self):
+        """Returns the relative path if use_absolute is False, otherwise returns the absolute path"""
         return self.__path
 
     @property
     def abspath(self):
+        """Equivalent to os.path.abspath"""
         return os.path.abspath(self.__path)
 
     @property
     def realpath(self):
+        """Equivalent to os.path.realpath"""
         return os.path.realpath(self.__path)
 
     def basename(self):
+        """Equivalent to os.path.basename"""
         return os.path.basename(self.__path)
 
     def basicname(self):
+        """Return the base name of the file without the extension"""
         return os.path.splitext(os.path.basename(self.__path))[0]
 
     def is_dir(self):
@@ -269,25 +274,43 @@ class GoudaPath(os.PathLike):
             return False
 
     def is_hidden(self):
+        """Check if the file is hidden in the filesystem (starts with .)"""
         return self.basename().startswith('.')
 
     def extension(self):
-        return '.' + self.__path.rsplit('.', 1)[-1]
+        """Return just the extension of the file"""
+        divided = self.__path.rsplit('.', 1)
+        if len(divided) == 1:
+            return ''
+        else:
+            return '.' + divided[-1]
 
     def exists(self):
+        """Check if the file indicated by the GoudaPath exists"""
         return os.path.exists(self)
 
     def endswith(self, suffix):
+        """Check if the the path ends with the given suffix"""
         return self.__path.endswith(suffix)
 
     def replace(self, old, new):
+        """Replace part of the path with a new string"""
         return GoudaPath(self.__path.replace(old, new), use_absolute=self.use_absolute)
 
     def rstrip(self, chars=None):
+        """Remove trailing characters from the path
+
+        Parameters
+        ----------
+        chars : string
+            The characters to strip from the end of the path. Using None defauts to whitespace (the default is None)
+        """
         return GoudaPath(self.__path.rstrip(chars), use_absolute=self.use_absolute)
 
     def startswith(self, prefix):
+        """Check if the path starts with the given suffix"""
         return self.__path.startswith(prefix)
 
     def add_basename(self, path):
+        """Add the basename of the given path to the end of the GoudaPath"""
         return self(os.path.basename(path))

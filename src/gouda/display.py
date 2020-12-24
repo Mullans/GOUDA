@@ -1,4 +1,4 @@
-"""Convenience methods to display images using pyplot."""
+"""Convenience methods to display images using matplotlib.pyplot."""
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,29 +12,29 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
 
     Parameters
     ----------
-    image : list | np.ndarray
+    *images : list or numpy.ndarray
         Image(s) to print as a grid
-    *images : list | np.ndarray
-        More images to print
     figsize : (int, int)
         Figure size to pass to pyplot
     toFile : str
         File to save image to
     show : bool
         Whether to show the grid or not (the default is True)
-
-    Optional Parameters
-    -------------------
-    Any parameters for matplotlib.pyplot.subplots_adjust can be passed for use in the grid
+    return_grid_shape : bool
+        Whether to return the (height, width) of the grid or not
+    **kwargs : dict
+        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust` can be passed for use in the grid
 
     Note
     ----
-    General accepted formats:
-        * List of lists
-        * List of dicts with key 'image' with image value
-        * List of numpy arrays
-        * 2, 3, 4, or 5 dimensional numpy arrays (leading rows will be used as row/column)
     Images can be in shape [x, y] or [x, y, c], but only 1 or 3 channels will work (assumes row/col structure otherwise)
+
+    General accepted formats
+    ------------------------
+    * List of lists
+    * List of dicts with key 'image' with image value
+    * List of numpy arrays
+    * 2, 3, 4, or 5 dimensional numpy arrays (leading rows will be used as row/column)
     """
     defaults = ['hspace', 'wspace', 'left', 'bottom', 'right', 'top']
     for item in defaults:

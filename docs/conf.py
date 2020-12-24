@@ -12,6 +12,7 @@ import os
 import sys
 import inspect
 import shutil
+import sphinx_rtd_theme
 
 __location__ = os.path.join(os.getcwd(), os.path.dirname(
     inspect.getfile(inspect.currentframe())))
@@ -66,7 +67,7 @@ except FileNotFoundError:
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo',
               'sphinx.ext.autosummary', 'sphinx.ext.viewcode', 'sphinx.ext.coverage',
               'sphinx.ext.doctest', 'sphinx.ext.ifconfig', 'sphinx.ext.mathjax',
-              'sphinx.ext.napoleon']
+              'sphinx.ext.napoleon', "sphinx_rtd_theme"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -82,7 +83,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GOUDA'
-copyright = u'2019, Sean Mullan'
+copyright = u'2020, Sean Mullan'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -135,15 +136,16 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+# html_theme = 'alabaster'
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    'sidebar_width': '300px',
-    'page_width': '1200px'
-}
+# html_theme_options = {
+#     'sidebar_width': '300px',
+#     'page_width': '1200px'
+# }
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -262,9 +264,9 @@ latex_documents = [
 # -- External mapping ------------------------------------------------------------
 python_version = '.'.join(map(str, sys.version_info[0:2]))
 intersphinx_mapping = {
-    # 'sphinx': ('http://www.sphinx-doc.org/en/stable', None),
-    # 'python': ('https://docs.python.org/' + python_version, None),
-    # 'matplotlib': ('https://matplotlib.org', None),
+    'sphinx': ('http://www.sphinx-doc.org/en/stable', None),
+    'python': ('https://docs.python.org/' + python_version, None),
+    'matplotlib': ('https://matplotlib.org', None),
     'numpy': ('https://docs.scipy.org/doc/numpy', None),
     # 'sklearn': ('http://scikit-learn.org/stable', None),
     # 'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),

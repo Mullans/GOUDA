@@ -8,7 +8,7 @@ Version 0.1
 - Add pre-existing utilities and new tests
 
 Version 0.2
-==========
+===========
 
 - Add 'allow_resize' option to image.rotate
 - Add 'add_array' method to ConfusionMatrix for faster adding of numpy arrays
@@ -24,7 +24,7 @@ Version 0.2
 
 
 Version 0.3
-==========
+===========
 
 - Add GoudaPath
 - Add GoudaPath support for image reading/writing methods

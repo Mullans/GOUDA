@@ -16,7 +16,7 @@ def underline(string):
     return '\033[4m' + string + '\033[0m'
 
 
-class BinaryConfusionMatrix(object):
+class BinaryConfusionMatrix():
     """
     2D array to represent and evaluate a 2-class confusion matrix.
 
@@ -62,10 +62,12 @@ class BinaryConfusionMatrix(object):
 
     @property
     def false_negative(self):
+        """The count of incorrectly predicted negative values"""
         return self.__matrix[1, 0]
 
     @property
     def false_positive(self):
+        """The count of incorrectly predicted positive values"""
         return self.__matrix[0, 1]
 
     @property
@@ -74,10 +76,12 @@ class BinaryConfusionMatrix(object):
 
     @property
     def true_negative(self):
+        """The count of correctly predicted negative values"""
         return self.__matrix[0, 0]
 
     @property
     def true_positive(self):
+        """The count of correctly predicted positive values"""
         return self.__matrix[1, 1]
 
     def __array__(self, dtype=None):
@@ -122,11 +126,21 @@ class BinaryConfusionMatrix(object):
         return format_string.format(*self.__matrix.flatten())
 
     def accuracy(self):
+        """The accuracy of the samples"""
         if self.__matrix.sum() == 0:
             return 0
         return (self.__matrix[0, 0] + self.__matrix[1, 1]) / self.__matrix.sum()
 
     def add(self, predictions, labels=None):
+        """Add a set of predictions and labels to the matrix
+
+        Parameters
+        ----------
+        predictions : one or two list/numpy.ndarrays
+            Either a list/array of predictions, or a list of length 2 where the first item is predictions and the second item is labels
+        labels : list/numpy.ndarray or None
+            The ground truth labels that match the given predictions (the default is None)
+        """
         if labels is None and isinstance(predictions, list):
             # Predictions is actually [predictions, labels]
             if len(predictions) == 2:
@@ -162,6 +176,7 @@ class BinaryConfusionMatrix(object):
         self.__matrix += np.array([[tn, fp], [fn, tp]])
 
     def add_matrix(self, binary_matrix):
+        """Add another matrix or 2x2 array to the current matrix"""
         if isinstance(binary_matrix, BinaryConfusionMatrix):
             self.__matrix += binary_matrix.matrix
         elif isinstance(binary_matrix, np.ndarray):
@@ -170,6 +185,7 @@ class BinaryConfusionMatrix(object):
             raise ValueError("Unknown matrix type {} cannot be added as a matrix".format(type(binary_matrix)))
 
     def copy(self):
+        """Create a copy of the current matrix"""
         new_mat = BinaryConfusionMatrix(threshold=self.threshold, dtype=self.dtype)
         new_mat[0, 0] = self.__matrix[0, 0]
         new_mat[0, 1] = self.__matrix[0, 1]
@@ -238,6 +254,7 @@ class BinaryConfusionMatrix(object):
         self.__matrix = np.zeros([2, 2], dtype=dtype)
 
     def save(self, path, title='BinaryConfusionMatrix'):
+        """Save the current binary confusion matrix to a text file"""
         with open(path, 'w') as f:
             f.write(title + '\n')
             f.write('Threshold: {}\n'.format(self.threshold))
@@ -246,6 +263,7 @@ class BinaryConfusionMatrix(object):
 
     @staticmethod
     def load(path):
+        """Load a binary confusion matrix that was saved as a text file."""
         with open(path, 'r') as f:
             title = f.readline().strip()
             threshold = float(f.readline()[11:].strip())

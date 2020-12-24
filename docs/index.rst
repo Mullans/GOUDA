@@ -22,6 +22,16 @@ Welcome to the documentation of **GOUDA** (**G** ood **O** ld **U** tilities for
 ..     you include documentation from docstrings. Docstrings can be written in
 ..     `Google style`_ (recommended!), `NumPy style`_ and `classical style`_.
 
+Requirements
+============
+
+* `NumPy`_
+* `Matplotlib`_
+
+Optional Requirements (gouda.image only)
+========================================
+* `OpenCV <https://opencv.org/>`_
+
 
 Contents
 ========
@@ -29,9 +39,13 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   data
-   image
+   binaryconfusionmatrix
+   data_methods
    display
+   file_methods
+   goudapath
+   image
+   moving_stats
 
    License <license>
    Authors <authors>
@@ -50,12 +64,12 @@ Indices and tables
 .. _Python domain syntax: http://sphinx-doc.org/domains.html#the-python-domain
 .. _Sphinx: http://www.sphinx-doc.org/
 .. _Python: http://docs.python.org/
-.. _Numpy: http://docs.scipy.org/doc/numpy
-.. _SciPy: http://docs.scipy.org/doc/scipy/reference/
-.. _matplotlib: https://matplotlib.org/contents.html#
-.. _Pandas: http://pandas.pydata.org/pandas-docs/stable
-.. _Scikit-Learn: http://scikit-learn.org/stable
-.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
-.. _Google style: https://github.com/google/styleguide/blob/gh-pages/pyguide.md#38-comments-and-docstrings
+.. _Numpy: https://numpy.org/doc/stable/
 .. _NumPy style: https://numpydoc.readthedocs.io/en/latest/format.html
-.. _classical style: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
+.. _matplotlib: https://matplotlib.org/contents.html#
+.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
+   .. _SciPy: http://docs.scipy.org/doc/scipy/reference/
+   .. _Pandas: http://pandas.pydata.org/pandas-docs/stable
+   .. _Scikit-Learn: http://scikit-learn.org/stable
+   .. _Google style: https://github.com/google/styleguide/blob/gh-pages/pyguide.md#38-comments-and-docstrings
+   .. _classical style: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
