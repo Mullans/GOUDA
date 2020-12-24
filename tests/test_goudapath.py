@@ -162,6 +162,37 @@ def test_relation():
     globbed = test_dir.parent_dir().glob('**/*.txt', recursive=True)
     assert test_dir('check_file.txt').path in globbed
 
+    setitem_tester = test_dir / 'check_file.txt'
+    assert setitem_tester[-1] == 'check_file.txt'
+    assert setitem_tester[-2] == test_dir.basename()
+    setitem_tester[-1] = 'null_file.txt'
+    assert setitem_tester[-1] == 'null_file.txt'
+    assert setitem_tester[-2] == test_dir.basename()
+    setitem_tester2 = setitem_tester.replace('null', 'blank')
+    assert setitem_tester2[-1] == 'blank_file.txt'
+    setitem_tester3 = GoudaPath('just/a/test', use_absolute=False)
+    setitem_tester3[0] = 'maybe'
+    assert setitem_tester3[0] == 'maybe'
+    assert setitem_tester3[1] == 'a'
+    assert setitem_tester3[2] == 'test'
+
+    os.remove(test_dir / 'check_file.txt')
+    os.removedirs(test_dir / 'check_dir1')
+    os.removedirs(test_dir / 'check_dir2')
+
+
+def test_get_images_num_children():
+    test_dir = GoudaPath('ScratchFiles/goudapath_imagetest_directory')
+    gouda.ensure_dir(test_dir)
+    gouda.ensure_dir(test_dir / 'check_dir1')
+    gouda.ensure_dir(test_dir / 'check_dir2')
+    with open(test_dir / 'check_file.txt', 'w') as _:
+        pass
+    if test_dir('image1.png').exists():
+        os.remove(test_dir('image1.png'))
+    if test_dir('image2.png').exists():
+        os.remove(test_dir('image2.png'))
+
     test_img = np.ones([50, 50, 3])
     gouda.image.imwrite(test_dir / 'image1.png', test_img)
     gouda.image.imwrite(test_dir / 'image2.png', test_img)
@@ -169,6 +200,20 @@ def test_relation():
     assert 'image1.png' in image_results
     assert 'image2.png' in image_results
     assert 'check_file.txt' not in image_results
+
+    image_results2 = test_dir.get_images(basenames=True, fast_check=True)
+    image_results3 = test_dir.get_images(basenames=False)
+    for a, b, c in zip(image_results, image_results2, image_results3):
+        assert a == b
+        assert a == os.path.basename(c)
+
+    image_results4 = test_dir.get_images(basenames=True, sort=True)
+    image_results5 = test_dir.get_images(basenames=False, sort=True)
+    for a, b in zip(image_results4, image_results5):
+        assert a == os.path.basename(b)
+    assert image_results4[0] == 'image1.png'
+    assert image_results4[1] == 'image2.png'
+
     assert test_dir('image1.png').is_image()
     with pytest.raises(NotADirectoryError):
         assert test_dir('image1.png').num_children()
@@ -177,8 +222,6 @@ def test_relation():
     assert test_dir.is_image() is False
     assert test_dir.num_children(dirs_only=True, files_only=False, include_hidden=True) == 2
     assert test_dir.num_children(dirs_only=False, files_only=True, include_hidden=False) == 3
-
-    os.remove(test_dir / 'check_file.txt')
     os.remove(test_dir / 'image1.png')
     os.remove(test_dir / 'image2.png')
     os.removedirs(test_dir / 'check_dir1')
