@@ -44,6 +44,30 @@ def test_next_filename():
     os.remove("ScratchFiles/test_2.txt")
 
 
+def test_basicname():
+    assert gouda.basicname('anypath/morepath/test_item-here.jpg') == 'test_item-here'
+
+
+def test_get_sorted_filenames():
+    src_dir = gouda.GoudaPath('../ScratchFiles/sortedfiles')
+    if not src_dir('test.txt').exists():
+        gouda.ensure_dir(src_dir)
+        for i in range(5):
+            with open(gouda.next_filename(src_dir('test.txt')), 'w'):
+                pass
+        for i in range(3):
+            with open(gouda.next_filename(src_dir('btest.txt')), 'w'):
+                pass
+    filenames = gouda.get_sorted_filenames(src_dir / '*.txt')
+    assert [gouda.basicname(item) for item in filenames] == ['btest', 'btest_2', 'btest_3', 'test', 'test_2', 'test_3', 'test_4', 'test_5']
+    os.remove(src_dir('test.txt'))
+    for i in range(2, 6):
+        os.remove(src_dir('test_{}.txt'.format(i)))
+    os.remove(src_dir('btest.txt'))
+    for i in range(2, 4):
+        os.remove(src_dir('btest_{}.txt'.format(i)))
+
+
 def test_save_load_json_dict():
     temp_data = {'a': 1, 'b': 2, 'c': 3}
     gouda.save_json(temp_data, 'ScratchFiles/test.json')
@@ -112,16 +136,23 @@ def test_save_json_load_json_numpy():
     os.remove('ScratchFiles/test3_arrayzip.npz')
 
 
+def test_save_load_json_set():
+    test_data = {'a': set([1, 2, 3])}
+    gouda.save_json(test_data, 'ScratchFiles/testset.json')
+    check = gouda.load_json('ScratchFiles/testset.json')
+    assert check['a'] == set([1, 2, 3])
+
+
 def test_save_load_json_list_numpy():
     temp_data = np.arange(5, dtype=np.uint8)
 
-    gouda.save_json([temp_data], 'ScratchFiles/test1.json', embed_arrays=False, compressed=False)
-    gouda.save_json([temp_data], 'ScratchFiles/test2.json', embed_arrays=True, compressed=False)
-    gouda.save_json([temp_data], 'ScratchFiles/test3.json', embed_arrays=False, compressed=True)
+    gouda.save_json([temp_data], 'ScratchFiles/testn1.json', embed_arrays=False, compressed=False)
+    gouda.save_json([temp_data], 'ScratchFiles/testn2.json', embed_arrays=True, compressed=False)
+    gouda.save_json([temp_data], 'ScratchFiles/testn3.json', embed_arrays=False, compressed=True)
 
-    check1 = gouda.load_json('ScratchFiles/test1.json')
-    check2 = gouda.load_json('ScratchFiles/test2.json')
-    check3 = gouda.load_json('ScratchFiles/test3.json')
+    check1 = gouda.load_json('ScratchFiles/testn1.json')
+    check2 = gouda.load_json('ScratchFiles/testn2.json')
+    check3 = gouda.load_json('ScratchFiles/testn3.json')
     assert isinstance(check1, list)
     assert isinstance(check2, list)
     assert isinstance(check3, list)
@@ -129,84 +160,98 @@ def test_save_load_json_list_numpy():
     np.testing.assert_array_equal(temp_data, check1[0])
     np.testing.assert_array_equal(temp_data, check2[0])
     np.testing.assert_array_equal(temp_data, check3[0])
+    os.remove('ScratchFiles/testn1.json')
+    os.remove('ScratchFiles/testn2.json')
+    os.remove('ScratchFiles/testn3.json')
 
 
 def test_save_load_json_numpy_list():
     temp_data = [np.arange(3, dtype=np.uint8), np.arange(4, 6, dtype=np.float32)]
-    gouda.save_json(temp_data, 'ScratchFiles/test.json', embed_arrays=True, compressed=False)
-    check_data = gouda.load_json('ScratchFiles/test.json')
+    gouda.save_json(temp_data, 'ScratchFiles/testnl.json', embed_arrays=True, compressed=False)
+    check_data = gouda.load_json('ScratchFiles/testnl.json')
     assert len(check_data) == 2
     np.testing.assert_array_equal(temp_data[0], check_data[0])
     np.testing.assert_array_equal(temp_data[1], check_data[1])
 
-    gouda.save_json(temp_data, 'ScratchFiles/test2.json', embed_arrays=False, compressed=False)
-    check_data2 = gouda.load_json('ScratchFiles/test2.json')
+    gouda.save_json(temp_data, 'ScratchFiles/testnl2.json', embed_arrays=False, compressed=False)
+    check_data2 = gouda.load_json('ScratchFiles/testnl2.json')
     assert len(check_data2) == 2
     np.testing.assert_array_equal(temp_data[0], check_data2[0])
     np.testing.assert_array_equal(temp_data[1], check_data2[1])
 
-    os.remove('ScratchFiles/test.json')
-    os.remove('ScratchFiles/test2.json')
-    os.remove('ScratchFiles/test2_array.npz')
+    os.remove('ScratchFiles/testnl.json')
+    os.remove('ScratchFiles/testnl2.json')
+    os.remove('ScratchFiles/testnl2_array.npz')
 
 
 def test_save_load_json_numpy_dict():
     temp_data = {'a': np.arange(3, dtype=np.uint8)}
-    gouda.save_json(temp_data, 'ScratchFiles/test.json', embed_arrays=True, compressed=False)
-    check_data = gouda.load_json('ScratchFiles/test.json')
+    gouda.save_json(temp_data, 'ScratchFiles/testnd.json', embed_arrays=True, compressed=False)
+    check_data = gouda.load_json('ScratchFiles/testnd.json')
     assert len(temp_data) == len(check_data)
     np.testing.assert_array_equal(temp_data['a'], check_data['a'])
 
-    gouda.save_json(temp_data, 'ScratchFiles/test2.json', embed_arrays=False, compressed=False)
-    check_data2 = gouda.load_json('ScratchFiles/test2.json')
+    gouda.save_json(temp_data, 'ScratchFiles/testnd2.json', embed_arrays=False, compressed=False)
+    check_data2 = gouda.load_json('ScratchFiles/testnd2.json')
     assert len(temp_data) == len(check_data2)
     np.testing.assert_array_equal(temp_data['a'], check_data2['a'])
 
-    os.remove('ScratchFiles/test.json')
-    os.remove('ScratchFiles/test2.json')
-    os.remove('ScratchFiles/test2_array.npz')
+    os.remove('ScratchFiles/testnd.json')
+    os.remove('ScratchFiles/testnd2.json')
+    os.remove('ScratchFiles/testnd2_array.npz')
 
 
 def test_save_load_json_numpy_mixed():
     temp_data = [np.arange(3), 3]
-    gouda.save_json(temp_data, 'ScratchFiles/test.json', embed_arrays=True, compressed=False)
-    check_data = gouda.load_json('ScratchFiles/test.json')
+    gouda.save_json(temp_data, 'ScratchFiles/testm.json', embed_arrays=True, compressed=False)
+    check_data = gouda.load_json('ScratchFiles/testm.json')
     np.testing.assert_array_equal(temp_data[0], check_data[0])
     assert check_data[1] == 3
 
-    gouda.save_json(temp_data, 'ScratchFiles/test2.json', embed_arrays=False, compressed=False)
-    check_data2 = gouda.load_json('ScratchFiles/test2.json')
+    gouda.save_json(temp_data, 'ScratchFiles/testm2.json', embed_arrays=False, compressed=False)
+    check_data2 = gouda.load_json('ScratchFiles/testm2.json')
     np.testing.assert_array_equal(temp_data[0], check_data2[0])
     assert check_data2[1] == 3
 
-    os.remove('ScratchFiles/test.json')
-    os.remove('ScratchFiles/test2.json')
-    os.remove('ScratchFiles/test2_array.npz')
+    os.remove('ScratchFiles/testm.json')
+    os.remove('ScratchFiles/testm2.json')
+    os.remove('ScratchFiles/testm2_array.npz')
+
+    data = [np.int64(32), 'a', np.float32(18.32)]
+    gouda.save_json(data, 'ScratchFiles/testm3.json')
+    check = gouda.load_json('ScratchFiles/testm3.json')
+    assert check[0] == 32
+    assert np.dtype(check[0]) == 'int64'
+    assert data[1] == 'a'
+    assert isinstance(data[1], str)
+    np.testing.assert_almost_equal(check[2], 18.32, decimal=5)
+    assert np.dtype(check[2]) == 'float32'
+    os.remove('ScratchFiles/testm3.json')
 
 
 def test_save_json_warning_error():
     temp_data = [1, 2, 3]
     with pytest.warns(UserWarning):
-        gouda.save_json(temp_data, 'ScratchFiles/test.json', embed_arrays=True, compressed=True)
-    os.remove('ScratchFiles/test.json')
+        gouda.save_json(temp_data, 'ScratchFiles/testw.json', embed_arrays=True, compressed=True)
+    os.remove('ScratchFiles/testw.json')
 
     temp_data = np.arange(5, dtype=np.uint8)
-    gouda.save_json(temp_data, 'ScratchFiles/test.json', embed_arrays=False)
-    gouda.save_json(temp_data.astype(np.float32), 'ScratchFiles/test2.json', embed_arrays=False)
-    gouda.save_json(temp_data.reshape([1, 5]), 'ScratchFiles/test3.json', embed_arrays=False)
-    os.remove('ScratchFiles/test_array.npz')
-    os.rename('ScratchFiles/test2_array.npz', 'ScratchFiles/test_array.npz')
+    gouda.save_json(temp_data, 'ScratchFiles/testw.json', embed_arrays=False)
+    gouda.save_json(temp_data.astype(np.float32), 'ScratchFiles/testw2.json', embed_arrays=False)
+    gouda.save_json(temp_data.reshape([1, 5]), 'ScratchFiles/testw3.json', embed_arrays=False)
+    os.remove('ScratchFiles/testw_array.npz')
+    os.rename('ScratchFiles/testw2_array.npz', 'ScratchFiles/testw_array.npz')
     with pytest.raises(ValueError):
-        gouda.load_json('ScratchFiles/test.json')
-    os.remove('ScratchFiles/test_array.npz')
-    os.rename('ScratchFiles/test3_array.npz', 'ScratchFiles/test_array.npz')
+        gouda.load_json('ScratchFiles/testw.json')
+    os.remove('ScratchFiles/testw_array.npz')
+    os.rename('ScratchFiles/testw3_array.npz', 'ScratchFiles/testw_array.npz')
     with pytest.raises(ValueError):
-        gouda.load_json('ScratchFiles/test.json')
+        gouda.load_json('ScratchFiles/testw.json')
 
-    os.remove('ScratchFiles/test.json')
-    os.remove('ScratchFiles/test2.json')
-    os.remove('ScratchFiles/test3.json')
-    os.remove('ScratchFiles/test_array.npz')
+    os.remove('ScratchFiles/testw.json')
+    os.remove('ScratchFiles/testw2.json')
+    os.remove('ScratchFiles/testw3.json')
+    os.remove('ScratchFiles/testw_array.npz')
 
 
 def test_is_image():
@@ -225,29 +270,29 @@ def test_is_image():
 
 def test_save_load_json_slice():
     data = slice(0, 10, None)
-    gouda.save_json(data, 'ScratchFiles/test.json')
-    compare = gouda.load_json('ScratchFiles/test.json')
+    gouda.save_json(data, 'ScratchFiles/tests.json')
+    compare = gouda.load_json('ScratchFiles/tests.json')
     assert compare == data
-    os.remove('ScratchFiles/test.json')
+    os.remove('ScratchFiles/tests.json')
 
     data = slice(0, 10, 2)
-    gouda.save_json(data, 'ScratchFiles/test.json')
-    compare = gouda.load_json('ScratchFiles/test.json')
+    gouda.save_json(data, 'ScratchFiles/tests.json')
+    compare = gouda.load_json('ScratchFiles/tests.json')
     assert compare == data
-    os.remove('ScratchFiles/test.json')
+    os.remove('ScratchFiles/tests.json')
 
     data = [slice(0, 10, 2)]
-    gouda.save_json(data, 'ScratchFiles/test.json')
-    compare = gouda.load_json('ScratchFiles/test.json')
+    gouda.save_json(data, 'ScratchFiles/tests.json')
+    compare = gouda.load_json('ScratchFiles/tests.json')
     print(compare, data)
     assert compare == data
-    os.remove('ScratchFiles/test.json')
+    os.remove('ScratchFiles/tests.json')
 
     data = [slice(0, 10, 2), {'this': slice(100, 230, None), 'that': np.array([1, 2, 3])}]
-    gouda.save_json(data, 'ScratchFiles/test.json')
-    compare = gouda.load_json('ScratchFiles/test.json')
+    gouda.save_json(data, 'ScratchFiles/tests.json')
+    compare = gouda.load_json('ScratchFiles/tests.json')
     assert compare[0] == slice(0, 10, 2)
     assert isinstance(compare[1], dict)
     assert compare[1]['this'] == slice(100, 230)
     np.testing.assert_array_equal(compare[1]['that'], np.array([1, 2, 3]))
-    os.remove('ScratchFiles/test.json')
+    os.remove('ScratchFiles/tests.json')

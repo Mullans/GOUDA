@@ -284,6 +284,9 @@ def test_crop_to_content():
     assert crop_test.shape == (50, 50, 3)
     assert crop_test.sum() == crop_test.size
 
+    bounds = image.crop_to_content(image_test, return_bounds=True)
+    assert bounds == ((25, 75), (25, 75))
+
 
 def test_rotate():
     image_test = np.zeros([50, 50, 3], dtype=np.uint8)

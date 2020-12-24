@@ -1,5 +1,6 @@
 """General file method and JSON handling"""
 import copy
+import glob
 import json
 import imghdr
 import os
@@ -8,6 +9,7 @@ import warnings
 import numpy as np
 
 from .goudapath import GoudaPath
+from .data_methods import num_digits
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -47,6 +49,8 @@ def ensure_dir(*paths):
 
 def next_filename(filename):
     """Check if a given file exists, and return a new filename for a numbered copy if it does."""
+    if isinstance(filename, GoudaPath):
+        filename = filename.path
     if os.path.isfile(filename):
         base, extension = filename.rsplit('.', 1)
         i = 2
@@ -83,8 +87,10 @@ def load_json(filename):
 
     def renumpy(_data):
         if isinstance(_data, list):
-            if len(data) == 2 and 'numpy.' in _data[0]:
+            if len(_data) == 2 and 'numpy.' in _data[0]:
                 _data = np.dtype(_data[0][6:]).type(_data[1])
+            elif len(_data) == 2 and 'set.' == _data[0]:
+                _data = set(renumpy(_data[1]))
             else:
                 for i in range(len(_data)):
                     _data[i] = renumpy(_data[i])
@@ -139,6 +145,8 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
             new_data = []
             for i in range(len(_data)):
                 new_data.append(unnumpy(_data[i]))
+        elif isinstance(_data, set):
+            new_data = ['set.', unnumpy(list(_data))]
         elif isinstance(_data, dict):
             new_data = {}
             for key in _data.keys():
@@ -198,12 +206,55 @@ def basicname(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
-def get_sorted_filenames(pattern, sep='_', reverse=False):
-    """Sort filenames based on ending digits"""
-    def get_file_copy_number(x):
-        check = os.path.splitext(os.path.basename(x))[0].rsplit(sep, 1)[1]
-        if str.isdigit(check):
-            return int(check)
+def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
+    """Sort filenames based on ending digits
+
+    Parameters
+    ----------
+    pattern : str
+        The pattern used with glob to find files
+    sep : str
+        The separator between the filename and the indexing value (the default is '_')
+    ending_index : bool
+        Whether the indexing value is at the end of the filename or the start (the default is True)
+    reverse : bool
+        Whether to reverse the order of the returned filenames
+
+    NOTESs
+    -----
+    ending_index=True with sep='_' would look like 'filename_1.txt', and ending_index=False would look like '1_filename.txt'
+
+    This method is only useful in the case where you have file_2.txt and file_10.txt where file_10 would be sorted first with other methods because the 1 is at the same inde as the 2.
+    """
+    def get_copy_num(x):
+        x = basicname(x)
+        item = x.rsplit(sep, 1) if ending else x.split(sep, 1)
+        if len(item) != 2:
+            return -1
+        item = item[int(ending)]
+        if str.isdigit(item):
+            return int(item)
         else:
             return -1
-    return sorted(glob.glob(pattern), key=get_file_copy_number, reverse=reverse)
+
+    if isinstance(pattern, GoudaPath):
+        pattern = pattern.path
+    files = glob.glob(pattern)
+    max_num = -1
+    for item in files:
+        max_num = max(max_num, get_copy_num(item))
+    digits = num_digits(max_num)
+    key_string = "{:0" + str(digits) + "d}"
+
+    def get_copy_key(x):
+        x = basicname(x)
+        item = x.rsplit(sep, 1) if ending else x.split(sep, 1)
+        if len(item) != 2:
+            return x
+        key = item[int(ending)]
+        path = item[int(~ending)]
+        if str.isdigit(key):
+            key = key_string.format(int(key))
+        return sep.join([path, key]) if ending else sep.join([key, path])
+
+    return sorted(files, key=get_copy_key, reverse=False)
