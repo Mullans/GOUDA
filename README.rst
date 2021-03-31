@@ -11,9 +11,9 @@ Description
 
 These are a bunch of miscellaneous data/image utilities that have been made as needed. Full documentation on its way.
 
+Installation
+============
 
-Note
-====
+For pip: pip install gouda
 
-This project has been set up using PyScaffold 3.2.1. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+For conda: conda install gouda -c smullan
