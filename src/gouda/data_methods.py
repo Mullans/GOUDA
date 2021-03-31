@@ -215,7 +215,7 @@ def roc_curve(label, pred, as_rates=True):
     thresh_idx = np.concatenate([distinct_idx, [y_true.size - 1]])
 
     tps = np.cumsum(y_true)
-    expected = np.sum(y_true)
+    # expected = np.sum(y_true)
 
     tps = tps[thresh_idx]
     fps = 1 + thresh_idx - tps
@@ -272,6 +272,41 @@ def optimal_mcc_from_roc(fps, tps, thresholds, optimal_only=True):
         best = np.argmax(mcc)
         return mcc[best], thresholds[best]
     return mcc, thresholds
+
+
+def accuracy_curve(label, pred, return_peak=False):
+    """Get the accuracy values for each possible threshold in the predictions.
+
+    Parameters
+    ----------
+    label : numpy.ndarray
+        The true values for each sample in the data.
+    pred : numpy.ndarray
+        The predicted values for each sample in the data
+    return_peak : bool
+        Whether to return the peak accuracy and best threshold for the data as well as the curve
+    """
+    if not isinstance(label, np.ndarray):
+        label = np.array(label)
+    if not isinstance(pred, np.ndarray):
+        pred = np.array(pred)
+
+    desc_score_indices = np.argsort(pred, kind='mergesort')[::-1]
+    y_score = pred[desc_score_indices]
+    y_true = label[desc_score_indices]
+
+    distinct_idx = np.where(np.diff(y_score))[0]
+    thresh_idx = np.concatenate([distinct_idx, [y_true.size - 1]])
+    thresh = y_score[thresh_idx]
+
+    tps = np.cumsum(y_true)[thresh_idx]
+    tns = np.cumsum((1 - y_true)[::-1])[::-1][thresh_idx]
+    correct = tps + tns
+    acc = correct / label.size
+    if return_peak:
+        peak = np.argmax(acc)
+        return acc, thresh, acc[peak], thresh[peak]
+    return acc, thresh
 
 
 def spec_at_sens(expected, predicted, sensitivities=[0.95]):
@@ -341,7 +376,7 @@ def value_crossing(array, threshold=0, positive_crossing=True, negative_crossing
     elif positive_crossing:
         crossing = (npos[:-1] & pos[1:])
     else:
-        raise ValueError('Either positive and/or negative crossings must be used') 
+        raise ValueError('Either positive and/or negative crossings must be used')
     if return_indices:
         return idxs[np.concatenate([crossing, [False]])]
     return crossing.sum()
