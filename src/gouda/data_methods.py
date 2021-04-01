@@ -380,3 +380,16 @@ def value_crossing(array, threshold=0, positive_crossing=True, negative_crossing
     if return_indices:
         return idxs[np.concatenate([crossing, [False]])]
     return crossing.sum()
+
+
+def center_of_mass(input_arr):
+    """Find the continuous index of the center of mass for the input n-dimensional array"""
+    flat_mass = np.reshape(input_arr, [-1, 1])
+    total_mass = np.sum(flat_mass)
+    if total_mass == 0:
+        raise ValueError("Cannot find the center if the total mass is 0")
+    grids = np.meshgrid(*[np.arange(axis_length) for axis_length in input_arr.shape], indexing='ij')
+    coords = np.stack([np.reshape(grid, [-1]) for grid in grids], axis=-1)
+
+    center_of_mass = np.sum(flat_mass * coords, axis=0) / total_mass
+    return center_of_mass

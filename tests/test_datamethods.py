@@ -240,3 +240,44 @@ def test_value_crossing():
 
     with pytest.raises(ValueError):
         gouda.value_crossing(data, negative_crossing=False, positive_crossing=False)
+
+
+def test_center_of_mass():
+    data = np.zeros([5, 5])
+    with pytest.raises(ValueError):
+        gouda.center_of_mass(data)
+
+    data = np.ones([5, 5])
+    np.testing.assert_array_equal(gouda.center_of_mass(data), np.array([2, 2]))
+
+    data[:2] = 0
+    data[:, :2] = 0
+    np.testing.assert_array_equal(gouda.center_of_mass(data), np.array([3, 3]))
+
+    data = np.ones([5, 5, 5])
+    np.testing.assert_array_equal(gouda.center_of_mass(data), np.array([2, 2, 2]))
+    data[:2] = 0
+    np.testing.assert_array_equal(gouda.center_of_mass(data), np.array([3, 2, 2]))
+
+
+def test_accuracy_curve():
+    label = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    pred = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    acc, thresh = gouda.accuracy_curve(label, pred)
+    np.testing.assert_array_equal(thresh, np.array(pred)[::-1])
+    counts = np.array([6, 7, 8, 9, 10, 10, 9, 8, 7, 6])
+    np.testing.assert_array_equal(acc, counts / 10)
+
+    acc2, thresh2, peak_acc, peak_thresh = gouda.accuracy_curve(label, pred, return_peak=True)
+    np.testing.assert_array_equal(acc, acc2)
+    np.testing.assert_array_equal(thresh, thresh2)
+    assert peak_acc in acc
+    assert peak_acc == 1
+    assert peak_thresh == 0.5
+
+    label = np.array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    pred = np.array([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0])
+    acc, thresh = gouda.accuracy_curve(label, pred)
+    np.testing.assert_array_equal(thresh, pred)
+    counts = np.array([5, 4, 3, 2, 1, 1, 2, 3, 4, 5])
+    np.testing.assert_array_equal(acc, counts / 10)
