@@ -394,7 +394,7 @@ def rotate(img, degrees=90, allow_resize=True):
     return cv2.warpAffine(img, M, (nW, nH)).astype(img.dtype)
 
 
-def padded_resize(image, size=[960, 540], allow_rotate=True):
+def padded_resize(image, size=[960, 540], allow_rotate=True, interpolation=cv2.INTER_LINEAR):
     """Resize input image to given size, only padding as needed for aspect ratio.
 
     Parameters
@@ -405,7 +405,13 @@ def padded_resize(image, size=[960, 540], allow_rotate=True):
         output size
     allow_rotate: bool
         Whether the image can be rotated to minimize required padding or if orientation should be preserved
+    interpolation: int
+        The interpolation function to use when resizing the image
+
+    Notes
+    -----
     Input image number of channels does not matter as long as the first two dimensions are x and y.
+
     """
     if isinstance(image, (str, GoudaPath)):
         image = imread(image, flag=RGB)
@@ -434,7 +440,7 @@ def padded_resize(image, size=[960, 540], allow_rotate=True):
             padded_image[:, int(pady // 2):-int(pady - pady // 2)] = image
     else:
         padded_image = image
-    padded_image = cv2.resize(padded_image, (size[1], size[0])).astype(data_type)
+    padded_image = cv2.resize(padded_image, (size[1], size[0]), interpolation).astype(data_type)
     if c == 1:
         # cv2.resize auto-squeezes images
         return padded_image[:, :, np.newaxis]
