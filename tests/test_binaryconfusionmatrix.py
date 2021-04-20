@@ -3,15 +3,14 @@ import pytest
 import numpy as np
 
 import gouda
-from gouda import BinaryConfusionMatrix
 
 
 def test_init():
-    test_mat = BinaryConfusionMatrix()
+    test_mat = gouda.BinaryConfusionMatrix()
     np.testing.assert_array_equal(test_mat.matrix, np.array([[0, 0], [0, 0]]))
 
     test_arr = np.array([[0, 1, 0], [1, 1, 0]])
-    test_mat_2 = BinaryConfusionMatrix(test_arr)
+    test_mat_2 = gouda.BinaryConfusionMatrix(test_arr)
     np.testing.assert_array_equal(test_mat_2.matrix, np.array([[1, 0], [1, 1]]))
 
     assert test_mat_2.dtype == np.int
@@ -28,7 +27,7 @@ def test_init():
 
 
 def test_add():
-    test_mat = BinaryConfusionMatrix()
+    test_mat = gouda.BinaryConfusionMatrix()
     np.testing.assert_array_equal(test_mat.matrix, np.array([[0, 0], [0, 0]]))
 
     test_arr = np.array([[0, 1, 0], [1, 1, 0]])
@@ -42,7 +41,7 @@ def test_add():
     with pytest.raises(ValueError):
         test_mat.add(np.ones([3, 3]))
 
-    test_mat2 = BinaryConfusionMatrix()
+    test_mat2 = gouda.BinaryConfusionMatrix()
     test_mat2.add(1, 1)
     np.testing.assert_array_equal(test_mat2.matrix, np.array([[0, 0], [0, 1]]))
 
@@ -81,12 +80,12 @@ def test_add():
 
 
 def test_add_matrix():
-    test_mat = BinaryConfusionMatrix()
+    test_mat = gouda.BinaryConfusionMatrix()
     test_arr = np.array([[0, 1, 0], [1, 1, 0]])
     test_mat.add(test_arr)
     np.testing.assert_array_equal(test_mat.matrix, np.array([[1, 0], [1, 1]]))
 
-    test_mat2 = BinaryConfusionMatrix()
+    test_mat2 = gouda.BinaryConfusionMatrix()
     test_arr2 = np.array([[0, 0, 0], [0, 0, 0]])
     test_mat2.add(test_arr2)
     np.testing.assert_array_equal(test_mat2.matrix, np.array([[3, 0], [0, 0]]))
@@ -95,7 +94,7 @@ def test_add_matrix():
     np.testing.assert_array_equal(test_mat.matrix, np.array([[4, 0], [1, 1]]))
     np.testing.assert_array_equal(test_mat2.matrix, np.array([[3, 0], [0, 0]]))
 
-    test_mat3 = BinaryConfusionMatrix()
+    test_mat3 = gouda.BinaryConfusionMatrix()
     test_arr3 = np.array([[1, 1, 1], [1, 1, 1]])
     test_mat3.add(test_arr3)
     np.testing.assert_array_equal(test_mat3.matrix, np.array([[0, 0], [0, 3]]))
@@ -108,7 +107,7 @@ def test_add_matrix():
 
 
 def test_parameters():
-    test_mat = BinaryConfusionMatrix()
+    test_mat = gouda.BinaryConfusionMatrix()
     assert test_mat.print(return_string=True, as_label=False) == '         →  Predicted\n↓ Expected          | 0 | 1 \n                0   | 0 | 0 |\n                1   | 0 | 0 |\n'
 
     test_mat.add(np.array([[1, 1, 1, 1], [1, 1, 1, 1]]))
@@ -136,7 +135,7 @@ def test_parameters():
 
 
 def test_math():
-    test_mat = BinaryConfusionMatrix()
+    test_mat = gouda.BinaryConfusionMatrix()
     assert test_mat.mcc() == 0
     assert test_mat.sensitivity() == 0
     assert test_mat.specificity() == 0
@@ -165,7 +164,7 @@ def test_math():
 
     np.testing.assert_almost_equal(test_mat.mcc(), manual_mcc)
 
-    test_mat2 = BinaryConfusionMatrix()
+    test_mat2 = gouda.BinaryConfusionMatrix()
     test_mat2[1, 1] = 99999999999
     assert test_mat2.mcc() == 0
     test_mat2[0, 0] = 99999999999
@@ -173,7 +172,7 @@ def test_math():
 
 
 def test_array():
-    test_mat = BinaryConfusionMatrix()
+    test_mat = gouda.BinaryConfusionMatrix()
     assert test_mat.__array__().dtype == test_mat.dtype
     assert test_mat.__array__(np.uint8).dtype == np.uint8
 
@@ -187,11 +186,11 @@ def test_underline():
 
 
 def test_save_load():
-    test_mat = BinaryConfusionMatrix()
+    test_mat = gouda.BinaryConfusionMatrix()
     test_arr = np.array([[1, 1, 0], [1, 1, 0]])
     test_mat.add(test_arr)
     np.testing.assert_array_equal(test_mat.matrix, np.array([[1, 0], [0, 2]]))
     test_mat.save('ScratchFiles/test_mat.txt')
 
-    test_mat2 = BinaryConfusionMatrix.load('ScratchFiles/test_mat.txt')
+    test_mat2 = gouda.BinaryConfusionMatrix.load('ScratchFiles/test_mat.txt')
     np.testing.assert_array_equal(test_mat.matrix, test_mat2.matrix)

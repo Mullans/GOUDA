@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import gouda
-from gouda import GoudaPath
 
 # def test_ensure_dir():
 #     test_dir = gouda.ensure_dir("test_dir")
@@ -31,8 +30,8 @@ def test_init_call():
     test_basic = gouda.GoudaPath(use_absolute=False)
     assert test_basic.path == '.'
 
-    test_abs = GoudaPath('absolute', use_absolute=True)
-    test_rel = GoudaPath('relative', use_absolute=False)
+    test_abs = gouda.GoudaPath('absolute', use_absolute=True)
+    test_rel = gouda.GoudaPath('relative', use_absolute=False)
 
     assert os.path.expanduser('~') in test_abs.path
     assert test_abs.path == os.path.abspath('absolute')
@@ -65,8 +64,8 @@ def test_init_call():
 
 
 def test_representations():
-    test_abs = GoudaPath('absolute', use_absolute=True)
-    test_rel = GoudaPath('relative', use_absolute=False)
+    test_abs = gouda.GoudaPath('absolute', use_absolute=True)
+    test_rel = gouda.GoudaPath('relative', use_absolute=False)
 
     assert str(test_abs) == os.path.abspath('absolute')
     assert str(test_rel) == 'relative'
@@ -81,7 +80,7 @@ def test_representations():
 
 
 def test_navigation():
-    test_rel = GoudaPath('relative', use_absolute=False)
+    test_rel = gouda.GoudaPath('relative', use_absolute=False)
     assert test_rel().path == test_rel.basename()
     assert (test_rel / 'check').path == os.path.join('relative', 'check')
     assert (test_rel // 'check').path == os.path.abspath(os.path.join('relative', 'check'))
@@ -103,7 +102,7 @@ def test_navigation():
 
 
 def test_relation():
-    test_dir = GoudaPath('ScratchFiles/goudapath_test_directory')
+    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_test_directory')
     gouda.ensure_dir(test_dir)
     gouda.ensure_dir(test_dir / 'check_dir1')
     gouda.ensure_dir(test_dir / 'check_dir2')
@@ -116,7 +115,7 @@ def test_relation():
 
     assert test_dir('check_dir1').exists()
     assert test_dir('check_dir1').is_dir()
-    assert GoudaPath('goudapath_test_directory', use_absolute=False).parent_dir().path[:2] == os.pardir
+    assert gouda.GoudaPath('goudapath_test_directory', use_absolute=False).parent_dir().path[:2] == os.pardir
     assert test_dir('check_dir1').parent_dir().path == test_dir.path
     assert not test_dir('doesntexist').exists()
     assert test_dir('check_file.txt').extension() == '.txt'
@@ -157,7 +156,7 @@ def test_relation():
     assert test_dir('check_dir1').path == globbed[0]
 
     globbed = test_dir.glob('*', sort=True, as_gouda=True)
-    assert isinstance(globbed[0], GoudaPath)
+    assert isinstance(globbed[0], gouda.GoudaPath)
 
     globbed = test_dir.parent_dir().glob('**/*.txt', recursive=True)
     assert test_dir('check_file.txt').path in globbed
@@ -170,7 +169,7 @@ def test_relation():
     assert setitem_tester[-2] == test_dir.basename()
     setitem_tester2 = setitem_tester.replace('null', 'blank')
     assert setitem_tester2[-1] == 'blank_file.txt'
-    setitem_tester3 = GoudaPath('just/a/test', use_absolute=False)
+    setitem_tester3 = gouda.GoudaPath('just/a/test', use_absolute=False)
     setitem_tester3[0] = 'maybe'
     assert setitem_tester3[0] == 'maybe'
     assert setitem_tester3[1] == 'a'
@@ -182,7 +181,7 @@ def test_relation():
 
 
 def test_get_images_num_children():
-    test_dir = GoudaPath('ScratchFiles/goudapath_imagetest_directory')
+    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_imagetest_directory')
     gouda.ensure_dir(test_dir)
     gouda.ensure_dir(test_dir / 'check_dir1')
     gouda.ensure_dir(test_dir / 'check_dir2')
