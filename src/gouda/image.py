@@ -1,4 +1,5 @@
 """Methods/Shortcuts for modifying and handling image data."""
+import os
 import warnings
 
 import cv2
@@ -29,6 +30,8 @@ def imread(path, flag=RGB):
     """
     if isinstance(path, GoudaPath):
         path = path.path
+    if not os.path.exists(path):
+        raise ValueError("No file found at path '{}'".format(path))
     if flag == GRAYSCALE:
         return cv2.imread(path, 0)
     elif flag == RGB:
@@ -162,7 +165,7 @@ def split_signs(mask):
     return new_mask
 
 
-def add_overlay(image, mask, label_channel=0, separate_signs=False):
+def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5):
     """Return image with a mask overlay.
 
     Parameters
@@ -178,7 +181,8 @@ def add_overlay(image, mask, label_channel=0, separate_signs=False):
     """
     output = np.squeeze(image)
     mask = np.squeeze(mask)
-
+    if mask.dtype == 'bool':
+        mask = mask.astype(np.float32)
     if mask.shape[:2] != image.shape[:2]:
         raise ValueError('Mask width/height does not match image width/height: {} != {}'.format(mask.shape[:2], image.shape[:2]))
     if mask.ndim == 2:
@@ -196,7 +200,7 @@ def add_overlay(image, mask, label_channel=0, separate_signs=False):
     if output.ndim == 2:
         output = np.dstack([output, output, output])
 
-    overlay = cv2.addWeighted(output, 0.5, mask, 0.5, 0)
+    overlay = cv2.addWeighted(output, 1 - opacity, mask, opacity, 0)
     output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
     return output
 
@@ -406,7 +410,7 @@ def padded_resize(image, size=[960, 540], allow_rotate=True, interpolation=cv2.I
     allow_rotate: bool
         Whether the image can be rotated to minimize required padding or if orientation should be preserved
     interpolation: int
-        The interpolation function to use when resizing the image
+        The interpolation function to use when resizing the image (the default is cv2.INTER_LINEAR)
 
     Notes
     -----

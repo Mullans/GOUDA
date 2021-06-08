@@ -159,6 +159,29 @@ def rescale(data, new_min=0, new_max=1, axis=None):
     return (x * new_range) + new_min
 
 
+def clip(data, output_min=0, output_max=1, input_min=0, input_max=255):
+    """Clip an array to a given range, then rescale the clipped array from the input range to the output range.
+
+    Parameters
+    ----------
+    image : numpy.ndarray
+        The data to rescale
+    output_min : int | float | np.number
+        The minimum value for the output data (the default is 0)
+    output_max : int | float | np.number
+        The maximum value for the output data (the default is 1)
+    input_min : int | float | np.number
+        The minimum value for the input data range (the default is 0)
+    input_max : int | float | np.number
+        The maximum value for the input data range (the default is 255)
+    """
+    # TODO - Add tests for this
+    data = np.clip(data, input_min, input_max)
+    scaler = (output_max - output_min) / (input_max - input_min)
+    bias = (input_min * output_min) / (input_max - input_min) - (input_min * output_max) / (input_max - input_min) + output_min
+    return data * scaler + bias
+
+
 def sigmoid(x):
     """Return the sigmoid of the given value/array."""
     return 1.0 / (1.0 + np.exp(-x) + 1e-7)
