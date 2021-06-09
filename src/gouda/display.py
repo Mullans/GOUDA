@@ -1,10 +1,36 @@
 """Convenience methods to display images using matplotlib.pyplot."""
+import inspect
 import matplotlib.pyplot as plt
 import numpy as np
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
+
+
+def _extract_method_kwargs(kwargs, method, remove=True):
+    """Internal method to extract keyword arguments related to a given method.
+
+    Parameters
+    ----------
+    kwargs : dict
+        A dictionary of keyword arguments
+    method : func
+        A function with keyword arguments
+    remove : bool
+        Whether to remove the extracted keyword arguments from the original dict (the default is True)
+    """
+    method_params = inspect.signature(method).parameters
+    method_kwargs = {}
+    to_remove = []
+    for key in kwargs:
+        if key in method_params:
+            method_kwargs[key] = kwargs[key]
+            to_remove.append(key)
+    if remove:
+        for key in to_remove:
+            del kwargs[key]
+    return method_kwargs
 
 
 def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shape=False, **kwargs):
@@ -22,8 +48,10 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
         Whether to show the grid or not (the default is True)
     return_grid_shape : bool
         Whether to return the (height, width) of the grid or not
+    image_kwargs : dict
+        Keyword arguments to be used for each matplotlib.pyplot.imshow call.
     **kwargs : dict
-        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust` can be passed for use in the grid
+        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust` can be passed for use in the grid. Parameters for :meth:`matplotlib.pyplot.imshow` will be used as defaults for all images in the grid, but will be replaced by any image-specific arguments (pass image as dict).
 
     Note
     ----
@@ -40,6 +68,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     for item in defaults:
         if item not in kwargs:
             kwargs[item] = None
+    image_kwargs = _extract_method_kwargs(kwargs, plt.imshow)
 
     if len(images) == 1:
         images = images[0]
@@ -101,14 +130,17 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
             if isinstance(image, dict):
                 image_dict = image
                 image = np.squeeze(image_dict['image'])
+                del image_dict['image']
+                for key in image_kwargs:
+                    if key not in image_dict:
+                        image_dict[key] = image_kwargs[key]
+                imshow_kwargs = _extract_method_kwargs(image_dict, plt.imshow)
                 if image.ndim == 2:
-                    if 'cmap' in image_dict:
-                        cmap = image_dict['cmap']
-                    else:
-                        cmap = 'bone'
-                    plt.imshow(image, cmap=cmap)
+                    if 'cmap' not in image_dict:
+                        image_dict['cmap'] = 'bone'
+                    plt.imshow(image, **imshow_kwargs)
                 else:
-                    plt.imshow(image)
+                    plt.imshow(image, **imshow_kwargs)
                 if 'title' in image_dict:
                     ax.set_title(image_dict['title'])
                 if 'xlabel' in image_dict:
@@ -117,7 +149,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
                     ax.set_ylabel(image_dict['ylabel'])
             else:
                 image = np.squeeze(image)
-                plt.imshow(image)
+                plt.imshow(image, **image_kwargs)
             ax.set_axis_off()
             ax.xaxis.set_major_locator(plt.NullLocator())
             ax.yaxis.set_major_locator(plt.NullLocator())
