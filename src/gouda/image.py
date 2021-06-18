@@ -498,12 +498,6 @@ def add_mask(image, mask, color='red', opacity=0.5):
     """
     if isinstance(image, list):
         return [add_mask(item, mask, color=color, opacity=opacity) for item in image]
-    if isinstance(image.flat[0], np.integer):
-        scaler = np.iinfo(image.dtype).max
-    elif isinstance(image.flat[0], np.floating):
-        scaler = 1
-    else:
-        scaler = np.max(image)  # pragma: no cover
     if opacity < 0.0 or opacity > 1.0:
         raise ValueError('opacity must be between 0.0 and 1.0')
     image = np.squeeze(image).copy()
@@ -514,6 +508,12 @@ def add_mask(image, mask, color='red', opacity=0.5):
         raise ValueError("image and outline must have the same height and width")
     if image.ndim == 2:
         image = np.dstack([image] * 3)
+    if isinstance(image.flat[0], np.integer):
+        scaler = np.iinfo(image.dtype).max
+    elif isinstance(image.flat[0], np.floating):
+        scaler = 1
+    else:
+        scaler = np.max(image)  # pragma: no cover
     color = matplotlib.colors.to_rgb(color)
     if mask.dtype != bool:
         mask = mask > 0.5
