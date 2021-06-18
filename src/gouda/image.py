@@ -487,3 +487,31 @@ def polar_to_cartesian(image, output_shape=None):
 
     output = cv2.remap(image, newx, newy, cv2.INTER_LINEAR)
     return output
+
+
+def get_mask_border(mask, inside_border=True, border_thickness=2, kernel='ellipse'):
+    """Get the border of a boolean mask.
+
+    mask: np.ndarray
+        The mask to get the border from
+    inside_border: bool
+        If true, uses pixels inside the mask as the border, otherwise uses pixels outside the mask (the default is true)
+    border_thickness: int
+        The thickness of the border in pixels (the default is 2)
+    kernel: str | cv2.MorphShapes enum
+        The kernel shape to use for the morphological operation (the default is 'elipse')
+
+    NOTE
+    ----
+    kernel options are ['rect', 'cross', 'ellipse'] or any cv2.MorphShapes enum
+    """
+    if isinstance(kernel, str):
+        kernel = {'rect': cv2.MORPH_RECT, 'cross': cv2.MORPH_CROSS, 'ellipse': cv2.MORPH_ELLIPSE}[kernel]
+    mask_type = mask.dtype
+    mask = mask.astype(np.float32)
+    element = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (border_thickness*2 + 1, border_thickness*2 + 1))
+    if inside_border:
+        border = (mask - cv2.erode(mask, element)).astype(mask_type)
+    else:
+        border = (cv2.dilate(mask, element) - mask).astype(mask_type)
+    return border

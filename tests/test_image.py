@@ -403,3 +403,29 @@ def test_polar_to_cartesian():
     assert (y[0, 0] == z[0, 0]).all()
     assert(y[50, 0] == z[100, 0]).all()
     assert(y[100, 0] == z[200, 0]).all()
+
+
+def test_get_mask_border():
+    x = np.zeros([500, 500], dtype=bool)
+    x[200:300, 200:300] = 1
+    border = image.get_mask_border(x, inside_border=True, border_thickness=2)
+    assert border.dtype == bool
+    expected = np.zeros([500, 500], dtype=bool)
+    expected[200:202, 200:300] = 1
+    expected[298:300, 200:300] = 1
+    expected[200:300, 200:202] = 1
+    expected[200:300, 298:300] = 1
+    np.testing.assert_array_equal(border, expected)
+
+    x = np.zeros([500, 500], dtype=bool)
+    x[200:300, 200:300] = 1
+    border = image.get_mask_border(x, inside_border=False, border_thickness=2)
+    assert border.dtype == bool
+    expected = np.zeros([500, 500], dtype=bool)
+    expected[198, 200:300] = 1
+    expected[199, 198:302] = 1
+    expected[300, 198:302] = 1
+    expected[301, 200:300] = 1
+    expected[199:301, 198:200] = 1
+    expected[199:301, 300:302] = 1
+    np.testing.assert_array_equal(border, expected)
