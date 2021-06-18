@@ -281,3 +281,25 @@ def test_accuracy_curve():
     np.testing.assert_array_equal(thresh, pred)
     counts = np.array([5, 4, 3, 2, 1, 1, 2, 3, 4, 5])
     np.testing.assert_array_equal(acc, counts / 10)
+
+
+def test_clip():
+    x = np.arange(300)
+    result = gouda.clip(x, output_min=0, output_max=1, input_min=0, input_max=255)
+    assert result.min() == 0
+    assert result.max() == 1
+    assert (result == 1).sum() == 45
+    assert (result == 0).sum() == 1
+    np.testing.assert_array_almost_equal(result[:256], np.linspace(0, 1, num=256))
+
+    result = gouda.clip(x, output_min=0, output_max=1, input_min=0, input_max=300)
+    np.testing.assert_array_almost_equal(result, x / 300.0, decimal=8)
+
+    result = gouda.clip(x, output_min=1, output_max=2, input_min=0, input_max=299)
+    np.testing.assert_array_almost_equal(result, (x / 299) + 1)
+    assert result.min() == 1
+
+    result = gouda.clip(x, output_min=1, output_max=2, input_min=0, input_max=500)
+    np.testing.assert_almost_equal(result, x / 500 + 1)
+    assert result.min() == 1
+    np.testing.assert_almost_equal(result.max(), 299 / 500 + 1)
