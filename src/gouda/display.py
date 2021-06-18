@@ -223,3 +223,45 @@ def print_image(image, figsize=(8, 6.5), toFile=None, show=True, allow_interpola
     if show:  # pragma: no cover
         # Check manually
         plt.show()
+
+
+def squarify(image, axis=0, as_array=False):
+    """Reshape a list/array of images into nested elements with the same numbers of rows and columns.
+
+    Parameters
+    ----------
+    image: list | numpy.ndarray
+        The list/array of images to reshape
+    axis: int
+        If the image is an array, the axis to split it along (the default is 0)
+    as_array: bool
+        Whether to convert the result into an array with rows and columns as the first two axes (the default is False)
+
+    NOTE
+    ----
+    If there are not a square number of images, then the last row will have None values as placeholders. If as_array is True, these will be zeros instead.
+    If as_array is True, this assumes that all images have the same shape.
+    """
+    if isinstance(image, list):
+        num_images = len(image)
+        images = [np.squeeze(item) for item in image]
+    else:
+        images = np.split(image, image.shape[axis], axis=axis)
+        num_images = image.shape[axis]
+    num_rows = int(np.ceil(np.sqrt(num_images)))
+    outer_list = []
+    for i in range(0, num_images, num_rows):
+        inner_list = []
+        for j in range(0, num_rows):
+            if i + j >= num_images:
+                if as_array:
+                    inner_list.append(np.zeros_like(images[0]))
+                else:
+                    inner_list.append(None)
+            else:
+                inner_list.append(images[i + j])
+        outer_list.append(inner_list)
+    if as_array:
+        rows = [np.stack(inner_list, axis=0) for inner_list in outer_list]
+        outer_list = np.stack(rows, axis=0)
+    return outer_list
