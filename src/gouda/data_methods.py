@@ -343,11 +343,10 @@ def spec_at_sens(expected, predicted, sensitivities=[0.95]):
 
 def get_confusion_stats(label, pred, threshold=0.5):
     """Get the true positive, false positive, true negative, and false negative values for the given data"""
-    if not isinstance(label, np.ndarray):
-        label = np.array(label)
-    if not isinstance(pred, np.ndarray):
-        pred = np.array(pred)
-    label_bool = label.astype(np.bool)
+    label = np.squeeze(label)
+    pred = np.squeeze(pred)
+
+    label_bool = label.astype(bool)
     pred_bool = pred >= threshold
     true_pos = np.logical_and(label_bool, pred_bool).sum()
     true_neg = np.logical_and(~label_bool, ~pred_bool).sum()
