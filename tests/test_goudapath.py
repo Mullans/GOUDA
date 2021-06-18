@@ -119,6 +119,7 @@ def test_relation():
     assert test_dir('check_dir1').parent_dir().path == test_dir.path
     assert not test_dir('doesntexist').exists()
     assert test_dir('check_file.txt').extension() == '.txt'
+    assert test_dir('check_subdir').extension() == ''
 
     children = test_dir.children(dirs_only=True, files_only=False, basenames=False)
     assert len(children) == 2
