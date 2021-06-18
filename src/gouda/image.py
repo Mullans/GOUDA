@@ -3,6 +3,7 @@ import os
 import warnings
 
 import cv2
+import matplotlib
 import numpy as np
 
 from .goudapath import GoudaPath
@@ -159,50 +160,10 @@ def split_signs(mask):
     mask = np.squeeze(mask)
     if mask.ndim != 2:
         raise ValueError("Single channel mask required for split_signs")
-    negative = np.clip(mask, -np.inf, 0) * -1
+    negative = -np.clip(mask, -np.inf, 0)
     positive = np.clip(mask, 0, np.inf)
     new_mask = np.dstack([negative, positive, np.zeros_like(positive)])
     return new_mask
-
-
-def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5):
-    """Return image with a mask overlay.
-
-    Parameters
-    ----------
-        image: numpy.ndarray
-            Image array with shape (x, y, channels)
-        mask: numpy.ndarray
-            np array with shape (x, y) and range [0, 1]
-        label_channel : int
-            The color channel to use for the overlay if separate_signs is False (the default is 0)
-        separate_signs : bool
-            Whether to separate +/- values of the mask into green/red channels
-    """
-    output = np.squeeze(image)
-    mask = np.squeeze(mask)
-    if mask.dtype == 'bool':
-        mask = mask.astype(np.float32)
-    if mask.shape[:2] != image.shape[:2]:
-        raise ValueError('Mask width/height does not match image width/height: {} != {}'.format(mask.shape[:2], image.shape[:2]))
-    if mask.ndim == 2:
-        if separate_signs:
-            mask = split_signs(mask)
-        else:
-            mask = stack_label(mask, label_channel, as_uint8=False)
-    elif mask.ndim == 3 and mask.shape[2] == 3:
-        pass
-    else:
-        raise ValueError("Mask must have shape [x, y] or [x, y, z], not {}".format(mask.shape))
-    if image.dtype == np.uint8:
-        mask = to_uint8(mask)
-
-    if output.ndim == 2:
-        output = np.dstack([output, output, output])
-
-    overlay = cv2.addWeighted(output, 1 - opacity, mask, opacity, 0)
-    output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
-    return output
 
 
 def masked_lineup(image, label):
@@ -509,9 +470,97 @@ def get_mask_border(mask, inside_border=True, border_thickness=2, kernel='ellips
         kernel = {'rect': cv2.MORPH_RECT, 'cross': cv2.MORPH_CROSS, 'ellipse': cv2.MORPH_ELLIPSE}[kernel]
     mask_type = mask.dtype
     mask = mask.astype(np.float32)
-    element = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (border_thickness*2 + 1, border_thickness*2 + 1))
+    element = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (border_thickness * 2 + 1, border_thickness * 2 + 1))
     if inside_border:
         border = (mask - cv2.erode(mask, element)).astype(mask_type)
     else:
         border = (cv2.dilate(mask, element) - mask).astype(mask_type)
     return border
+
+
+def add_mask(image, mask, color='red', opacity=0.5):
+    """Add a binary outline/mask over a given image.
+
+    Parameters
+    ----------
+    image: numpy.ndarray | list
+        The image(s) to add the outline to
+    mask: numpy.ndarray
+        A binary mask to overlay on the image(s)
+    color: str
+        A matplotlib color to use for the overlay (the default is 'red')
+    opacity: float
+        The opacity to use when overlaying the mask (the default is 0.5)
+
+    NOTE
+    ----
+    The colors use a maximum value of 1.0 for floating type images, the maximum for the given integer type for integer type images, and the maximum present value for any other types.
+    """
+    if isinstance(image, list):
+        return [add_mask(item, mask, color=color, opacity=opacity) for item in image]
+    if isinstance(image.flat[0], np.integer):
+        scaler = np.iinfo(image.dtype).max
+    elif isinstance(image.flat[0], np.floating):
+        scaler = 1
+    else:
+        scaler = np.max(image)  # pragma: no cover
+    if opacity < 0.0 or opacity > 1.0:
+        raise ValueError('opacity must be between 0.0 and 1.0')
+    image = np.squeeze(image).copy()
+    mask = np.squeeze(mask)
+    if mask.ndim != 2:
+        raise ValueError('Only 2-dimensional binary masks can be used')
+    if image.shape[:2] != mask.shape[:2]:
+        raise ValueError("image and outline must have the same height and width")
+    if image.ndim == 2:
+        image = np.dstack([image] * 3)
+    color = matplotlib.colors.to_rgb(color)
+    if mask.dtype != bool:
+        mask = mask > 0.5
+    scaler = scaler * opacity
+    bias = image[mask] * (1 - opacity)
+    image[:, :, 0][mask] = color[0] * scaler + bias[:, 0]
+    image[:, :, 1][mask] = color[1] * scaler + bias[:, 1]
+    image[:, :, 2][mask] = color[2] * scaler + bias[:, 2]
+    return image
+
+
+def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5):
+    """Return image with a mask overlay.
+
+    Parameters
+    ----------
+        image: numpy.ndarray
+            Image array with shape (x, y, channels)
+        mask: numpy.ndarray
+            np array with shape (x, y) and range [0, 1]
+        label_channel : int
+            The color channel to use for the overlay if separate_signs is False (the default is 0)
+        separate_signs : bool
+            Whether to separate +/- values of the mask into green/red channels
+    """
+    warnings.warn('add_overlay has been deprecated, use add_mask instead', DeprecationWarning)
+    output = np.squeeze(image)
+    mask = np.squeeze(mask)
+    if mask.dtype == 'bool':
+        mask = mask.astype(np.float32)
+    if mask.shape[:2] != image.shape[:2]:
+        raise ValueError('Mask width/height does not match image width/height: {} != {}'.format(mask.shape[:2], image.shape[:2]))
+    if mask.ndim == 2:
+        if separate_signs:
+            mask = split_signs(mask)
+        else:
+            mask = stack_label(mask, label_channel, as_uint8=False)
+    elif mask.ndim == 3 and mask.shape[2] == 3:
+        pass
+    else:
+        raise ValueError("Mask must have shape [x, y] or [x, y, z], not {}".format(mask.shape))
+    if image.dtype == np.uint8:
+        mask = to_uint8(mask)
+
+    if output.ndim == 2:
+        output = np.dstack([output, output, output])
+
+    overlay = cv2.addWeighted(output, 1 - opacity, mask, opacity, 0)
+    output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
+    return output
