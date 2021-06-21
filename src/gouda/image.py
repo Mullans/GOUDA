@@ -512,6 +512,9 @@ def add_mask(image, mask, color='red', opacity=0.5):
         scaler = np.iinfo(image.dtype).max
     elif isinstance(image.flat[0], np.floating):
         scaler = 1
+    elif isinstance(image.flat[0], (np.bool_, bool)):
+        image = image.astype(np.float32)
+        scaler = 1
     else:
         scaler = np.max(image)  # pragma: no cover
     color = matplotlib.colors.to_rgb(color)
