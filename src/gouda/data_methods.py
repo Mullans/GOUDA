@@ -358,13 +358,19 @@ def get_confusion_stats(label, pred, threshold=0.5):
 def dice_coef(label, pred, threshold=0.5):
     """Get the Sorenson Dice Coefficient for the given data"""
     tp, fp, tn, fn = get_confusion_stats(label, pred, threshold)
-    return (tp * 2) / (tp * 2 + fp + fn)
+    denom = tp * 2 + fp + fn
+    if denom == 0:
+        return 0
+    return (tp * 2) / denom
 
 
 def jaccard_coef(label, pred, threshold=0.5):
     """Get the Jaccard Coefficient for the given data"""
     tp, fp, tn, fn = get_confusion_stats(label, pred, threshold)
-    return tp / (tp + fn + fp)
+    denom = tp + fn + fp
+    if denom == 0:
+        return 0
+    return tp / denom
 
 
 def value_crossing(array, threshold=0, positive_crossing=True, negative_crossing=True, return_indices=False):
