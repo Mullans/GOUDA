@@ -244,10 +244,10 @@ def squarify(image, axis=0, as_array=False):
     """
     if isinstance(image, list):
         num_images = len(image)
-        images = [np.squeeze(item) for item in image]
+        images = [item for item in image]
     else:
         images = np.split(image, image.shape[axis], axis=axis)
-        images = [np.squeeze(item) for item in images]
+        images = [item for item in images]
         num_images = image.shape[axis]
     num_rows = int(np.ceil(np.sqrt(num_images)))
     outer_list = []

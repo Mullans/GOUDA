@@ -495,6 +495,7 @@ def add_mask(image, mask, color='red', opacity=0.5):
     NOTE
     ----
     The colors use a maximum value of 1.0 for floating type images, the maximum for the given integer type for integer type images, and the maximum present value for any other types.
+    Boolean images will be converted to float32 images with values of 0.0 and 1.0
     """
     if isinstance(image, list):
         return [add_mask(item, mask, color=color, opacity=opacity) for item in image]

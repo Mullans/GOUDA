@@ -225,6 +225,15 @@ def roc_curve(label, pred, as_rates=True):
         The predicted values
     as_rate : bool
         Whether to return true/false positive rates or scores (the default is True)
+
+    Returns
+    -------
+    fps : numpy.ndarray
+        The false positive rates/scores
+    tps : numpy.ndarray
+        The true positive rates/scores
+    thresh : numpy.ndarray
+        The thresholds for each fps/tps
     """
     if not isinstance(label, np.ndarray):
         label = np.array(label)
