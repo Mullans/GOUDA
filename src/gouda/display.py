@@ -130,17 +130,11 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
             if isinstance(image, dict):
                 image_dict = image
                 image = np.squeeze(image_dict['image'])
-                del image_dict['image']
                 for key in image_kwargs:
                     if key not in image_dict:
                         image_dict[key] = image_kwargs[key]
                 imshow_kwargs = _extract_method_kwargs(image_dict, plt.imshow)
-                if image.ndim == 2:
-                    if 'cmap' not in image_dict:
-                        image_dict['cmap'] = 'bone'
-                    plt.imshow(image, **imshow_kwargs)
-                else:
-                    plt.imshow(image, **imshow_kwargs)
+                plt.imshow(image, **imshow_kwargs)
                 if 'title' in image_dict:
                     ax.set_title(image_dict['title'])
                 if 'xlabel' in image_dict:
