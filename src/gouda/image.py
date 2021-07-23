@@ -491,6 +491,8 @@ def add_mask(image, mask, color='red', opacity=0.5):
         A matplotlib color to use for the overlay (the default is 'red')
     opacity: float
         The opacity to use when overlaying the mask (the default is 0.5)
+    mask_threshold: float
+        The threshold to use if a non-boolean mask is used
 
     NOTE
     ----
@@ -520,7 +522,7 @@ def add_mask(image, mask, color='red', opacity=0.5):
         scaler = np.max(image)  # pragma: no cover
     color = matplotlib.colors.to_rgb(color)
     if mask.dtype != bool:
-        mask = mask > 0.5
+        mask = mask > mask_threshold
     scaler = scaler * opacity
     bias = image[mask] * (1 - opacity)
     image[:, :, 0][mask] = color[0] * scaler + bias[:, 0]
