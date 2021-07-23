@@ -157,6 +157,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     if show:  # pragma: no cover
         # Check manually
         plt.show()
+    else:
+        plt.close(fig)
     if return_grid_shape:
         return rows, cols
 
