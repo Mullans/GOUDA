@@ -151,10 +151,11 @@ def prime_overlap(x, y):
 
 def rescale(data, new_min=0, new_max=1, axis=None):
     """Rescales data to have range [new_min, new_max] along axis or axes indicated."""
+    data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
         data = data.astype(np.float)
-    data_range = data.max(axis=axis, keepdims=True) - data.min(axis=axis, keepdims=True)
-    x = np.divide(data - data.min(axis=axis, keepdims=True), data_range, where=data_range > 0, out=np.zeros_like(data))
+    data_range = np.max(data, axis=axis, keepdims=True) - np.min(data, axis=axis, keepdims=True)
+    x = np.divide(data - np.min(data, axis=axis, keepdims=True), data_range, where=data_range > 0, out=np.zeros_like(data))
     new_range = new_max - new_min
     return (x * new_range) + new_min
 
@@ -197,6 +198,7 @@ def softmax(x, axis=None):
     axis : int | list of ints
         The axis or axes to apply softmax across
     """
+    x = np.asarray(x)
     if np.issubdtype(x.dtype, np.integer):
         x = x.astype(np.float)
     s = np.max(x, axis=axis, keepdims=True)
@@ -207,10 +209,11 @@ def softmax(x, axis=None):
 
 def normalize(data, axis=None):
     """Return data normalized to have zero mean and unit variance along axis or axes indicated."""
+    data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
         data = data.astype(np.float)
-    mean = data.mean(axis=axis, keepdims=True)
-    stddev = data.std(axis=axis, keepdims=True)
+    mean = np.mean(data, axis=axis, keepdims=True)
+    stddev = np.std(data, axis=axis, keepdims=True)
     return np.divide(data - mean, stddev, where=stddev != 0, out=np.zeros_like(data))
 
 

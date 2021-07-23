@@ -116,6 +116,15 @@ def load_json(filename):
     return data
 
 
+def is_jsonable(data):
+    """Check to see if data is JSON serializable"""
+    try:
+        json.dumps(data)
+        return True
+    except (TypeError, OverflowError):
+        return False
+
+
 def save_json(data, filename, embed_arrays=True, compressed=False):
     """Save a list/dict/numpy.ndarray as a JSON file.
 
