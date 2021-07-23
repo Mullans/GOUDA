@@ -478,7 +478,7 @@ def get_mask_border(mask, inside_border=True, border_thickness=2, kernel='ellips
     return border
 
 
-def add_mask(image, mask, color='red', opacity=0.5):
+def add_mask(image, mask, color='red', opacity=0.5, mask_threshold=0.5):
     """Add a binary outline/mask over a given image.
 
     Parameters
