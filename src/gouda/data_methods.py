@@ -242,6 +242,8 @@ def roc_curve(label, pred, as_rates=True):
         label = np.array(label)
     if not isinstance(pred, np.ndarray):
         pred = np.array(pred)
+    label = np.ravel(label)
+    pred = np.ravel(pred)
     desc_score_indices = np.argsort(pred, kind='mergesort')[::-1]
     y_score = pred[desc_score_indices]
     y_true = label[desc_score_indices]

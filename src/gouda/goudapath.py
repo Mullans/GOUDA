@@ -94,6 +94,7 @@ class GoudaPath(os.PathLike):
         split_path = self.__path.split(os.path.sep)
         if len(split_path[0]) == 0:
             split_path = split_path[1:]
+            split_path[0] = os.path.sep + split_path[0]
         if isinstance(index, slice):
             return os.path.join(*split_path[index])
         return split_path[index]
@@ -103,6 +104,7 @@ class GoudaPath(os.PathLike):
         split_path = self.__path.split(os.path.sep)
         if len(split_path[0]) == 0:
             split_path = split_path[1:]
+            split_path[0] = os.path.sep + split_path[0]
         split_path[index] = value
         self.__path = os.path.join(*split_path)
 
