@@ -4,6 +4,8 @@ import imghdr
 import os
 import re
 
+from .data_methods import ensure_dir
+
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -12,7 +14,7 @@ __license__ = "mit"
 
 class GoudaPath(os.PathLike):
     """Note: requires python 3.6+"""
-    def __init__(self, *path, use_absolute=True):
+    def __init__(self, *path, use_absolute=True, ensure=False):
         """PathLike class for easier file traversal
 
         Parameters
@@ -34,6 +36,9 @@ class GoudaPath(os.PathLike):
             self.__path = os.path.abspath(path)
         else:
             self.__path = path
+
+        if self.is_dir() and ensure:
+            ensure_dir(self.path)
 
     def __call__(self, *path_args, use_absolute=None):
         """Add to the current path.
