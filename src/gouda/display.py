@@ -242,9 +242,14 @@ def squarify(image, axis=0, as_array=False):
         num_images = len(image)
         images = [item for item in image]
     else:
-        images = np.split(image, image.shape[axis], axis=axis)
-        images = [item for item in images]
+        # images = np.split(image, image.shape[axis], axis=axis)
+        # images = [item for item in images]
+        images = []
+        axis_slice = [slice(None) for _ in range(image.ndim)]
         num_images = image.shape[axis]
+        for idx in range(num_images):
+            axis_slice[axis] = idx
+            images.append(image[tuple(axis_slice)])
     num_rows = int(np.ceil(np.sqrt(num_images)))
     outer_list = []
     for i in range(0, num_images, num_rows):

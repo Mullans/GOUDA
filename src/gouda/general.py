@@ -13,7 +13,7 @@ def getattr_recursive(item, attr_string):
 
     Note
     ----
-    An example would be a module with submodules: `getattr_recursive(os, 'path.basename')` would return os.path.basename
+    An example would be a module with submodules: `getattr_recursive(os, 'path.basename')` would return os.path.basenamed
     """
     nested_type = type(item).__name__
     cur_item = item
