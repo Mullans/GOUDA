@@ -12,8 +12,8 @@ import gouda
 
 
 def test_ensure_dir():
-    test_dir = gouda.ensure_dir("ScratchFiles/test_dir")
-    test_dir2 = gouda.GoudaPath("ScratchFiles/test_dir", use_absolute=False, ensure_dir=True)
+    test_dir = gouda.GoudaPath("ScratchFiles/test_dir", use_absolute=False, ensure_dir=True)
+    test_dir2 = gouda.ensure_dir("ScratchFiles/test_dir")
     assert test_dir == str(test_dir2)
     assert os.path.isdir("ScratchFiles/test_dir")
     assert test_dir == "ScratchFiles/test_dir"

@@ -129,8 +129,8 @@ class GoudaPath(os.PathLike):
         return os.fspath(os.path.abspath(self.__path))
 
     def ensure_dir(self):
-        if not self.is_dir():
-            ensure_dir(self.parent_dir)
+        if '.' not in os.path.basename(self.path):
+            ensure_dir(self.parent_dir())
         else:
             ensure_dir(self.path)
 
