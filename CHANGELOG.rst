@@ -32,3 +32,7 @@ Version 0.3
 - Add dict_flip to reverse dictionary key/value pairs
 - Updated print_grid and added single print_image
 - Add BinaryConfusionMatrix
+
+Version 0.6
+===========
+- add ensure to GoudaPath

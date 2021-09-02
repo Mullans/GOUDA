@@ -3,6 +3,7 @@ import glob
 import imghdr
 import os
 import re
+import warnings
 
 from .data_methods import ensure_dir
 
@@ -37,8 +38,8 @@ class GoudaPath(os.PathLike):
         else:
             self.__path = path
 
-        if self.is_dir() and ensure:
-            ensure_dir(self.path)
+        if ensure:
+            self.ensure_dir()
 
     def __call__(self, *path_args, use_absolute=None):
         """Add to the current path.
@@ -127,6 +128,12 @@ class GoudaPath(os.PathLike):
     def __fspath__(self):
         """Note: fspath is always absolute path"""
         return os.fspath(os.path.abspath(self.__path))
+
+    def ensure_dir(self):
+        if not self.is_dir():
+            ensure_dir(self.parent_dir)
+        else:
+            ensure_dir(self.path)
 
     def glob(self, pattern, as_gouda=False, basenames=False, recursive=False, sort=False):
         """Make a glob call starting from the current path.
