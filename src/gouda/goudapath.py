@@ -3,7 +3,6 @@ import glob
 import imghdr
 import os
 import re
-import warnings
 
 from .data_methods import ensure_dir
 
