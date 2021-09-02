@@ -8,7 +8,6 @@ import warnings
 
 import numpy as np
 
-from .goudapath import GoudaPath
 from .data_methods import num_digits
 
 __author__ = "Sean Mullan"
@@ -32,25 +31,19 @@ def ensure_dir(*paths):
     """
     full_path = ''
     for path in paths:
-        if isinstance(path, GoudaPath):
-            full_path = os.path.join(full_path, path.path)
-        else:
-            full_path = os.path.join(full_path, path)
+        full_path = os.path.join(full_path, str(path))
         if os.path.exists(full_path) and os.path.isdir(full_path):
             continue
         elif os.path.exists(full_path):
             raise ValueError("A file without an extension is blocking directory creation at {}".format(full_path))
         else:
             os.makedirs(full_path, exist_ok=True)
-    if isinstance(paths[0], GoudaPath):
-        return GoudaPath(full_path, use_absolute=paths[0].use_absolute)
     return full_path
 
 
 def next_filename(filename):
     """Check if a given file exists, and return a new filename for a numbered copy if it does."""
-    if isinstance(filename, GoudaPath):
-        filename = filename.path
+    filename = str(filename)
     if os.path.isfile(filename):
         base, extension = filename.rsplit('.', 1)
         i = 2
@@ -201,13 +194,11 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
 
 def is_image(path):
     """Check if the path is an image file"""
-    if isinstance(path, GoudaPath):
-        return path.is_image()
-    else:
-        try:
-            return imghdr.what(path) is not None
-        except IsADirectoryError:
-            return False
+    path = str(path)
+    try:
+        return imghdr.what(path) is not None
+    except IsADirectoryError:
+        return False
 
 
 def basicname(path):
@@ -246,8 +237,7 @@ def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
         else:
             return -1
 
-    if isinstance(pattern, GoudaPath):
-        pattern = pattern.path
+    pattern = str(pattern)
     files = glob.glob(pattern)
     max_num = -1
     for item in files:
