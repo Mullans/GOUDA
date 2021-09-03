@@ -14,12 +14,13 @@ import gouda
 def test_ensure_dir():
     test_dir = gouda.GoudaPath("ScratchFiles/test_dir", use_absolute=False, ensure_dir=True)
     test_dir2 = gouda.ensure_dir("ScratchFiles/test_dir")
-    assert test_dir == str(test_dir2)
+    assert str(test_dir) == str(test_dir2)
     assert os.path.isdir("ScratchFiles/test_dir")
-    assert test_dir == "ScratchFiles/test_dir"
+    assert test_dir.path == "ScratchFiles/test_dir"
 
     test_dir_path = gouda.ensure_dir("ScratchFiles/test_dir", "check1")
-    assert test_dir_path == os.path.join(test_dir, "check1")
+    # Have to use test_dir.path. os.path.join uses the __fspath__, which is always absolute
+    assert test_dir_path == os.path.join(test_dir.path, "check1")
     assert os.path.isdir(test_dir_path)
 
     pathlib.Path(os.path.join(test_dir_path, 'check2')).touch()
