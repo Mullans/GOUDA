@@ -183,9 +183,14 @@ def clip(data, output_min=0, output_max=1, input_min=0, input_max=255):
     return data * scaler + bias
 
 
-def sigmoid(x):
+def sigmoid(x, epsilon=1e-7):
     """Return the sigmoid of the given value/array."""
-    return 1.0 / (1.0 + np.exp(-x) + 1e-7)
+    return (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)
+
+
+def inv_sigmoid(x, epsilon=1e-7):
+    """Return the inverse of the sigmoid function for the given value/array."""
+    return np.log((x + epsilon) / (1 - x + epsilon))
 
 
 def softmax(x, axis=None):

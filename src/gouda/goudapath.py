@@ -125,7 +125,9 @@ class GoudaPath(os.PathLike):
         return value in self.__path
 
     def __fspath__(self):
-        """Note: fspath is always absolute path"""
+        """Note: fspath is always absolute path
+            Should it be?
+        """
         return os.fspath(os.path.abspath(self.__path))
 
     def ensure_dir(self):
@@ -133,6 +135,7 @@ class GoudaPath(os.PathLike):
             ensure_dir(self.parent_dir())
         else:
             ensure_dir(self.path)
+        return self
 
     def glob(self, pattern, as_gouda=False, basenames=False, recursive=False, sort=False):
         """Make a glob call starting from the current path.
