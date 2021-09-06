@@ -250,3 +250,35 @@ def test_strings():
     assert path[-1] == 'test.txt'
     assert path.basename() == 'test.txt'
     assert path.basicname() == 'test'
+
+
+def test_ensure_dir():
+    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_ensuretest_directory')
+    gouda.ensure_dir(test_dir)
+    for check_dir in ['check_dir', 'check_dir2', 'check_dir3', 'check_dir4']:
+        if os.path.exists(f'ScratchFiles/goudapath_ensuretest_directory/{check_dir}'):
+            os.removedirs(f'ScratchFiles/goudapath_ensuretest_directory/{check_dir}')
+
+    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_ensuretest_directory/check_dir')
+    gouda.ensure_dir(test_dir)
+    assert os.path.exists(test_dir)
+    assert test_dir.exists()
+
+    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_ensuretest_directory/check_dir2', ensure_dir=True)
+    assert os.path.exists(test_dir)
+    assert test_dir.exists()
+
+    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_ensuretest_directory/check_dir3')
+    test_dir2 = test_dir.ensure_dir()
+    assert os.path.exists(test_dir)
+    assert test_dir.exists()
+    assert str(test_dir) == str(test_dir2)
+
+    test_file = gouda.GoudaPath('ScratchFiles/goudapath_ensuretest_directory/check_dir4/nothing.txt', ensure_dir=True)
+    assert not os.path.exists(test_file)
+    assert os.path.exists(test_file.parent_dir())
+
+    gouda.ensure_dir(test_dir)
+    for check_dir in ['check_dir', 'check_dir2', 'check_dir3', 'check_dir4']:
+        if os.path.exists(f'ScratchFiles/goudapath_ensuretest_directory/{check_dir}'):
+            os.removedirs(f'ScratchFiles/goudapath_ensuretest_directory/{check_dir}')
