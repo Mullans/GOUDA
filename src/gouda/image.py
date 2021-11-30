@@ -73,7 +73,15 @@ def imwrite(path, image, as_RGB=True):
 
 
 def to_uint8(x):
-    """Convert an image to a uint8 type with range [0, 255] based on inferred normalization type."""
+    """Convert an image to a uint8 type with range [0, 255] based on inferred normalization type.
+
+    NOTES
+    -----
+    input range [0, 255] -> cast to uint8
+    input range [-1, 1] -> x * 127.5 + 127.5 -> cast to uint8
+    input range [0, 1] -> x * 255 -> cast to uint8
+    input range OTHER -> (x - x_min) / (x_max - x_min) -> cast to uint8
+    """
     if x.dtype == np.uint8:
         return x
     if x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
@@ -570,3 +578,41 @@ def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5)
     overlay = cv2.addWeighted(output, 1 - opacity, mask, opacity, 0)
     output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
     return output
+
+
+def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000):
+    """Convert a probability mask into a binary mask using multiple thresholds
+
+    Parameters
+    ----------
+    pred : numpy.ndarray
+        1-3 dimensional array with continuous values
+    lower_thresh : float
+        The minimum threshold for potential foreground values (the default is 0.3)
+    upper_thresh : float
+        The minimum threshold of peak foreground values (the default is 0.75)
+    area_thresh : float
+        The minimum size a peak object needs to be for its base to be considered foreground (the default is 2000)
+
+    NOTE
+    ----
+    Individual peaks and bases are identified by the given thresholds. If a peak object has the minimum area, then the base object that it is a part of is considered to be foreground in the final mask.
+    """
+    #TODO - Add tests
+    #TODO - Optimize skimage.measure.label  -> I think this is in the CT methods
+    import skimage.measure
+    flat_pred = np.squeeze(pred)
+    mask_shape = np.shape(flat_pred)
+
+    peaks = skimage.measure.label(flat_pred > upper_thresh)
+    bases = skimage.measure.label(flat_pred > lower_thresh)
+    indices, counts = np.unique(peaks, return_counts=True)
+    obj_mask = np.zeros(mask_shape, dtype=bool)
+    for idx, count in zip(indices[1:], counts[1:]):
+        if count > area_thresh:
+            obj_mask[peaks == idx] = True
+    final_mask = np.zeros(mask_shape, dtype=bool)
+    for idx in np.unique(bases):
+        if obj_mask[bases == idx].any():
+            final_mask[bases == idx] = 1
+    return final_mask.reshape(pred.shape)
