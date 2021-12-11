@@ -1,12 +1,11 @@
 """General file method and JSON handling"""
 import copy
 import glob
-import json
 import imghdr
+import json
+import numpy as np
 import os
 import warnings
-
-import numpy as np
 
 from .data_methods import num_digits
 
@@ -164,10 +163,12 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
                 out_arrays['array_{}'.format(len(out_arrays))] = _data
         elif 'numpy' in str(type(_data)):
             dtype = str(_data.dtype)
-            if np.issubdtype(_data, np.integer):
+            if np.issubdtype(_data.dtype, np.integer):
                 _data = int(_data)
-            elif np.issubdtype(_data, np.floating):
+            elif np.issubdtype(_data.dtype, np.floating):
                 _data = float(_data)
+            else:
+                raise ValueError('Un-JSON-able dtype {} found'.format(dtype))
             new_data = ['numpy.' + dtype, _data]
         else:
             new_data = copy.copy(_data)
@@ -224,14 +225,14 @@ def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
     -----
     ending_index=True with sep='_' would look like 'filename_1.txt', and ending_index=False would look like '1_filename.txt'
 
-    This method is only useful in the case where you have file_2.txt and file_10.txt where file_10 would be sorted first with other methods because the 1 is at the same inde as the 2.
+    This method is only useful in the case where you have file_2.txt and file_10.txt where file_10 would be sorted first with other methods because the 1 is at the same index as the 2.
     """
     def get_copy_num(x):
         x = basicname(x)
         item = x.rsplit(sep, 1) if ending else x.split(sep, 1)
         if len(item) != 2:
             return -1
-        item = item[int(ending)]
+        item = item[-1 if ending else 0]
         if str.isdigit(item):
             return int(item)
         else:

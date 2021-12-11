@@ -1,10 +1,9 @@
-import json
-import os
-import pathlib
-
 import pytest
 
+import json
 import numpy as np
+import os
+import pathlib
 
 import gouda
 
@@ -59,8 +58,10 @@ def test_get_sorted_filenames():
         for i in range(3):
             with open(gouda.next_filename(src_dir('btest.txt')), 'w'):
                 pass
+        with open(src_dir('btest_extra.txt'), 'w'):
+            pass
     filenames = gouda.get_sorted_filenames(src_dir / '*.txt')
-    assert [gouda.basicname(item) for item in filenames] == ['btest', 'btest_2', 'btest_3', 'test', 'test_2', 'test_3', 'test_4', 'test_5']
+    assert [gouda.basicname(item) for item in filenames] == ['btest', 'btest_2', 'btest_3', 'btest_extra', 'test', 'test_2', 'test_3', 'test_4', 'test_5']
     os.remove(src_dir('test.txt'))
     for i in range(2, 6):
         os.remove(src_dir('test_{}.txt'.format(i)))
@@ -71,12 +72,14 @@ def test_get_sorted_filenames():
 
 def test_save_load_json_dict():
     temp_data = {'a': 1, 'b': 2, 'c': 3}
+    assert gouda.is_jsonable(temp_data)
     gouda.save_json(temp_data, 'ScratchFiles/test.json')
     assert os.path.isfile('ScratchFiles/test.json')
     check_data = gouda.load_json('ScratchFiles/test.json')
     for key in temp_data.keys():
         assert temp_data[key] == check_data[key]
     os.remove('ScratchFiles/test.json')
+    assert not gouda.is_jsonable(os)
 
 
 def test_save_load_json_list():
@@ -228,6 +231,10 @@ def test_save_load_json_numpy_mixed():
     np.testing.assert_almost_equal(check[2], 18.32, decimal=5)
     assert np.dtype(check[2]) == 'float32'
     os.remove('ScratchFiles/testm3.json')
+
+    bad_data = [np.int64(32), 'a', np.complex64(18.32 + 3j)]
+    with pytest.raises(ValueError):
+        gouda.save_json(bad_data, 'ScratchFiles/error.json')
 
 
 def test_save_json_warning_error():
