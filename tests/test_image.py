@@ -1,11 +1,11 @@
-import os
-
 import pytest
 
 import cv2
 import numpy as np
+import os
 
-from gouda import GoudaPath, image as gimage, RGB, GRAYSCALE, UNCHANGED
+from gouda import GRAYSCALE, RGB, UNCHANGED, GoudaPath
+from gouda import image as gimage
 
 
 def test_imwrite_imread():
@@ -60,7 +60,7 @@ def test_imwrite_imread():
 
 
 def test_rescale():
-    image_test = np.ones([10, 10, 3], dtype=np.int)
+    image_test = np.ones([10, 10, 3], dtype=int)
     image_test[:5] -= 1
     image_test[-2:] += 1
     image_test *= 100
@@ -71,8 +71,8 @@ def test_rescale():
     np.testing.assert_array_equal(rescaled_2, (0, 1, 2))
     np.testing.assert_array_equal(rescaled_3, (3, 4.5, 6))
 
-    image_test_2 = np.ones([10, 10], dtype=np.int)
-    rescale_4 = gimage.rescale(image_test_2, return_type=np.int)
+    image_test_2 = np.ones([10, 10], dtype=int)
+    rescale_4 = gimage.rescale(image_test_2, return_type=int)
     assert rescale_4.max() == rescale_4.min()
     assert rescale_4[0, 0] == 0
     assert rescale_4.dtype == 'int'
@@ -142,7 +142,7 @@ def test_add_overlay():
     overlay1b = gimage.add_overlay(image_1, np.dstack([label_1, np.zeros([100, 100]), np.zeros([100, 100])]))
     np.testing.assert_array_equal(overlay1, overlay1b)
 
-    label_2 = np.copy(label_1).astype(np.float)
+    label_2 = np.copy(label_1).astype(float)
     label_2[:50] = 1
     overlay2 = gimage.add_overlay(image_1[:, :, np.newaxis], label_2)
     np.testing.assert_array_equal(overlay1, overlay2)
@@ -211,7 +211,7 @@ def test_grabCut():
 
     # assert (cv2.GC_BGD, cv2.GC_PR_BGD, cv2.GC_PR_FGD, cv2.GC_FGD) == 1
 
-    label_test_2 = np.ones([100, 100], dtype=np.float)
+    label_test_2 = np.ones([100, 100], dtype=float)
     label_test_2[:25] = 0
     label_test_2[25:50] = 0.25
     label_test_2[50:75] = 0.5
@@ -463,6 +463,8 @@ def test_add_mask():
     label = label > 0.5
     overlay_2 = gimage.add_mask(image, label, color='red', opacity=1)
     np.testing.assert_array_equal(overlay_2, overlay)
+    # overlay_2b = gimage.add_mask(image.astype(np.bool), label, color='red', opacity=1)
+    # np.testing.assert_array_equal(overlay_2b, overlay)
 
     label_3 = np.zeros([100, 100, 3], dtype=np.uint8)
     label_3[:50] = 255

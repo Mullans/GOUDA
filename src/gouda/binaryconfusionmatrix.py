@@ -1,8 +1,7 @@
 """Binary confusion matrix class"""
-import warnings
-
 import colorama
 import numpy as np
+import warnings
 
 from .data_methods import num_digits
 
@@ -29,7 +28,7 @@ class BinaryConfusionMatrix():
     threshold : float
         Threshold to use for binary labels with continuous predictions (the default is 0.5)
     dtype : numpy.dtype
-        Numpy variable type to use for the matrix. (the default is np.int)
+        Numpy variable type to use for the matrix. (the default is int)
 
     Note
     ----
@@ -38,13 +37,14 @@ class BinaryConfusionMatrix():
     * Dtype may be set to change memory usage, but will always be treated as an int. No checking is done to prevent overflow if dtype is manually set.
 
     """
-    def __init__(self, predictions=None, labels=None, threshold=0.5, dtype=np.int, pos_label='True', neg_label='False'):
+    def __init__(self, predictions=None, labels=None, threshold=0.5, dtype=int, pos_label='True', neg_label='False', title='BinaryConfusionMatrix'):
         self.threshold = threshold
         self.reset(dtype)
         if predictions is not None:
             self.add(predictions, labels)
         self.pos_label = pos_label
         self.neg_label = neg_label
+        self.title = title
 
     @property
     def dtype(self):
@@ -150,7 +150,7 @@ class BinaryConfusionMatrix():
         elif labels is None:
             predictions = np.array(predictions)
             if 2 not in predictions.shape:
-                raise ValueError("At least one dimension must be a stack of prediction/label values".format(predictions.shape))
+                raise ValueError("At least one dimension must be a stack of prediction/label values")
             axis_to_split = np.where(np.array(predictions.shape) == 2)[0]
             if len(axis_to_split) > 1:
                 warnings.warn("Multiple dimensions have size 2. Splitting the first one into prediction/label arrays.", UserWarning)
@@ -159,8 +159,8 @@ class BinaryConfusionMatrix():
         predictions = np.array(predictions)
         if predictions.max() > 1 or predictions.min() < 0 or labels.max() > 1 or labels.min() < 0:
             raise ValueError("All values must be between 0 and 1")
-        labels = np.round(labels).astype(np.int)
-        predictions = (predictions >= self.threshold).astype(np.int)
+        labels = np.round(labels).astype(int)
+        predictions = (predictions >= self.threshold).astype(int)
         if labels.shape != predictions.shape:
             raise ValueError("Predictions and labels must have the same length/shape")
         labels = np.reshape(labels, [-1])
@@ -253,8 +253,9 @@ class BinaryConfusionMatrix():
             dtype = self.__matrix.dtype
         self.__matrix = np.zeros([2, 2], dtype=dtype)
 
-    def save(self, path, title='BinaryConfusionMatrix'):
+    def save(self, path, title=None):
         """Save the current binary confusion matrix to a text file"""
+        title = self.title if title is None else title
         with open(path, 'w') as f:
             f.write(title + '\n')
             f.write('Threshold: {}\n'.format(self.threshold))
@@ -279,7 +280,7 @@ class BinaryConfusionMatrix():
             next_line = f.readline().split('|')
             fn = int(next_line[1].strip())
             tp = int(next_line[2].strip())
-        new_matrix = BinaryConfusionMatrix(threshold=threshold, pos_label=pos_label, neg_label=neg_label, dtype=datatype)
+        new_matrix = BinaryConfusionMatrix(threshold=threshold, pos_label=pos_label, neg_label=neg_label, dtype=datatype, title=title)
         new_matrix.add_matrix(np.array([[tn, fp], [fn, tp]]))
         return new_matrix
 
@@ -326,7 +327,7 @@ class BinaryConfusionMatrix():
         if self.__matrix.max() == 0:
             item_width = 1
         else:
-            item_width = np.ceil(np.log10(self.__matrix.max())).astype(np.int)
+            item_width = np.ceil(np.log10(self.__matrix.max())).astype(int)
         if as_label:
             item_width = max(item_width, len(pos_label), len(neg_label))
         item_width = str(item_width)

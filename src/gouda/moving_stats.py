@@ -221,7 +221,7 @@ class MMeanArray(object):
         Value shape must be the same or broadcastable to the shape of the
         mean array for all operations.
     """
-    def __init__(self, shape, dtype=np.float):
+    def __init__(self, shape, dtype=float):
         self._mean = np.zeros(shape, dtype=dtype)
         self._count = 0
 
@@ -278,7 +278,7 @@ class MStddevArray(object):
         mean array for all operations.
     """
 
-    def __init__(self, shape, dtype=np.float):
+    def __init__(self, shape, dtype=float):
         self._mean = np.zeros(shape, dtype=dtype)
         self._variance = np.zeros(shape, dtype=dtype)
         self._count = 0

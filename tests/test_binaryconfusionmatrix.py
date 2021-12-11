@@ -13,7 +13,7 @@ def test_init():
     test_mat_2 = gouda.BinaryConfusionMatrix(test_arr)
     np.testing.assert_array_equal(test_mat_2.matrix, np.array([[1, 0], [1, 1]]))
 
-    assert test_mat_2.dtype == np.int
+    assert test_mat_2.dtype == int
 
     test_mat_2.dtype = np.uint8
     assert test_mat_2.dtype == np.uint8

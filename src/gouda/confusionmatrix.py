@@ -1,8 +1,7 @@
 """Confusion matrix class"""
-import warnings
-
 import colorama
 import numpy as np
+import warnings
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -39,7 +38,7 @@ class ConfusionMatrix(object):
     * Dtype may be set to change memory usage, but will always be treated as an int. No checking is done to prevent overflow if dtype is manually set.
 
     """
-    def __init__(self, predictions=None, labels=None, threshold=None, num_classes=None, dtype=np.int):
+    def __init__(self, predictions=None, labels=None, threshold=None, num_classes=None, dtype=int):
 
         self.matrix = None
         self._num_classes = 0
@@ -256,7 +255,7 @@ class ConfusionMatrix(object):
                     predicted = predicted > threshold
         if 'float' in expected.dtype.name:
             warnings.warn("Float type labels will be automatically rounded to the nearest integer", UserWarning)
-            expected = np.round(expected).astype(np.int)
+            expected = np.round(expected).astype(int)
         if not ('int' in expected.dtype.name or 'bool' in expected.dtype.name):
             raise ValueError("Expected must be either an int or a bool, not {}".format(expected.dtype))
         max_in = max(expected.max(), predicted.max()) + 1
@@ -315,7 +314,7 @@ class ConfusionMatrix(object):
         elif isinstance(expected, (float, int, bool, np.bool_)) and isinstance(predicted, (list, np.ndarray)):
             # Class probabilities with single expected label
             predicted_class = np.argmax(predicted).astype(int)
-        elif isinstance(predicted, (list, np.ndarray)) and isinstance(expected, (list, np.ndarray))and len(predicted) == len(expected):
+        elif isinstance(predicted, (list, np.ndarray)) and isinstance(expected, (list, np.ndarray)) and len(predicted) == len(expected):
             # Paired lists
             for x, y in zip(predicted, expected):
                 self.add(x, y, threshold=threshold)
@@ -367,7 +366,7 @@ class ConfusionMatrix(object):
         predicted_string = u"\u2192" + "  Predicted"
         leading_space = "            "
         confusion_string = "         "
-        item_width = str(np.ceil(np.log10(self.matrix.max())).astype(np.int))
+        item_width = str(np.ceil(np.log10(self.matrix.max())).astype(int))
         header_string = "        " + "".join([('| {:^' + item_width + 'd} ').format(i) for i in range(self._num_classes)])
         if show_sensitivities:
             header_string += "| Sensitivity"

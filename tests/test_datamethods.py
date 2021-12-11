@@ -58,7 +58,7 @@ def test_normalize():
     np.testing.assert_almost_equal(normed_1.std(), 1)
     assert normed_1.mean() == 0
 
-    normed_alt = gouda.normalize(test_data.astype(np.float))
+    normed_alt = gouda.normalize(test_data.astype(float))
     np.testing.assert_equal(normed_1, normed_alt)
 
     normed_2 = gouda.normalize(test_data, axis=1)
@@ -75,7 +75,7 @@ def test_rescale():
     scaled_1 = gouda.rescale(test_data, new_min=0, new_max=1, axis=1)
     manual = (test_data - test_data.min(axis=1, keepdims=True)) / (test_data.max(axis=1, keepdims=True) - test_data.min(axis=1, keepdims=True))
     np.testing.assert_array_equal(scaled_1, manual)
-    scaled_alt = gouda.rescale(test_data.astype(np.float), new_min=0, new_max=1, axis=1)
+    scaled_alt = gouda.rescale(test_data.astype(float), new_min=0, new_max=1, axis=1)
     np.testing.assert_array_equal(scaled_1, scaled_alt)
 
     scaled_2 = gouda.rescale(test_data, new_min=-1, new_max=2)
@@ -173,7 +173,7 @@ def test_softmax():
     assert gouda.softmax(data, axis=0).sum() == 2
     assert gouda.softmax(data, axis=1).sum() == 5
 
-    np.testing.assert_array_equal(gouda.softmax(data), gouda.softmax(data.astype(np.float)))
+    np.testing.assert_array_equal(gouda.softmax(data), gouda.softmax(data.astype(float)))
 
 
 def test_roc_mcc():

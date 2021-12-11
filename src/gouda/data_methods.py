@@ -16,7 +16,7 @@ def arr_sample(arr, rate):
     i = 0
     out = []
     while i < arr.shape[0]:
-        out.append(arr[np.floor(i).astype(np.int)])
+        out.append(arr[np.floor(i).astype(int)])
         i += rate
     return np.array(out)
 
@@ -152,7 +152,7 @@ def rescale(data, new_min=0, new_max=1, axis=None):
     """Rescales data to have range [new_min, new_max] along axis or axes indicated."""
     data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
-        data = data.astype(np.float)
+        data = data.astype(float)
     data_range = np.max(data, axis=axis, keepdims=True) - np.min(data, axis=axis, keepdims=True)
     x = np.divide(data - np.min(data, axis=axis, keepdims=True), data_range, where=data_range > 0, out=np.zeros_like(data))
     new_range = new_max - new_min
@@ -210,7 +210,7 @@ def softmax(x, axis=None):
     """
     x = np.asarray(x)
     if np.issubdtype(x.dtype, np.integer):
-        x = x.astype(np.float)
+        x = x.astype(float)
     s = np.max(x, axis=axis, keepdims=True)
     e_x = np.exp(x - s)
     div = np.sum(e_x, axis=axis, keepdims=True)
@@ -221,7 +221,7 @@ def normalize(data, axis=None):
     """Return data normalized to have zero mean and unit variance along axis or axes indicated."""
     data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
-        data = data.astype(np.float)
+        data = data.astype(float)
     mean = np.mean(data, axis=axis, keepdims=True)
     stddev = np.std(data, axis=axis, keepdims=True)
     return np.divide(data - mean, stddev, where=stddev != 0, out=np.zeros_like(data))

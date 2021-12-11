@@ -1,13 +1,12 @@
 """Methods/Shortcuts for modifying and handling image data."""
-import os
-import warnings
-
 import cv2
 import matplotlib
 import numpy as np
+import os
+import warnings
 
+from .constants import GRAYSCALE, RGB, UNCHANGED
 from .goudapath import GoudaPath
-from .constants import UNCHANGED, GRAYSCALE, RGB
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -96,14 +95,15 @@ def to_uint8(x):
     return x.astype(np.uint8)
 
 
-def rescale(data, column_wise=False, max_val=1, min_val=0, return_type=np.float):
+def rescale(data, column_wise=False, max_val=1, min_val=0, return_type=float):
     """Scale either an image or rows of data to [0, 1].
 
         NOTE
         ----
         If the range of values in a column/image is 0, data will scale to 0
     """
-    data = data.astype(np.float)
+    if not np.issubdtype(type(data.flat[0]), np.floating):
+        data = data.astype(float)
     if column_wise:
         range = data.max(axis=0) - data.min(axis=0)
         range[range == 0] = 1
@@ -580,7 +580,7 @@ def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5)
     return output
 
 
-def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000):
+def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000, fast=True):
     """Convert a probability mask into a binary mask using multiple thresholds
 
     Parameters
@@ -593,26 +593,45 @@ def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000)
         The minimum threshold of peak foreground values (the default is 0.75)
     area_thresh : float
         The minimum size a peak object needs to be for its base to be considered foreground (the default is 2000)
+    fast : bool
+        Whether to use the faster version that has less type-checking involved
 
     NOTE
     ----
     Individual peaks and bases are identified by the given thresholds. If a peak object has the minimum area, then the base object that it is a part of is considered to be foreground in the final mask.
     """
-    #TODO - Add tests
-    #TODO - Optimize skimage.measure.label  -> I think this is in the CT methods
+    # TODO - Add tests
     import skimage.measure
     flat_pred = np.squeeze(pred)
     mask_shape = np.shape(flat_pred)
 
-    peaks = skimage.measure.label(flat_pred > upper_thresh)
-    bases = skimage.measure.label(flat_pred > lower_thresh)
-    indices, counts = np.unique(peaks, return_counts=True)
-    obj_mask = np.zeros(mask_shape, dtype=bool)
-    for idx, count in zip(indices[1:], counts[1:]):
-        if count > area_thresh:
-            obj_mask[peaks == idx] = True
-    final_mask = np.zeros(mask_shape, dtype=bool)
-    for idx in np.unique(bases):
-        if obj_mask[bases == idx].any():
-            final_mask[bases == idx] = 1
+    if fast:
+        peaks = fast_label(flat_pred > upper_thresh)
+        bases = fast_label(flat_pred > lower_thresh)
+        keep_idx = [idx for idx, count in enumerate(np.bincount(peaks.ravel())) if count > area_thresh][1:]
+        obj_mask = np.isin(peaks, keep_idx)
+        valid = bases * obj_mask
+        valid_idx = np.nonzero(np.bincount(valid.ravel()))[0][1:]
+        final_mask = np.isin(bases, valid_idx)
+    else:
+        peaks = skimage.measure.label(flat_pred > upper_thresh)
+        bases = skimage.measure.label(flat_pred > lower_thresh)
+        indices, counts = np.unique(peaks, return_counts=True)
+        obj_mask = np.zeros(mask_shape, dtype=bool)
+        for idx, count in zip(indices[1:], counts[1:]):
+            if count > area_thresh:
+                obj_mask[peaks == idx] = True
+        final_mask = np.zeros(mask_shape, dtype=bool)
+        for idx in np.unique(bases):
+            if obj_mask[bases == idx].any():
+                final_mask[bases == idx] = 1
     return final_mask.reshape(pred.shape)
+
+
+def fast_label(item):
+    """A stripped-down, faster version of skimage.measure.label"""
+    from scipy.ndimage import _ni_label
+    label_dest = np.empty(item.shape, dtype=np.uint16)
+    structure = np.ones([3, 3], dtype=bool)
+    _ni_label._label(item, structure, label_dest)
+    return label_dest
