@@ -321,3 +321,17 @@ def test_clip():
     np.testing.assert_almost_equal(result, x / 500 + 1)
     assert result.min() == 1
     np.testing.assert_almost_equal(result.max(), 299 / 500 + 1)
+
+
+def test_percentile_norm():
+    x = np.arange(100)
+    perc_norm = gouda.percentile_normalize(x, low_percentile=0.5)
+    reg_norm = (x - np.mean(x)) / np.std(x)
+    assert not np.any(perc_norm == reg_norm)
+
+    percentiles = np.percentile(x, [0.5, 99.5])
+    clipped = np.clip(x, percentiles[0], percentiles[1])
+    np.testing.assert_almost_equal(perc_norm, (clipped - clipped.mean()) / clipped.std())
+
+    perc_norm2 = gouda.percentile_normalize(x, low_percentile=0, high_percentile=100)
+    np.testing.assert_array_equal(perc_norm2, reg_norm)

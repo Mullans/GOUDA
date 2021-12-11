@@ -182,6 +182,30 @@ def clip(data, output_min=0, output_max=1, input_min=0, input_max=255):
     return data * scaler + bias
 
 
+def percentile_normalize(x, low_percentile=0.5, high_percentile=None):
+    """Normalize data after clipping to a percentile value
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        The data to normalize
+    low_percentile : float
+        The lower percentile to clip data at - must be within [0, 100] (the default is 0.5)
+    high_percentile : float
+        The higher percentile to clip data at - will be `100 - low_percentile` if no value is given
+
+    Note
+    ----
+    A percentile of 0.5 is the value at the bottom 0.5% of the data NOT the value at the bottom 50%.
+    """
+    if high_percentile is None:
+        high_percentile = 100 - low_percentile
+    low_percentile, high_percentile = sorted([low_percentile, high_percentile])
+    low_val, high_val = np.percentile(x, (low_percentile, high_percentile))
+    x = np.clip(x, low_val, high_val)
+    return (x - np.mean(x)) / np.std(x)
+
+
 def sigmoid(x, epsilon=1e-7):
     """Return the sigmoid of the given value/array."""
     return (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)
