@@ -1,6 +1,39 @@
 """These are all matplotlib helper methods, and are still being developed."""
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+def parse_color(color, float_cmap='viridis', int_cmap='Set1'):
+    """Convert the input to a rgb color
+
+    NOTE
+    ----
+    Recognizes all formats that can be used with matplotlib in addition to rgb/rgba tuples as strings [ie. '(0.1, 0.2, 0.5)'] and single values.
+    Single values will be mapped to the given matplotlib colormap. Ints will wrap-around and floats will be clipped to [0, 1].
+    """
+    try:
+        return matplotlib.colors.to_rgb(color)
+    except ValueError:
+        if isinstance(color, str):
+            # Format is comma- and/or space-separated values
+            color.translate(None, '()[]')
+            if ', ' in color:
+                divided = color.split(', ')
+            elif ',' in color:
+                divided = color.split(',')
+            else:
+                divided = color.split(' ')
+            rgb = np.array(divided).astype(np.float32)
+            return matplotlib.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)
+        elif isinstance(color, float):
+            return matplotlib.cm.get_cmap(float_cmap)
+        elif isinstance(color, int):
+            return matplotlib.cm.get_cmap(int_cmap)(color % 9)
+        else:
+            # Format is any array-like set of values
+            rgb = np.array(color).astype(np.float32)
+            return matplotlib.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)
 
 
 def plot_accuracy_curve(acc, thresh, label_height=0.5, line_args={}, thresh_args={}):
