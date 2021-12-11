@@ -1,5 +1,5 @@
-{% set name = "GOUDA" %}
-{% set version = "0.5.0" %}
+{% set name = "gouda" %}
+{% set version = "0.5.5" %}
 
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/GOUDA-{{ version }}.tar.gz
-  sha256: cf36ed6492a6128d280ae18931ff079b12af8eb13c5e1eec5f66d27da7d77c6e
+  sha256: 09c627c8662c856ec0eac343256e57a5c2d3ff3c18be7885ffb2d7e7b85dd5d5
 
 build:
   number: 0
@@ -18,8 +18,10 @@ build:
 requirements:
   host:
     - pip
+    - pyscaffold >=3.2a0,<3.3a0
     - python >=3.6
   run:
+    - importlib-metadata
     - colorama
     - matplotlib-base
     - numpy
@@ -30,12 +32,14 @@ test:
     - gouda
   commands:
     - pip check
+    - putup --help
   requires:
     - pip
 
 about:
-  home: https://github.com/Mullans/GOUDA/
+  home: https://github.com/mullans/GOUDA
   summary: Good Old Utilities for Data Analysis!
+  dev_url: https://github.com/mullans/GOUDA
   license: MIT
   license_file: LICENSE.txt
 
