@@ -170,7 +170,7 @@ def test_ParallelStats():
     to_use2 = np.random.randint(0, 1000, 100000)
     stats2 = gouda.ParallelStats(stabilize=True)
     stats2 += to_use2[:100]
-    stats2(to_use2[100:5000])
+    stats2(to_use2[100:5000], stabilize=True)
     stats2 += to_use2[5000:10000]
     stats2 += to_use2[10000:]
     assert stats2.count() == to_use2.size
@@ -178,6 +178,7 @@ def test_ParallelStats():
     np.testing.assert_allclose(stats2.ssd(), ((to_use2 - np.mean(to_use2)) ** 2).sum(), rtol=1e-10)
     np.testing.assert_allclose(stats2.std(), np.std(to_use2), atol=1e-10, rtol=0)
     np.testing.assert_allclose(stats2.var(), np.var(to_use2), atol=1e-10, rtol=0)
+    np.testing.assert_allclose(stats2.var(sample_variance=True), stats2.ssd() / (stats2.count() - 1), atol=1e-10, rtol=0)
     np.testing.assert_allclose(stats2.min(), np.min(to_use2), atol=1e-10)
     np.testing.assert_allclose(stats2.max(), np.max(to_use2), atol=1e-10)
 

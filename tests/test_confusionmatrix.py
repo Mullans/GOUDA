@@ -32,8 +32,14 @@ def test_ConfusionMatrix_init_withData():
     assert mat.threshold is None
     assert mat.shape == (3, 3)
     assert mat.size == 9
+    assert mat.num_classes == 3
+    assert len(mat) == mat.num_classes
     assert mat.count() == 9
     np.testing.assert_array_equal(mat.matrix, np.ones([3, 3]))
+
+    assert mat[0, 0] == mat.matrix[0, 0]
+    mat[0, 0] = 8
+    assert mat.matrix[0, 0] == 8
 
 
 def test_ConfusionMatrix_init_withThreshold():
@@ -137,6 +143,13 @@ def test_ConfusionMatrix_accuracy():
     labels = [0, 1, 2, 0, 1, 2, 0, 1, 2]
     mat1 = gouda.ConfusionMatrix(predictions=predictions, labels=labels, dtype=int)
     assert mat1.accuracy() == 5 / 9
+
+
+def test_ConfusionMatrix_zerorule():
+    predictions = [0, 1, 0, 1, 1, 1, 2, 1, 2]
+    labels = [0, 1, 2, 0, 1, 1, 0, 1, 1]
+    mat1 = gouda.ConfusionMatrix(predictions=predictions, labels=labels)
+    np.testing.assert_almost_equal(mat1.zero_rule(), 5 / 9)
 
 
 def test_ConfusionMatrix_specificity():

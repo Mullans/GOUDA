@@ -82,7 +82,7 @@ class ParallelStats:
     def mean(self):
         return self._mean
 
-    def summary(self):
+    def summary(self):  # pragma: no cover
         print(f"Count: {self._count:d}, Min: {self._min:.2f}, Max: {self._max:.2f}")
         print(f"Mean: {self._mean:.4f}, Std: {self.std():.4f}, Var: {self.var():.4f}")
 

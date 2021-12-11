@@ -206,7 +206,7 @@ class ConfusionMatrix(object):
             warnings.filterwarnings('error')
             try:
                 result = ((tp * tn) - (fp * fn)) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-            except RuntimeWarning:
+            except RuntimeWarning:  # pragma: no cover
                 # Defaults to this in case of overflow issues with large matrices
                 n = tn + tp + fn + fp + 0.0
                 s = (tp + fn) / n
