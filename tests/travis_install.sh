@@ -7,7 +7,7 @@
 # This script is inspired by Scikit-Learn (http://scikit-learn.org/)
 #
 # THIS SCRIPT IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
-
+#TODO - update me
 set -e
 
 if [[ "$DISTRIB" == "conda" ]]; then
