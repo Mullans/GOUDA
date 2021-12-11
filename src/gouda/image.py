@@ -580,6 +580,20 @@ def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5)
     return output
 
 
+def fast_label(item):
+    """A stripped-down, faster version of skimage.measure.label
+
+    Note
+    ----
+    requires scipy, which is not a main requirement of the rest of GOUDA
+    """
+    from scipy.ndimage import _ni_label
+    label_dest = np.empty(item.shape, dtype=np.uint16)
+    structure = np.ones([3, 3], dtype=bool)
+    _ni_label._label(item, structure, label_dest)
+    return label_dest
+
+
 def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000, fast=True):
     """Convert a probability mask into a binary mask using multiple thresholds
 
@@ -599,6 +613,10 @@ def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000,
     NOTE
     ----
     Individual peaks and bases are identified by the given thresholds. If a peak object has the minimum area, then the base object that it is a part of is considered to be foreground in the final mask.
+
+    Note
+    ----
+    requires scikit-image which is not a requirement of the rest of GOUDA
     """
     # TODO - Add tests
     import skimage.measure
@@ -626,12 +644,3 @@ def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000,
             if obj_mask[bases == idx].any():
                 final_mask[bases == idx] = 1
     return final_mask.reshape(pred.shape)
-
-
-def fast_label(item):
-    """A stripped-down, faster version of skimage.measure.label"""
-    from scipy.ndimage import _ni_label
-    label_dest = np.empty(item.shape, dtype=np.uint16)
-    structure = np.ones([3, 3], dtype=bool)
-    _ni_label._label(item, structure, label_dest)
-    return label_dest

@@ -463,8 +463,8 @@ def test_add_mask():
     label = label > 0.5
     overlay_2 = gimage.add_mask(image, label, color='red', opacity=1)
     np.testing.assert_array_equal(overlay_2, overlay)
-    # overlay_2b = gimage.add_mask(image.astype(np.bool), label, color='red', opacity=1)
-    # np.testing.assert_array_equal(overlay_2b, overlay)
+    overlay_2b = gimage.add_mask(image.astype(bool), label, color='red', opacity=1)
+    np.testing.assert_array_equal(overlay_2b, overlay / 255.0)
 
     label_3 = np.zeros([100, 100, 3], dtype=np.uint8)
     label_3[:50] = 255
