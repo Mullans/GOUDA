@@ -31,9 +31,25 @@ def test_arr_sample_exception():
 
 
 def test_sigmoid():
-    np.testing.assert_almost_equal(gouda.sigmoid(0), 0.5)
-    np.testing.assert_almost_equal(gouda.sigmoid(-100), 0)
     np.testing.assert_almost_equal(gouda.sigmoid(100), 1)
+    np.testing.assert_almost_equal(gouda.sigmoid(-100), 0)
+    np.testing.assert_almost_equal(gouda.sigmoid(0), 0.5)
+
+    assert np.isposinf(gouda.inv_sigmoid(1))
+    assert np.isneginf(gouda.inv_sigmoid(0))
+    np.testing.assert_almost_equal(gouda.inv_sigmoid(0.5), 0)
+    with pytest.raises(ValueError):
+        gouda.inv_sigmoid(-1)
+    with pytest.raises(ValueError):
+        gouda.inv_sigmoid(1.1)
+
+    np.testing.assert_almost_equal(0.8, gouda.sigmoid(gouda.inv_sigmoid(0.8)))
+    np.testing.assert_almost_equal(0.2, gouda.sigmoid(gouda.inv_sigmoid(0.2)))
+    np.testing.assert_almost_equal(0.5, gouda.sigmoid(gouda.inv_sigmoid(0.5)))
+
+    np.testing.assert_almost_equal(5, gouda.inv_sigmoid(gouda.sigmoid(5)))
+    np.testing.assert_almost_equal(0, gouda.inv_sigmoid(gouda.sigmoid(0)))
+    np.testing.assert_almost_equal(-5, gouda.inv_sigmoid(gouda.sigmoid(-5)))
 
 
 def test_normalize():
@@ -225,6 +241,8 @@ def test_get_confusion_stats_dice_jacaard():
 
     assert gouda.dice_coef(label, pred, 0.5) == 8 / (8 + 0 + 1)
     assert gouda.jaccard_coef(label, pred, 0.5) == 4 / (4 + 1 + 0)
+    assert gouda.dice_coef([], []) == 0
+    assert gouda.jaccard_coef([], []) == 0
 
 
 def test_value_crossing():

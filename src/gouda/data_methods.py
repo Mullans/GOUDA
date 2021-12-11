@@ -1,7 +1,6 @@
 """Methods for working with data and numpy arrays"""
-import warnings
-
 import numpy as np
+import warnings
 
 
 def arr_sample(arr, rate):
@@ -190,7 +189,13 @@ def sigmoid(x, epsilon=1e-7):
 
 def inv_sigmoid(x, epsilon=1e-7):
     """Return the inverse of the sigmoid function for the given value/array."""
-    return np.log((x + epsilon) / (1 - x + epsilon))
+    if x > 1 or x < 0:
+        raise ValueError('Inverse sigmoid input must be in range [0, 1]')
+    elif x == 0:
+        return -np.inf
+    elif x == 1:
+        return np.inf
+    return np.log(x / ((1 + epsilon) - ((1 + epsilon) * x)))
 
 
 def softmax(x, axis=None):
