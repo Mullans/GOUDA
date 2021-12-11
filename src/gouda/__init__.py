@@ -24,3 +24,4 @@ from .display import print_grid, print_image  # noqa: F401
 from .file_methods import *  # noqa: F401, F403
 from .general import *  # noqa: F401, F403
 from .goudapath import GoudaPath  # noqa: F401
+from .moving_stats import *  # noqa: F401, F403
