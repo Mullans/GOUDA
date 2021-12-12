@@ -1,5 +1,5 @@
 {% set name = "gouda" %}
-{% set version = "0.5.5" %}
+{% set version = "0.5.6" %}
 
 
 package:
@@ -7,8 +7,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/GOUDA-{{ version }}.tar.gz
-  sha256: 09c627c8662c856ec0eac343256e57a5c2d3ff3c18be7885ffb2d7e7b85dd5d5
+  path: ..
 
 build:
   number: 0
@@ -25,6 +24,7 @@ requirements:
     - colorama
     - matplotlib-base
     - numpy
+    - opencv >=4.5
     - python >=3.6
 
 test:
@@ -32,7 +32,6 @@ test:
     - gouda
   commands:
     - pip check
-    - putup --help
   requires:
     - pip
 

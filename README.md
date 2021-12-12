@@ -1,4 +1,5 @@
 # GOUDA
+[![Anaconda-Server Badge](https://anaconda.org/smullan/gouda/badges/version.svg)](https://anaconda.org/smullan/gouda)
 
 Good Old Utilities for Data Analysis!
 
