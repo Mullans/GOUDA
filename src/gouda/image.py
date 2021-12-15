@@ -589,7 +589,7 @@ def fast_label(item):
     """
     from scipy.ndimage import _ni_label
     label_dest = np.empty(item.shape, dtype=np.uint16)
-    structure = np.ones([3, 3], dtype=bool)
+    structure = np.ones([3] * len(item.shape), dtype=bool)
     _ni_label._label(item, structure, label_dest)
     return label_dest
 
