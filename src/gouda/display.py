@@ -3,6 +3,8 @@ import inspect
 import matplotlib.pyplot as plt
 import numpy as np
 
+from . import image as gimage
+
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
@@ -267,3 +269,131 @@ def squarify(image, axis=0, as_array=False):
         rows = [np.stack(inner_list, axis=0) for inner_list in outer_list]
         outer_list = np.stack(rows, axis=0)
     return outer_list
+
+
+class VideoWriter:
+    import cv2
+
+    def __init__(self, out_path, fps=10, codec='MJPG', output_shape=None, interpolator=cv2.INTER_LINEAR):
+        """A convenience wrapper for OpenCV video writing"""
+        self.out_path = out_path
+        self.output_shape = output_shape  # assumes (height, width)
+        self.writer = None
+        self.fps = fps
+        self.codec = codec
+        self.interpolator = interpolator
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.writer is not None:
+            self.writer.release()
+
+    def start_writer(self):
+        codec = self.cv2.VideoWriter_fourcc(*self.codec)
+        self.writer = self.cv2.VideoWriter(self.out_path, codec, self.fps, (self.output_shape[1], self.output_shape[0]))
+
+    def write(self, data):
+        if self.writer is None:
+            if self.output_shape is None:
+                self.output_shape = np.squeeze(data).shape[:2]
+            self.start_writer()
+        data = gimage.to_uint8(data)
+        if data.ndim == 2:
+            # TODO - allow for color maps
+            data = np.dstack([data] * 3)
+        elif data.ndim == 3 and data.shape[-1] == 4:
+            data = self.cv2.cvtColor(data, self.cv2.RGBA2RGB)
+        if data.shape[:2] != self.output_shape:
+            data = self.cv2.resize(data, (self.output_shape[1], self.output_shape[0]), self.interpolator)
+        self.writer.write(data)
+
+    def __call__(self, data):
+        self.write(data)
+
+
+def show_video(data, player_width=500, player_height=300, frame_height=None, frame_width=None, toFile='temp.mp4', show='ipython', **kwargs):
+    """Convert a series of frames to a video and display it.
+
+    Parameters
+    ----------
+    data : list or numpy.ndarray
+        The frames to join into a video
+    player_width : int
+        The width in pixels of the video player
+    player_height : int
+        The height in pixels of the video player
+    frame_height : int
+        The height in pixels of the result video (if None, it will be determined based on the first frame)
+    frame_width : int
+        The width in pixels of the result video (if None, it will be determined based on the first frame)
+    toFile : str or os.PathLike
+        The path to save the output video to
+    show : str or None
+        The method to show the video or None to not display the result (options are 'ipython', 'opencv', None)
+    **kwargs : dict
+        Other parameters for VideoWriter such as fps, codec, interpolator
+
+
+    Note
+    ----
+    Data can be in shape [frames, x, y], [frames, x, y, c], but only 1, 3, or 4 channels will work
+    """
+    defaults = {
+        'fps': 10,
+        'codec': 'H264',
+        'frame_height': frame_height,
+        'frame_width': frame_width,
+        'interpolator': 1  # 1 = cv2.InterLinear
+    }
+
+    for item in defaults:
+        if item not in kwargs:
+            kwargs[item] = defaults[item]
+    if isinstance(data, (list, tuple)):
+        # A list/tuple of arrays
+        if hasattr(data[0], '__array__'):
+            nframes = len(data)
+            temp = np.array(data[0])
+            data_shape = temp.shape
+            ndim = temp.ndim + 1
+        else:
+            raise ValueError('Frames must be array-like, not {}'.format(type(data[0])))
+    elif hasattr(data, '__array__'):
+        # Array
+        data = np.array(data)
+        nframes = data.shape[0]
+        data_shape = data.shape[1:]
+        ndim = data.ndim
+    else:
+        raise ValueError('Unknown data type: {}'.format(type(data)))
+
+    if ndim < 2:
+        raise ValueError('Video data must have at frames, height, and width')
+    if not (ndim == 3 or (ndim == 4 and data_shape[-1] in [1, 3, 4])):
+        raise ValueError('Unknown video shape: {}'.format(data_shape))
+
+    if kwargs['frame_height'] is not None and kwargs['frame_width'] is not None:
+        kwargs['output_shape'] = (int(kwargs['frame_height']), int(kwargs['frame_width']))
+    elif kwargs['frame_height'] is not None:
+        width = data_shape[1] * (kwargs['frame_height'] / data_shape[0])
+        kwargs['output_shape'] = (int(kwargs['frame_height']), int(width))
+    elif kwargs['frame_width'] is not None:
+        height = data_shape[0] * (kwargs['frame_width'] / data_shape[1])
+        kwargs['output_shape'] = (int(height), int(kwargs['frame_width']))
+    else:
+        kwargs['output_shape'] = (int(data_shape[0]), int(data_shape[1]))
+
+    kwargs['output_shape'] = (int(kwargs['output_shape'][1]), int(kwargs['output_shape'][0]))
+    writer_kwargs = _extract_method_kwargs(kwargs, VideoWriter.__init__)
+    print(writer_kwargs)
+    with VideoWriter(str(toFile), **writer_kwargs) as writer:
+        for i in range(nframes):
+            writer.write(data[i])
+
+    if show == 'ipython':
+        from IPython.display import Video
+        return Video(str(toFile), height=player_height, width=player_width)
+    elif show == 'opencv':
+        raise NotImplementedError('Still working on this - use ipython for now')

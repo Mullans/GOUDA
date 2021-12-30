@@ -1,5 +1,4 @@
 """Methods/Shortcuts for modifying and handling image data."""
-import cv2
 import matplotlib
 import numpy as np
 import os
@@ -11,6 +10,11 @@ from .goudapath import GoudaPath
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
+
+try:
+    import cv2
+except ModuleNotFoundError:
+    warnings.warn('OpenCV module not found - some image methods will raise exceptions')
 
 
 def imread(path, flag=RGB):
@@ -613,6 +617,10 @@ def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000,
     NOTE
     ----
     Individual peaks and bases are identified by the given thresholds. If a peak object has the minimum area, then the base object that it is a part of is considered to be foreground in the final mask.
+
+    NOTE
+    ----
+    Using an area_thresh of 0 is equivalent to hysterisis thresholding
 
     Note
     ----
