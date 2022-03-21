@@ -57,7 +57,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
 
     Note
     ----
-    Images can be in shape [x, y] or [x, y, c], but only 1 or 3 channels will work (assumes row/col structure otherwise)
+    * Images can be in shape [x, y] or [x, y, c], but only 1 or 3 channels will work (assumes row/col structure otherwise)
+    * If no image kwargs are passed (ex: top, right, etc.), fig.tight_layout is applied
 
     General accepted formats
     ------------------------
@@ -65,6 +66,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     * List of dicts with key 'image' with image value
     * List of numpy arrays
     * 2, 3, 4, or 5 dimensional numpy arrays (leading rows will be used as row/column)
+
+    #TODO - allow passing ncols or nrows as arguments... move this to squarify?
     """
     defaults = ['hspace', 'wspace', 'left', 'bottom', 'right', 'top']
     for item in defaults:
@@ -150,10 +153,10 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
             ax.xaxis.set_major_locator(plt.NullLocator())
             ax.yaxis.set_major_locator(plt.NullLocator())
     plt.subplots_adjust(left=kwargs['left'], bottom=kwargs['bottom'], right=kwargs['right'], top=kwargs['top'])
-    if all([kwargs[key] is None for key in defaults]):
-        fig.tight_layout()
     if 'suptitle' in kwargs:
         plt.suptitle(kwargs['suptitle'])
+    if all([kwargs[key] is None for key in defaults]):
+        fig.tight_layout()
     if toFile is not None:
         plt.savefig(toFile, dpi=fig.dpi)
     if show:  # pragma: no cover
@@ -161,6 +164,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
         plt.show()
     else:
         plt.close(fig)
+    return fig
     if return_grid_shape:
         return rows, cols
 
