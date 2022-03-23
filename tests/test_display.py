@@ -1,9 +1,8 @@
-import os
-
 import pytest
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 from gouda import display
 
@@ -15,6 +14,11 @@ def test_print_grid():
 
     # Image
     assert display.print_grid(image, show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+
+    fig, shape = display.print_grid(image, show=False, return_grid_shape=True, return_fig=True)
+    assert shape == (1, 1)
+    assert isinstance(fig, plt.Figure)
     plt.close()
 
     # # Multiple images

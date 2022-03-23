@@ -35,7 +35,7 @@ def _extract_method_kwargs(kwargs, method, remove=True):
     return method_kwargs
 
 
-def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shape=False, **kwargs):
+def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shape=False, return_fig=False, **kwargs):
     """Print out images as a grid.
 
     Parameters
@@ -164,9 +164,15 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
         plt.show()
     else:
         plt.close(fig)
-    return fig
+    to_return = []
+    if return_fig:
+        to_return.append(fig)
     if return_grid_shape:
-        return rows, cols
+        to_return.append((rows, cols))
+    if len(to_return) == 1:
+        return to_return[0]
+    elif len(to_return) > 1:
+        return tuple(to_return)
 
 
 def print_image(image, figsize=(8, 6.5), toFile=None, show=True, allow_interpolation=False, imshow_args={}, **kwargs):
