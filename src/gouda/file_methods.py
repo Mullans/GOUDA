@@ -1,6 +1,7 @@
 """General file method and JSON handling"""
 import copy
 import glob
+import gzip
 import imghdr
 import json
 import numpy as np
@@ -258,3 +259,20 @@ def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
         return sep.join([path, key]) if ending else sep.join([key, path])
 
     return sorted(files, key=get_copy_key, reverse=False)
+
+
+def save_arr(path, arr):
+    if path.endswith('.gz'):
+        with gzip.open(path, 'wb') as f:
+            np.save(f, arr)
+    else:
+        np.save(path, arr)
+
+
+def read_arr(path):
+    if path.endswith('.gz'):
+        with gzip.open(path, 'rb') as f:
+            data = np.load(f)
+    else:
+        data = np.load(path)
+    return data

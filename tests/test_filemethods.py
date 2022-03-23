@@ -304,3 +304,20 @@ def test_save_load_json_slice():
     assert compare[1]['this'] == slice(100, 230)
     np.testing.assert_array_equal(compare[1]['that'], np.array([1, 2, 3]))
     os.remove('ScratchFiles/tests.json')
+
+
+def test_read_save_arr():
+    x = np.random.randint(-10, 10, [10, 10])
+    gouda.save_arr('ScratchFiles/test_arr.npy', x)
+    assert os.path.exists('ScratchFiles/test_arr.npy')
+    x2 = gouda.read_arr('ScratchFiles/test_arr.npy')
+    np.testing.assert_array_equal(x, x2)
+
+    gouda.save_arr('ScratchFiles/test_arr2.npy.gz', x)
+    assert os.path.exists('ScratchFiles/test_arr2.npy.gz')
+    assert not os.path.exists('ScratchFiles/test_arr2.npy')
+    x2 = gouda.read_arr('ScratchFiles/test_arr2.npy.gz')
+    np.testing.assert_array_equal(x, x2)
+
+    os.remove('ScratchFiles/test_arr.npy')
+    os.remove('ScratchFiles/test_arr2.npy.gz')

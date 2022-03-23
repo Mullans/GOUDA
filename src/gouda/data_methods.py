@@ -233,6 +233,11 @@ def percentile_normalize(x, low_percentile=0.5, high_percentile=None):
     return np.divide(x - np.mean(x), std_vals, where=std_vals > 0, out=np.zeros_like(x))
 
 
+def relu(data):
+    """Return the rectified linear - max(data, 0)"""
+    return np.maximum(data, 0)
+
+
 def sigmoid(x, epsilon=1e-7):
     """Return the sigmoid of the given value/array."""
     return (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)

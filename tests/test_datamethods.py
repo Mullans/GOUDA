@@ -52,6 +52,15 @@ def test_sigmoid():
     np.testing.assert_almost_equal(-5, gouda.inv_sigmoid(gouda.sigmoid(-5)))
 
 
+def test_relu():
+    x = np.random.randint(-100, 100, [10, 10])
+    check = gouda.relu(x)
+    assert np.min(check) >= 0
+    assert gouda.relu(-1) == 0
+    assert gouda.relu(1) == 1
+    assert gouda.relu(0) == 0
+
+
 def test_normalize():
     test_data = np.arange(1000).reshape([10, 10, 10])
     normed_1 = gouda.normalize(test_data)
