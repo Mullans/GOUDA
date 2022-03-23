@@ -166,10 +166,10 @@ def rescale(data, output_min=0, output_max=1, axis=None):
 
 def order_normalization(data, order=2, axis=None):
     norm = np.linalg.norm(data, order, axis)
-    if axis is None:
-        return data / norm
     norm = np.atleast_1d(norm)
     norm[norm == 0] = 1
+    if axis is None:
+        return data / norm
     return data / np.expand_dims(norm, axis)
 
 

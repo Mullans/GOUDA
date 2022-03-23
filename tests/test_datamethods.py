@@ -373,3 +373,22 @@ def test_max_signal():
     assert gouda.argmax_signal(x) == 2
     np.testing.assert_array_equal(gouda.argmax_signal(x, axis=0), [1, 0, 1])
     np.testing.assert_array_equal(gouda.argmax_signal(x, axis=1), [2, 1])
+
+
+def test_order_normalization():
+    x = np.arange(100)
+    check = gouda.order_normalization(x)
+    test = x / np.sqrt(np.sum(x ** 2))
+    np.testing.assert_array_equal(check, test)
+
+    x = np.arange(100).reshape([10, 10])
+    check = gouda.order_normalization(x, axis=0)
+    test = x / np.sqrt(np.sum(x ** 2, axis=0, keepdims=True))
+    np.testing.assert_array_equal(check, test)
+
+    check = gouda.order_normalization(x, axis=1)
+    test = x / np.sqrt(np.sum(x ** 2, axis=1, keepdims=True))
+    np.testing.assert_array_equal(check, test)
+
+    check = gouda.order_normalization(np.zeros([100]))
+    assert check.sum() == 0
