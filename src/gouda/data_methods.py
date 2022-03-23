@@ -148,7 +148,7 @@ def prime_overlap(x, y):
     return sorted(overlap)
 
 
-def rescale(data, new_min=0, new_max=1, axis=None):
+def rescale(data, output_min=0, output_max=1, axis=None):
     """Rescales data to have range [new_min, new_max] along axis or axes indicated."""
     data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
@@ -160,8 +160,8 @@ def rescale(data, new_min=0, new_max=1, axis=None):
         min_val = np.expand_dims(min_val, axis)
         data_range = np.expand_dims(data_range, axis)
     x = np.divide(data - min_val, data_range, where=data_range > 0, out=np.zeros_like(data))
-    new_range = new_max - new_min
-    return (x * new_range) + new_min
+    new_range = output_max - output_min
+    return (x * new_range) + output_min
 
 
 def order_normalization(data, order=2, axis=None):
@@ -191,12 +191,21 @@ def clip(data, output_min=0, output_max=1, input_min=0, input_max=255):
     """
     # TODO - Add tests for this
     data = np.clip(data, input_min, input_max)
-    denom = input_max - input_min
-    if denom == 0:
+    input_range = input_max - input_min
+    output_range = output_max - output_min
+    if input_range == 0:
         return np.zeros_like(data) + output_min
-    scaler = (output_max - output_min) / (input_max - input_min)
-    bias = (input_min * output_min) / (input_max - input_min) - (input_min * output_max) / (input_max - input_min) + output_min
+    scaler = output_range / input_range
+    bias = -input_min * scaler + output_min
     return data * scaler + bias
+
+
+def percentile_rescale(x, low_percentile=0.5, high_percentile=None, output_min=0, output_max=1):
+    if high_percentile is None:
+        high_percentile = 100 - low_percentile
+    low_percentile, high_percentile = sorted([low_percentile, high_percentile])
+    low_val, high_val = np.percentile(x, (low_percentile, high_percentile))
+    return clip(x, output_min, output_max, low_val, high_val)
 
 
 def percentile_normalize(x, low_percentile=0.5, high_percentile=None):
@@ -220,7 +229,8 @@ def percentile_normalize(x, low_percentile=0.5, high_percentile=None):
     low_percentile, high_percentile = sorted([low_percentile, high_percentile])
     low_val, high_val = np.percentile(x, (low_percentile, high_percentile))
     x = np.clip(x, low_val, high_val)
-    return (x - np.mean(x)) / np.std(x)
+    std_vals = np.std(x)
+    return np.divide(x - np.mean(x), std_vals, where=std_vals > 0, out=np.zeros_like(x))
 
 
 def sigmoid(x, epsilon=1e-7):

@@ -72,13 +72,13 @@ def test_normalize():
 
 def test_rescale():
     test_data = np.arange(100).reshape([10, 10])
-    scaled_1 = gouda.rescale(test_data, new_min=0, new_max=1, axis=1)
+    scaled_1 = gouda.rescale(test_data, output_min=0, output_max=1, axis=1)
     manual = (test_data - test_data.min(axis=1, keepdims=True)) / (test_data.max(axis=1, keepdims=True) - test_data.min(axis=1, keepdims=True))
     np.testing.assert_array_equal(scaled_1, manual)
-    scaled_alt = gouda.rescale(test_data.astype(float), new_min=0, new_max=1, axis=1)
+    scaled_alt = gouda.rescale(test_data.astype(float), output_min=0, output_max=1, axis=1)
     np.testing.assert_array_equal(scaled_1, scaled_alt)
 
-    scaled_2 = gouda.rescale(test_data, new_min=-1, new_max=2)
+    scaled_2 = gouda.rescale(test_data, output_min=-1, output_max=2)
     assert scaled_2.max() == 2
     assert scaled_2.min() == -1
 
@@ -335,6 +335,24 @@ def test_percentile_norm():
 
     perc_norm2 = gouda.percentile_normalize(x, low_percentile=0, high_percentile=100)
     np.testing.assert_array_equal(perc_norm2, reg_norm)
+
+
+def test_percentile_rescale():
+    x = np.arange(100)
+    check = gouda.percentile_rescale(x, low_percentile=5)
+    assert check.min() == 0
+    np.testing.assert_almost_equal(check.max(), 1.0)
+    assert check[:5].sum() == 0
+    assert check[-5:].sum() == 5
+
+    x = np.random.rand(100)
+    check = gouda.percentile_rescale(x, low_percentile=0.5)
+    assert check.min() == 0
+    np.testing.assert_almost_equal(check.max(), 1.0)
+
+    low, high = np.percentile(x, [0.5, 99.5])
+    test = gouda.rescale(np.clip(x, low, high))
+    np.testing.assert_array_almost_equal(check, test)
 
 
 def test_max_signal():
