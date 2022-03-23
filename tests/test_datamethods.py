@@ -335,3 +335,14 @@ def test_percentile_norm():
 
     perc_norm2 = gouda.percentile_normalize(x, low_percentile=0, high_percentile=100)
     np.testing.assert_array_equal(perc_norm2, reg_norm)
+
+
+def test_max_signal():
+    x = np.array([[0, 1, -2], [-1, 1, 1]])
+    assert gouda.max_signal(x) == -2
+    np.testing.assert_array_equal(gouda.max_signal(x, axis=0), [-1, 1, -2])
+    np.testing.assert_array_equal(gouda.max_signal(x, axis=1), [-2, 1])
+
+    assert gouda.argmax_signal(x) == 2
+    np.testing.assert_array_equal(gouda.argmax_signal(x, axis=0), [1, 0, 1])
+    np.testing.assert_array_equal(gouda.argmax_signal(x, axis=1), [2, 1])

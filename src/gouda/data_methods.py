@@ -486,3 +486,41 @@ def center_of_mass(input_arr):
 
     center_of_mass = np.sum(flat_mass * coords, axis=0) / total_mass
     return center_of_mass
+
+
+def max_signal(data, axis=None):
+    """Return the signed value with the largest absolute value along the given axis
+
+    Parameters
+    ----------
+    data : array_like
+        Input array
+    axis : int, optional
+        The axis to check across, otherwise the result uses the flattened array
+
+    NOTE
+    ----
+    If two values have the same absolute value and sign, the first one encountered along the given axis will be returned. If two values have the same absolute value and different signs, the positive value will be returned.
+    """
+    maxes = np.max(data, axis=axis)
+    mins = np.min(data, axis=axis)
+    return np.where(np.abs(mins) > maxes, mins, maxes)
+
+
+def argmax_signal(data, axis=None):
+    """Return the index of the signed value with the largest absolute value along an axis
+
+    Parameters
+    ----------
+    data : array_like
+        Input array
+    axis : int, optional
+        The axis to check across, otherwise the result uses the flattened array
+
+    NOTE
+    ----
+    If two values have the same absolute value and sign, the first one encountered along the given axis will be returned. If two values have the same absolute value and different signs, the positive value will be returned.
+    """
+    max_idx = np.argmax(data, axis=axis)
+    min_idx = np.argmin(data, axis=axis)
+    return np.where(np.abs(data.flat[min_idx]) > data.flat[max_idx], min_idx, max_idx)
