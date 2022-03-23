@@ -153,10 +153,24 @@ def rescale(data, new_min=0, new_max=1, axis=None):
     data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
         data = data.astype(float)
-    data_range = np.max(data, axis=axis, keepdims=True) - np.min(data, axis=axis, keepdims=True)
-    x = np.divide(data - np.min(data, axis=axis, keepdims=True), data_range, where=data_range > 0, out=np.zeros_like(data))
+    max_val = np.max(data, axis=axis)
+    min_val = np.min(data, axis=axis)
+    data_range = max_val - min_val
+    if axis is not None:
+        min_val = np.expand_dims(min_val, axis)
+        data_range = np.expand_dims(data_range, axis)
+    x = np.divide(data - min_val, data_range, where=data_range > 0, out=np.zeros_like(data))
     new_range = new_max - new_min
     return (x * new_range) + new_min
+
+
+def order_normalization(data, order=2, axis=None):
+    norm = np.linalg.norm(data, order, axis)
+    if axis is None:
+        return data / norm
+    norm = np.atleast_1d(norm)
+    norm[norm == 0] = 1
+    return data / np.expand_dims(norm, axis)
 
 
 def clip(data, output_min=0, output_max=1, input_min=0, input_max=255):
@@ -177,6 +191,9 @@ def clip(data, output_min=0, output_max=1, input_min=0, input_max=255):
     """
     # TODO - Add tests for this
     data = np.clip(data, input_min, input_max)
+    denom = input_max - input_min
+    if denom == 0:
+        return np.zeros_like(data) + output_min
     scaler = (output_max - output_min) / (input_max - input_min)
     bias = (input_min * output_min) / (input_max - input_min) - (input_min * output_max) / (input_max - input_min) + output_min
     return data * scaler + bias
