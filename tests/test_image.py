@@ -6,6 +6,7 @@ import os
 
 from gouda import GRAYSCALE, RGB, UNCHANGED, GoudaPath
 from gouda import image as gimage
+from gouda.plot_methods import parse_color
 
 
 def test_imwrite_imread():
@@ -57,50 +58,6 @@ def test_imwrite_imread():
     os.remove('ScratchFiles/test_singleChannel.png')
     os.remove('ScratchFiles/test_2D.png')
     os.remove('ScratchFiles/test_uint16.png')
-
-
-def test_rescale():
-    image_test = np.ones([10, 10, 3], dtype=int)
-    image_test[:5] -= 1
-    image_test[-2:] += 1
-    image_test *= 100
-    rescaled_1 = np.unique(gimage.rescale(image_test))
-    rescaled_2 = np.unique(gimage.rescale(image_test, max_val=2, min_val=0))
-    rescaled_3 = np.unique(gimage.rescale(image_test, max_val=6, min_val=3))
-    np.testing.assert_array_equal(rescaled_1, (0, 0.5, 1))
-    np.testing.assert_array_equal(rescaled_2, (0, 1, 2))
-    np.testing.assert_array_equal(rescaled_3, (3, 4.5, 6))
-
-    image_test_2 = np.ones([10, 10], dtype=int)
-    rescale_4 = gimage.rescale(image_test_2, return_type=int)
-    assert rescale_4.max() == rescale_4.min()
-    assert rescale_4[0, 0] == 0
-    assert rescale_4.dtype == 'int'
-    rescale_5 = gimage.rescale(image_test_2, return_type=np.float32)
-    assert rescale_5.max() == rescale_5.min()
-    assert rescale_5[0, 0] == 0
-    assert rescale_5.dtype == 'float32'
-
-
-def test_rescale_columnwise():
-    image_test = np.ones([5, 5])
-    temp_1 = np.array([0, 0, 2, 4, 4])
-    temp_1 = np.stack([temp_1, temp_1], axis=0).transpose([1, 0])
-    image_test[:, :2] = image_test[:, :2] * temp_1
-    np.testing.assert_array_equal(image_test[:, :2], temp_1)
-    temp_2 = np.array([1, 1, 2, 2, 2])
-    temp_2 = np.stack([temp_2, temp_2, temp_2], axis=0).transpose([1, 0])
-    image_test[:, 2:] *= temp_2
-    np.testing.assert_array_equal(image_test[:, 2:], temp_2)
-    rescaled_1 = gimage.rescale(image_test, column_wise=True)
-    np.testing.assert_array_equal(image_test, np.array([[0, 0, 1, 1, 1], [0, 0, 1, 1, 1], [2, 2, 2, 2, 2], [4, 4, 2, 2, 2], [4, 4, 2, 2, 2]]))
-    np.testing.assert_array_equal(np.unique(rescaled_1[:, :2]), (0, 0.5, 1))
-    np.testing.assert_array_equal(np.unique(rescaled_1[:, 2:]), (0, 1))
-
-    image_test_2 = np.ones([5, 5])
-    rescaled_2 = gimage.rescale(image_test_2, column_wise=True)
-    assert rescaled_2.max() == rescaled_2.min()
-    assert rescaled_2[0, 0] == 0
 
 
 def test_stack_label():
@@ -484,3 +441,68 @@ def test_add_mask():
     label *= 10
     with pytest.warns(UserWarning):
         gimage.to_uint8(label)
+
+
+def test_split_signs():
+    mask = np.zeros([100, 100], dtype=np.float32)
+    mask[:50] = 1
+    mask[50:] = -1
+    check = gimage.split_signs(mask)
+
+    np.testing.assert_array_equal(check[0, 0], (0, 1, 0))
+    np.testing.assert_array_equal(check[99, 99], (1, 0, 0))
+
+    check = gimage.split_signs(mask, positive_color='orange', negative_color='purple')
+    np.testing.assert_array_almost_equal(check[0, 0], parse_color('orange'), )
+    np.testing.assert_array_almost_equal(check[99, 99], parse_color('purple'))
+
+
+def test_to_uint8():
+    first = np.zeros([10, 10], dtype=np.uint8)
+    first[:5] = 127
+    check = gimage.to_uint8(first)
+    assert check[0, 0] == 127
+    assert check[9, 0] == 0
+    print(np.unique(check))
+    np.testing.assert_array_equal(np.unique(check), [0, 127])
+    assert check.dtype == 'uint8'
+
+    check = gimage.to_uint8(first, rescale=True)
+    assert check[0, 0] == 255
+    assert check[9, 0] == 0
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'
+
+    second = np.zeros([10, 10], dtype=np.float32)
+    second[:5] = 127.5
+    check = gimage.to_uint8(second)
+    np.testing.assert_array_equal(np.unique(check), [0, 127])
+    assert check.dtype == 'uint8'
+
+    check = gimage.to_uint8(second, rescale=True)
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'
+
+    third = np.zeros([10, 10], dtype=np.float32)
+    third[:4] = -1
+    third[6:] = 0.5
+    check = gimage.to_uint8(third)
+    np.testing.assert_array_equal(np.unique(check), [0, 127, 191])
+    assert check.dtype == 'uint8'
+
+    check = gimage.to_uint8(third, rescale=True)
+    np.testing.assert_array_equal(np.unique(check), [0, 170, 255])
+    assert check.dtype == 'uint8'
+
+    fourth = np.zeros([10, 10], dtype=np.float32)
+    fourth[:5] = 1000
+    with pytest.warns(UserWarning):
+        check = gimage.to_uint8(fourth)
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'
+
+    fourth[5:] = -1000
+    with pytest.warns(UserWarning):
+        check = gimage.to_uint8(fourth)
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'

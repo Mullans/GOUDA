@@ -4,7 +4,7 @@ import numpy as np
 import os
 import warnings
 
-from .constants import GRAYSCALE, RGB, UNCHANGED
+from . import constants, data_methods, plot_methods
 from .goudapath import GoudaPath
 
 __author__ = "Sean Mullan"
@@ -17,7 +17,7 @@ except ModuleNotFoundError:
     warnings.warn('OpenCV module not found - some image methods will raise exceptions')
 
 
-def imread(path, flag=RGB):
+def imread(path, flag=constants.RGB):
     """Shortcut method: Load an image from a path using OpenCV modified for RGB.
 
     Parameters
@@ -36,11 +36,11 @@ def imread(path, flag=RGB):
         path = path.path
     if not os.path.exists(path):
         raise ValueError("No file found at path '{}'".format(path))
-    if flag == GRAYSCALE:
+    if flag == constants.GRAYSCALE:
         return cv2.imread(path, 0)
-    elif flag == RGB:
+    elif flag == constants.RGB:
         return cv2.imread(path)[:, :, ::-1]
-    elif flag == UNCHANGED:
+    elif flag == constants.UNCHANGED:
         return cv2.imread(path, -1)
     else:
         return cv2.imread(path)
@@ -75,7 +75,7 @@ def imwrite(path, image, as_RGB=True):
         cv2.imwrite(path, image)
 
 
-def to_uint8(x):
+def to_uint8(x, rescale=False):
     """Convert an image to a uint8 type with range [0, 255] based on inferred normalization type.
 
     NOTES
@@ -85,9 +85,11 @@ def to_uint8(x):
     input range [0, 1] -> x * 255 -> cast to uint8
     input range OTHER -> (x - x_min) / (x_max - x_min) -> cast to uint8
     """
-    if x.dtype == np.uint8:
+    if rescale:
+        x = data_methods.rescale(x, 0, 255)  # rescale to [0, 255] for any input range
+    elif x.dtype == np.uint8:
         return x
-    if x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
+    elif x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
         pass
     elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:  # input range [-1, 1]
         x = ((x * 127.5) + 127.5)
@@ -95,31 +97,8 @@ def to_uint8(x):
         x = (x * 255.0)
     else:
         warnings.warn("Cannot determine input range. Rescaling to [0, 1]")
-        x = rescale(x, min_val=0, max_val=255)
+        x = data_methods.rescale(x, 0, 255)
     return x.astype(np.uint8)
-
-
-def rescale(data, column_wise=False, max_val=1, min_val=0, return_type=float):
-    """Scale either an image or rows of data to [0, 1].
-
-        NOTE
-        ----
-        If the range of values in a column/image is 0, data will scale to 0
-    """
-    if not np.issubdtype(type(data.flat[0]), np.floating):
-        data = data.astype(float)
-    if column_wise:
-        range = data.max(axis=0) - data.min(axis=0)
-        range[range == 0] = 1
-        rescaled = (data - data.min(axis=0)) / range
-        rescaled[range == 0] = 0
-    else:
-        range = data.max() - data.min() + 0.0
-        if range == 0:
-            rescaled = np.zeros_like(data)
-        else:
-            rescaled = (data - data.min()) / range
-    return ((rescaled * (max_val - min_val)) + min_val).astype(return_type)
 
 
 def stack_label(label, label_channel=0, as_uint8=True):
@@ -167,14 +146,30 @@ def sobel_var(image):
     return cv2.addWeighted(grad_x, 0.5, grad_y, 0.5, 0).var()
 
 
-def split_signs(mask):
-    """Split a single channel image mask with +/- values into green/red color channels"""
+def split_signs(mask, positive_color=(0., 1., 0.), negative_color=(1., 0., 0.)):
+    """Split a single channel image mask with +/- values into color channels
+
+    Parameters
+    ----------
+    mask : np.ndarray
+        The mask to split into colors
+    positive_color : see gouda.parse_color
+        The color to use for the positive part of the mask
+    negative_color : see gouda.parse_color
+        The color to use for the negative part of the mask
+
+    NOTE
+    ----
+    positive_color and negative_color can be any color format recognized by gouda.parse_color (which includes all formats recognized by matplotlib)
+    """
     mask = np.squeeze(mask)
     if mask.ndim != 2:
         raise ValueError("Single channel mask required for split_signs")
     negative = -np.clip(mask, -np.inf, 0)
     positive = np.clip(mask, 0, np.inf)
-    new_mask = np.dstack([negative, positive, np.zeros_like(positive)])
+    negative_image = np.dstack([negative * neg_channel for neg_channel in plot_methods.parse_color(negative_color)])
+    positive_image = np.dstack([positive * pos_channel for pos_channel in plot_methods.parse_color(positive_color)])
+    new_mask = negative_image + positive_image
     return new_mask
 
 
@@ -391,7 +386,7 @@ def padded_resize(image, size=[960, 540], allow_rotate=True, interpolation=cv2.I
 
     """
     if isinstance(image, (str, GoudaPath)):
-        image = imread(image, flag=RGB)
+        image = imread(image, flag=constants.RGB)
     data_type = image.dtype
     if image.ndim == 2:
         x, y = image.shape
