@@ -506,3 +506,15 @@ def test_to_uint8():
         check = gimage.to_uint8(fourth)
     np.testing.assert_array_equal(np.unique(check), [0, 255])
     assert check.dtype == 'uint8'
+
+
+def test_fast_label():
+    x = np.zeros([100, 100])
+    x[5:10, 5:10] = 1
+    x[50:55, 50:55] = -1
+    x[20:23, 90:91] = 50
+    label = gimage.fast_label(x)
+    np.testing.assert_array_equal(np.unique(label), [0, 1, 2, 3])
+    assert label[5, 5] > 0
+    assert label[50, 50] > 0
+    assert label[20, 90] > 0

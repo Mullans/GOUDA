@@ -331,6 +331,9 @@ def test_clip():
     assert result.min() == 1
     np.testing.assert_almost_equal(result.max(), 299 / 500 + 1)
 
+    result = gouda.clip(np.zeros([10, 10]), output_min=1, output_max=2, input_min=0, input_max=0)
+    assert result.min() == 1
+
 
 def test_percentile_norm():
     x = np.arange(100)
@@ -353,6 +356,9 @@ def test_percentile_rescale():
     np.testing.assert_almost_equal(check.max(), 1.0)
     assert check[:5].sum() == 0
     assert check[-5:].sum() == 5
+
+    check2 = gouda.percentile_rescale(x, low_percentile=5, high_percentile=95)
+    np.testing.assert_array_equal(check, check2)
 
     x = np.random.rand(100)
     check = gouda.percentile_rescale(x, low_percentile=0.5)
