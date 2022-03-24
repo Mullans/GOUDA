@@ -11,6 +11,6 @@ These are a bunch of data/image utilities that I've made to help with my researc
 
 ## Installation
 
-* For pip: `pip install gouda`
+* [![Anaconda-Server Badge](https://anaconda.org/smullan/gouda/badges/installer/pypi.svg)](https://pypi.anaconda.org/smullan) `pip install gouda`
 
-* For conda: `conda install gouda -c smullan`
+* [![Anaconda-Server Badge](https://anaconda.org/smullan/gouda/badges/installer/conda.svg)](https://pypi.anaconda.org/smullan) `conda install gouda -c smullan`
