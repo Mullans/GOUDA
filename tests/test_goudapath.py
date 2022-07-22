@@ -1,7 +1,7 @@
-import os
+import pytest
 
 import numpy as np
-import pytest
+import os
 
 import gouda
 
@@ -250,6 +250,18 @@ def test_strings():
     assert path[-1] == 'test.txt'
     assert path.basename() == 'test.txt'
     assert path.basicname() == 'test'
+
+    path = gouda.GoudaPath('path/to/file/test.nii.gz')
+    assert path.basicname() == 'test'
+    assert path.extension() == '.nii.gz'
+
+    path = gouda.GoudaPath('path/to/file/..code.txt')
+    assert path.basicname() == '..code'
+    assert path.extension() == '.txt'
+
+    path = gouda.GoudaPath('path/to/file/..code')
+    assert path.basicname() == '..code'
+    assert path.extension() == ''
 
 
 def test_ensure_dir():

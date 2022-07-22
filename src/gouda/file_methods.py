@@ -203,9 +203,33 @@ def is_image(path):
         return False
 
 
+def fullsplit(path):
+    """Split the path into head, basename, and extension
+
+    NOTE
+    ----
+    * This splits at the first non-leading period of the basename, compared to os.path.splitext which splits the whole path at the last period.
+    * Leading periods are considered to be part of the basename
+    """
+    # return os.path.split(path)
+    head, tail = os.path.split(path)
+    splitpath = tail.split('.')
+    to_add = ''
+    while splitpath[0] == '':
+        splitpath = splitpath[1:]
+        to_add += '.'
+    splitpath[0] = to_add + splitpath[0]
+    if len(splitpath) == 1:
+        return head, splitpath[0], ''
+    elif len(splitpath) > 2:
+        return head, splitpath[0], '.' + '.'.join(splitpath[1:])
+    else:
+        return head, splitpath[0], '.' + splitpath[1]
+
+
 def basicname(path):
     """Return the basename of the path without the extension"""
-    return os.path.splitext(os.path.basename(path))[0]
+    return fullsplit(path)[1]
 
 
 def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):

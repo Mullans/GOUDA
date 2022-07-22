@@ -47,6 +47,26 @@ def test_next_filename():
 def test_basicname():
     assert gouda.basicname('anypath/morepath/test_item-here.jpg') == 'test_item-here'
 
+    head, basename, ext = gouda.fullsplit('anypath/morepath/test_item-here.jpg')
+    assert head == 'anypath/morepath'
+    assert basename == 'test_item-here'
+    assert ext == '.jpg'
+
+    head, basename, ext = gouda.fullsplit('path/to/file')
+    assert head == 'path/to'
+    assert basename == 'file'
+    assert ext == ''
+
+    head, basename, ext = gouda.fullsplit('path/to/..file')
+    assert head == 'path/to'
+    assert basename == '..file'
+    assert ext == ''
+
+    head, basename, ext = gouda.fullsplit('path/to/..file.txt.gz')
+    assert head == 'path/to'
+    assert basename == '..file'
+    assert ext == '.txt.gz'
+
 
 def test_get_sorted_filenames():
     src_dir = gouda.GoudaPath('../ScratchFiles/sortedfiles')

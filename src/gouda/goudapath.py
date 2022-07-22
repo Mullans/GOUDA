@@ -6,7 +6,6 @@ import re
 
 from .file_methods import ensure_dir
 
-
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
@@ -276,7 +275,7 @@ class GoudaPath(os.PathLike):
 
     def basicname(self):
         """Return the base name of the file without the extension"""
-        return os.path.splitext(os.path.basename(self.__path))[0]
+        return self.fullsplit()[1]
 
     def is_dir(self):
         """Check if the path is a directory"""
@@ -295,11 +294,7 @@ class GoudaPath(os.PathLike):
 
     def extension(self):
         """Return just the extension of the file"""
-        divided = self.__path.rsplit('.', 1)
-        if len(divided) == 1:
-            return ''
-        else:
-            return '.' + divided[-1]
+        return self.fullsplit()[2]
 
     def exists(self):
         """Check if the file indicated by the GoudaPath exists"""
@@ -322,6 +317,28 @@ class GoudaPath(os.PathLike):
             The characters to strip from the end of the path. Using None defauts to whitespace (the default is None)
         """
         return GoudaPath(self.__path.rstrip(chars), use_absolute=self.use_absolute)
+
+    def fullsplit(self):
+        """Split the path into basename and extension
+
+        NOTE
+        ----
+        * This splits at the first non-leading period of the basename, compared to os.path.splitext which splits the whole path at the last period.
+        * Leading periods are considered to be part of the basename
+        """
+        head, tail = os.path.split(self.__path)
+        splitpath = tail.split('.')
+        to_add = ''
+        while splitpath[0] == '':
+            splitpath = splitpath[1:]
+            to_add += '.'
+        splitpath[0] = to_add + splitpath[0]
+        if len(splitpath) == 1:
+            return head, splitpath[0], ''
+        elif len(splitpath) > 2:
+            return head, splitpath[0], '.' + '.'.join(splitpath[1:])
+        else:
+            return head, splitpath[0], '.' + splitpath[1]
 
     def startswith(self, prefix):
         """Check if the path starts with the given suffix"""
