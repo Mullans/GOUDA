@@ -13,7 +13,7 @@ __license__ = "mit"
 
 try:
     import cv2
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     warnings.warn('OpenCV module not found - some image methods will raise exceptions')
 
 

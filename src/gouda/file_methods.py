@@ -29,6 +29,7 @@ def ensure_dir(*paths):
         Joined filepath of all ensured directories
 
     """
+    # TODO - Can this all be replaced with `os.makedirs(os.path.join([str(path) for path in paths]))`? The only difference is the non-dir check
     full_path = ''
     for path in paths:
         full_path = os.path.join(full_path, str(path))
