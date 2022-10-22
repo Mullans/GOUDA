@@ -64,3 +64,5 @@ test3_arrayzip.npz
 goudapath_test_directory
 test_*.png
 ScratchFiles
+
+.vscode/

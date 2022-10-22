@@ -376,7 +376,7 @@ def test_max_signal():
     np.testing.assert_array_equal(gouda.max_signal(x, axis=0), [-1, 1, -2])
     np.testing.assert_array_equal(gouda.max_signal(x, axis=1), [-2, 1])
 
-    assert gouda.argmax_signal(x) == 2
+    assert gouda.argmax_signal(x) == (0, 2)
     np.testing.assert_array_equal(gouda.argmax_signal(x, axis=0), [1, 0, 1])
     np.testing.assert_array_equal(gouda.argmax_signal(x, axis=1), [2, 1])
 
