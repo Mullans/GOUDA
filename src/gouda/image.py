@@ -1,11 +1,13 @@
 """Methods/Shortcuts for modifying and handling image data."""
 import matplotlib
 import numpy as np
+import numpy.typing as npt
 import os
 import warnings
 
-from . import constants, data_methods, plot_methods
-from .goudapath import GoudaPath
+from gouda import constants, data_methods, plot_methods
+from gouda.goudapath import GoudaPath, GPathLike
+from gouda.typing import ColorType, ImageArrayType
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -17,12 +19,12 @@ except ModuleNotFoundError:  # pragma: no cover
     warnings.warn('OpenCV module not found - some image methods will raise exceptions')
 
 
-def imread(path, flag=constants.RGB):
+def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
     """Shortcut method: Load an image from a path using OpenCV modified for RGB.
 
     Parameters
     ----------
-    path: string
+    path: GPathLike
         Path to image file
     flag: int
         The way to read the image (the default is :data:`gouda.constants.RGB`)
@@ -46,14 +48,14 @@ def imread(path, flag=constants.RGB):
         return cv2.imread(path)
 
 
-def imwrite(path, image, as_RGB=True):
+def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
     """Shortcut method: Write an image to a path using OpenCV modified for RGB.
 
     Parameters
     ----------
-    path: string
+    path: GPathLike
         Path to save image file to
-    image: image data
+    image: FloatArrayType
         image data to save - must be uint8/uint16 and with shape [x, y], [x, y, 1], or [x, y, 3]
     as_RGB: bool
         If true, flips the channels before saving (OpenCV assumes BGR image by default)
@@ -75,7 +77,7 @@ def imwrite(path, image, as_RGB=True):
         cv2.imwrite(path, image)
 
 
-def to_uint8(x, rescale=False):
+def to_uint8(x: npt.NDArray, rescale: bool = False) -> npt.NDArray[np.uint8]:
     """Convert an image to a uint8 type with range [0, 255] based on inferred normalization type.
 
     NOTES
@@ -101,7 +103,7 @@ def to_uint8(x, rescale=False):
     return x.astype(np.uint8)
 
 
-def stack_label(label, label_channel=0, as_uint8=True):
+def stack_label(label: npt.NDArray, label_channel: int = 0, as_uint8: bool = True) -> npt.NDArray:
     """Convert 2d label to 3d.
 
     Parameters
@@ -126,7 +128,7 @@ def stack_label(label, label_channel=0, as_uint8=True):
         raise ValueError("Not a valid color channel index: {}".format(label_channel))
 
 
-def laplacian_var(image):
+def laplacian_var(image: npt.NDArray) -> npt.NDArray:
     """Return the laplacian variance of an image"""
     # Laplacian is the rate of change of pixel intensity (2nd order derivative)
     blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
@@ -134,7 +136,7 @@ def laplacian_var(image):
     return cv2.Laplacian(grey, cv2.CV_16S).var()
 
 
-def sobel_var(image):
+def sobel_var(image: npt.NDArray) -> npt.NDArray:
     """Return the sobal variance of an image"""
     # Sobel is the gradient of pixel intensity (1st order derivative)
     blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
@@ -146,7 +148,7 @@ def sobel_var(image):
     return cv2.addWeighted(grad_x, 0.5, grad_y, 0.5, 0).var()
 
 
-def split_signs(mask, positive_color=(0., 1., 0.), negative_color=(1., 0., 0.)):
+def split_signs(mask: npt.NDArray, positive_color: ColorType = (0., 1., 0.), negative_color: ColorType = (1., 0., 0.)) -> npt.NDArray:
     """Split a single channel image mask with +/- values into color channels
 
     Parameters
@@ -312,15 +314,22 @@ def crop_to_mask(image, mask, with_label=False, smoothing=True):
     return masked_image[x0:x1, y0:y1]
 
 
-def get_bounds(mask):
-    """Return the bounding box corners of the positive content for the mask."""
-    vert = np.any(mask, axis=0)
-    horiz = np.any(mask, axis=1)
-    y_range = np.where(vert == True)  # noqa: E712
-    x_range = np.where(horiz == True)  # noqa: E712
-    x0, x1 = x_range[0][0], x_range[0][-1]
-    y0, y1 = y_range[0][0], y_range[0][-1]
-    return (x0, y0), (x1, y1)
+def get_bounds(mask: np.ndarray, bg_val: float = 0) -> list[tuple[int, int]]:
+    """Get the corners of the bounding box/cube for the given binary label
+
+    Returns
+    -------
+    List[Tuple[int, int]]
+        A list of the [start, stop) indices for each axis - NOTE: inclusive start and exclusive stop
+    """
+    bounds = []
+    if bg_val != 0:
+        mask = mask != bg_val
+    for i in range(mask.ndim):
+        axis_check = np.any(mask, axis=tuple([j for j in range(mask.ndim) if j != i]))
+        axis_range = np.where(axis_check == True) # noqa
+        bounds.append([axis_range[0][0], axis_range[0][-1] + 1])
+    return bounds
 
 
 def crop_to_content(image, return_bounds=False):

@@ -8,7 +8,7 @@ import numpy as np
 import os
 import warnings
 
-from .data_methods import num_digits
+from gouda.data_methods import num_digits
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"

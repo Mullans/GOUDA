@@ -3,12 +3,16 @@ import glob
 import imghdr
 import os
 import re
+from typing import Union
 
-from .file_methods import ensure_dir
+from gouda.file_methods import ensure_dir
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
+
+
+GPathLike = Union[str, 'GoudaPath', os.PathLike]
 
 
 class GoudaPath(os.PathLike):

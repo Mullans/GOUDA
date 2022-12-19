@@ -3,7 +3,7 @@ import inspect
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import image as gimage
+import gouda.image as gimage
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
