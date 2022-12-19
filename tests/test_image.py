@@ -217,8 +217,9 @@ def test_crop_to_mask():
 
 def test_get_bounds():
     label_test = np.zeros([100, 100])
-    label_test[25:76, 25:76] = 1
-    (x0, y0), (x1, y1) = gimage.get_bounds(label_test)
+    label_test[25:75, 25:75] = 1
+    (x0, x1), (y0, y1) = gimage.get_bounds(label_test)
+    print(gimage.get_bounds(label_test))
     assert x0 == 25
     assert x1 == 75
     assert y0 == 25
@@ -349,8 +350,8 @@ def test_polar_to_cartesian():
     assert (y[50, 0] == color2).all()
     assert (y[100, 0] == color1).all()
     assert (y[0, 0] == z[0, 0]).all()
-    assert(y[50, 0] == z[100, 0]).all()
-    assert(y[100, 0] == z[200, 0]).all()
+    assert (y[50, 0] == z[100, 0]).all()
+    assert (y[100, 0] == z[200, 0]).all()
 
 
 def test_get_mask_border():

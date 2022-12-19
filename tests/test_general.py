@@ -54,3 +54,34 @@ def test_nestit():
 
     test_cycle = gouda.capped_cycle([])
     assert next(test_cycle) == StopIteration
+
+
+def test_isiter():
+    assert not gouda.is_iter('x')
+    assert gouda.is_iter([1, 2, 3])
+    assert not gouda.is_iter(1)
+
+
+def test_len():
+    x = 3
+    assert gouda.force_len(x, 3) == (3, 3, 3)
+    assert gouda.force_len(x, 2) == (3, 3)
+    assert gouda.force_len((3, 2), 2) == (3, 2)
+    assert gouda.force_len((3, 2), 3, pad='wrap') == (3, 2, 3)
+    assert gouda.force_len((3, 2), 3, pad='reflect') == (3, 2, 2)
+    assert gouda.force_len((3, 2), 4, pad='reflect') == (3, 2, 2, 3)
+    assert gouda.force_len((1, 2, 3, 4), 2) == (1, 2)
+    with pytest.raises(ValueError):
+        assert gouda.force_len((3, 2), 5, pad='reflect')
+    with pytest.raises(ValueError):
+        assert gouda.force_len((3, 2), 5, pad='asdf')
+
+    a = [1, 2]
+    b = 2
+    c = 3
+    result, result_len = gouda.match_len(a, b, c)
+    assert all([len(x) == result_len for x in result])
+    assert result_len == 2
+    result, result_len = gouda.match_len(a, b, c, count=4, pad='wrap')
+    assert result_len == 4
+    assert all([len(x) == 4 for x in result])
