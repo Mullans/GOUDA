@@ -1,14 +1,14 @@
+
 # GOUDA
+
 [![Anaconda-Server Badge](https://anaconda.org/smullan/gouda/badges/version.svg)](https://anaconda.org/smullan/gouda)
 [![pypi](https://img.shields.io/pypi/v/gouda)](https://pypi.org/project/GOUDA/)
 
 Good Old Utilities for Data Analysis!
 
-
 ## Description
 
 These are a bunch of data/image/filepath utilities that I've made to help with my research projects. Feel free to use them as you would like, and I'd appreciate it if you make a pull request for any fixes/optimizations you may find.
-
 
 ## Installation
 
