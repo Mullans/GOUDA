@@ -82,6 +82,7 @@ def test_normalize():
 def test_rescale():
     test_data = np.arange(100).reshape([10, 10])
     scaled_1 = gouda.rescale(test_data, output_min=0, output_max=1, axis=1)
+    assert scaled_1.max() == 1 and scaled_1.min() == 0
     manual = (test_data - test_data.min(axis=1, keepdims=True)) / (test_data.max(axis=1, keepdims=True) - test_data.min(axis=1, keepdims=True))
     np.testing.assert_array_equal(scaled_1, manual)
     scaled_alt = gouda.rescale(test_data.astype(float), output_min=0, output_max=1, axis=1)
@@ -90,6 +91,14 @@ def test_rescale():
     scaled_2 = gouda.rescale(test_data, output_min=-1, output_max=2)
     assert scaled_2.max() == 2
     assert scaled_2.min() == -1
+
+    # check for input min/max
+    scaled = gouda.rescale(test_data, output_min=0, output_max=1, input_min=0, input_max=200)
+    assert scaled.min() == 0 and scaled.max() == 99. / 200.
+
+    # check for out-of-bounds
+    scaled = gouda.rescale(test_data, output_min=0, output_max=1, input_min=99, input_max=100)
+    assert scaled.min() == -99 and scaled.max() == 0
 
 
 def test_factors():

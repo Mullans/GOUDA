@@ -6,9 +6,7 @@ import numpy.typing as npt
 import warnings
 from typing import Any, List, Optional, Tuple, Union
 
-ShapeType = Union[int, Tuple[int, ...]]
-FloatArrayType = Union[float, np.floating, npt.NDArray[np.floating]]
-LabelArrayType = Union[bool, int, npt.NDArray[np.integer], npt.NDArray[np.bool_]]
+from gouda.typing import FloatArrayType, LabelArrayType, ShapeType
 
 
 def arr_sample(arr: np.ndarray, rate: float) -> np.ndarray:
@@ -187,7 +185,7 @@ def prime_overlap(x: int, y: int) -> list[int]:
     return sorted(overlap)
 
 
-def rescale(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, axis: Optional[ShapeType] = None) -> FloatArrayType:
+def rescale(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, input_min: Optional[float] = None, input_max: Optional[float] = None, axis: Optional[ShapeType] = None) -> npt.NDArray[np.floating]:
     """Rescales data to have range [new_min, new_max] along axis or axes indicated
 
     Parameters
@@ -198,24 +196,29 @@ def rescale(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, a
         The minimum output value, by default 0
     output_max : float, optional
         The maximum output value, by default 1
+    input_min : float, optional
+        The minimum input value, by default None (if None, inferred from data along axis)
+    input_max : float, optional
+        The maximum input value, by default None (if None, inferred from data along axis)
     axis : Optional[ShapeType], optional
-        Axis or axes along which to operate, by default None
+        Axis or axes along which to infer input min/max if needed, by default None
 
     Returns
     -------
     FloatArrayType
         Rescaled array
+
+    NOTE
+    ----
+    For flexibility, there is no checking that input_min and input_max are actually the minimum and maximum values in data along axis. If they are not, the output values are rescaled as if they were and may lie outside of [output_min, output_max]. For enforced bounds, use `gouda.data_methods.clip`.
     """
     data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
         data = data.astype(float)
-    max_val = np.max(data, axis=axis)
-    min_val = np.min(data, axis=axis)
-    data_range = max_val - min_val
-    if axis is not None:
-        min_val = np.expand_dims(min_val, axis)
-        data_range = np.expand_dims(data_range, axis)
-    x = np.divide(data - min_val, data_range, where=data_range > 0, out=np.zeros_like(data))
+    min_val = np.min(data, axis=axis, keepdims=True) if input_min is None else np.asarray(input_min)
+    max_val = np.max(data, axis=axis, keepdims=True) if input_max is None else np.asarray(input_max)
+    data_range = max_val - min_val  # If max_val < min_val, the output will have flipped signs
+    x = np.divide(data - min_val, data_range, where=data_range != 0, out=np.zeros_like(data))
     new_range = output_max - output_min
     return (x * new_range) + output_min
 
