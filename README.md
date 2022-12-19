@@ -8,7 +8,7 @@ Good Old Utilities for Data Analysis!
 
 ## Description
 
-These are a bunch of data/image/filepath utilities that I've made to help with my research projects. Feel free to use them as you would like, and I'd appreciate it if you make a pull request for any fixes/optimizations you may find.
+These are a bunch of data/image/filepath/etc utilities that I've made to help with my research projects. Feel free to use them as you would like, and I'd appreciate it if you make a pull request for any fixes/optimizations you may find.
 
 ## Installation
 
