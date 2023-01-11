@@ -42,14 +42,29 @@ def ensure_dir(*paths):
     return full_path
 
 
-def next_filename(filename):
-    """Check if a given file exists, and return a new filename for a numbered copy if it does."""
+# ! TODO - Update tests for new formatting
+def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name}_{idx:01d}{ext}'):
+    """Check if a given file exists, and return a new filename for a numbered copy if it does.
+
+    Parameters
+    ----------
+    filename : str
+        The base filename to iterate on
+    first_idx : int, optional
+        Index of the first numbered copy to check, by default 2
+    path_fmt : _type_, optional
+        Format for subsequent filepaths, by default '{base_name}_{idx:01d}{ext}'
+
+    NOTE
+    ----
+    For path_fmt, base_name is the basename of the file (i.e. the filename without the extension), idx is the index of the numbered copy, and ext is the extension of the file including the period(s) (see :func:`~gouda.file_methods.fullsplit` for path/basename/extension split).
+    """
     filename = str(filename)
     if os.path.isfile(filename):
-        base, extension = filename.rsplit('.', 1)
-        i = 2
+        path, base, extension = fullsplit(filename)
+        i = first_idx
         while True:
-            next_check = '{}_{}.{}'.format(base, i, extension)
+            next_check = os.path.join(path, path_fmt.format(base_name=base, idx=i, ext=extension))
             if os.path.isfile(next_check):
                 i += 1
             else:

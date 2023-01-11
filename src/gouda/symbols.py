@@ -7,6 +7,20 @@ from typing import Optional, Union
 if not sys.stdout.encoding.lower().startswith('utf'):
     warnings.warn('Terminal does not support unicode. Some symbols may not display correctly.')
 
+# ANSI Escape Codes - Just the ones that I use regularly. Check out plumbum for a way more complete way to do style text or crayons for a more light weight version.
+# https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
+ansi_stop = '\033[0m'
+ansi_bold = '\033[1m'
+ansi_italics = '\033[3m'
+ansi_under = '\033[4m'
+ansi_strike = '\033[9m'
+
+
+def underline(string):
+    """Shortcut to underline ANSI text"""
+    return ansi_under + string + ansi_stop
+
+
 # Lower-case Greek Letters - "Greek and Coptic" block
 alpha = '\u03B1'
 beta = '\u03B2'
