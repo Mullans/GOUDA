@@ -149,7 +149,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
             else:
                 image = np.squeeze(image)
                 plt.imshow(image, **image_kwargs)
-            ax.set_axis_off()
+            # ax.set_axis_off()
+            plt.setp(ax.spines.values(), visible=False)
             ax.xaxis.set_major_locator(plt.NullLocator())
             ax.yaxis.set_major_locator(plt.NullLocator())
     plt.subplots_adjust(left=kwargs['left'], bottom=kwargs['bottom'], right=kwargs['right'], top=kwargs['top'])

@@ -1,4 +1,5 @@
 """Useful unicode symbols for printing"""
+# TODO - make more consistent with LaTeX
 import sys
 import unicodedata
 import warnings
@@ -107,7 +108,9 @@ almostEq = '\u2248'
 notAlmostEq = '\u2249'
 neq = '\u2260'
 leq = '\u2264'
+nleq = '\u2270'
 geq = '\u2265'
+ngeq = '\u2271'
 subset = '\u2282'
 notSubset = '\u2284'
 subsetEq = '\u2286'
