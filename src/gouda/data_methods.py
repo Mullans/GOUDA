@@ -748,3 +748,37 @@ def argmax_signal(data: npt.ArrayLike, axis: Optional[int] = None) -> Union[Tupl
         max_idx = np.argmax(data, axis=axis)
         min_idx = np.argmin(data, axis=axis)
         return np.where(np.abs(data.flat[min_idx]) > data.flat[max_idx], min_idx, max_idx)
+
+
+def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
+    """Performs the Benjamini-Hochberg procedure for multiple hypothesis testing.
+
+    Parameters
+    ----------
+    p_vals : np.ndarray
+        An array of p-values to check
+    alpha : float, optional
+        The baseline significance level, by default 0.05
+
+    Returns
+    -------
+    np.ndarray
+        list of booleans, True if the null hypothesis can be rejected
+
+    Note
+    ----
+    See `Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing <https://www.jstor.org/stable/2346101>`_ for more information
+    Or the Wikipedia page: https://en.wikipedia.org/wiki/False_discovery_rate#Benjamini%E2%80%93Hochberg_procedure
+    """
+    # TODO - Add unit tests
+    p_vals = np.asarray(p_vals)
+    rank = np.argsort(p_vals)
+    p_vals = p_vals[rank]
+    reject = np.zeros(p_vals.size, dtype=bool)
+    scalar = alpha / p_vals.size
+    for idx in range(p_vals.size):
+        if p_vals[idx] <= (idx + 1) * scalar:
+            reject[rank[idx]] = True
+        else:
+            break
+    return reject
