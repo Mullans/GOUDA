@@ -96,10 +96,11 @@ def load_json(filename):
 
     def renumpy(_data):
         if isinstance(_data, list):
-            if len(_data) == 2 and 'numpy.' in _data[0]:
-                _data = np.dtype(_data[0][6:]).type(_data[1])
-            elif len(_data) == 2 and 'set.' == _data[0]:
-                _data = set(renumpy(_data[1]))
+            if len(_data) == 2 and isinstance(_data[0], str):
+                if 'numpy.' in _data[0]:
+                    _data = np.dtype(_data[0][6:]).type(_data[1])
+                elif 'set.' in _data[0]:
+                    _data = set(renumpy(_data[1]))
             else:
                 for i in range(len(_data)):
                     _data[i] = renumpy(_data[i])

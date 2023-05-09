@@ -209,11 +209,12 @@ def test_save_load_json_numpy_list():
 
 
 def test_save_load_json_numpy_dict():
-    temp_data = {'a': np.arange(3, dtype=np.uint8)}
+    temp_data = {'a': np.arange(3, dtype=np.uint8), 'b': [3, 10]}
     gouda.save_json(temp_data, 'ScratchFiles/testnd.json', embed_arrays=True, compressed=False)
     check_data = gouda.load_json('ScratchFiles/testnd.json')
     assert len(temp_data) == len(check_data)
     np.testing.assert_array_equal(temp_data['a'], check_data['a'])
+    assert temp_data['b'] == check_data['b']
 
     gouda.save_json(temp_data, 'ScratchFiles/testnd2.json', embed_arrays=False, compressed=False)
     check_data2 = gouda.load_json('ScratchFiles/testnd2.json')
