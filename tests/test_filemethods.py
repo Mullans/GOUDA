@@ -326,6 +326,26 @@ def test_save_load_json_slice():
     np.testing.assert_array_equal(compare[1]['that'], np.array([1, 2, 3]))
     os.remove('ScratchFiles/tests.json')
 
+    data = {'size': np.array([500, 500, 500]),
+            'origin': np.array([0, 0, 0]),
+            'spacing': np.array([1, 1, 1]),
+            'dtype': 'float32', 'bounds': (slice(0, 100, None), slice(0, 50))}
+    # NOTE - JSON saves tuples and lists as Arrays, so they'll always be loaded as lists
+    gouda.save_json(data, 'ScratchFiles/tests.json')
+    compare = gouda.load_json('ScratchFiles/tests.json')
+    for key in data:
+        assert key in compare
+        if isinstance(data[key], (list, tuple)):
+            assert isinstance(compare[key], (list, tuple))
+        else:
+            assert isinstance(data[key], type(compare[key]))
+        if isinstance(data[key], np.ndarray):
+            np.testing.assert_allclose(data[key], compare[key])
+        elif isinstance(data[key], (list, tuple)):
+            assert list(data[key]) == list(compare[key])
+        else:
+            assert data[key] == compare[key]
+
 
 def test_read_save_arr():
     x = np.random.randint(-10, 10, [10, 10])

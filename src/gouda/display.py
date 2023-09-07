@@ -53,7 +53,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     image_kwargs : dict
         Keyword arguments to be used for each matplotlib.pyplot.imshow call.
     **kwargs : dict
-        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust` can be passed for use in the grid. Parameters for :meth:`matplotlib.pyplot.imshow` will be used as defaults for all images in the grid, but will be replaced by any image-specific arguments (pass image as dict).
+        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust` or :meth:`matplotlib.pyplot.figure` can be passed for use in the grid. Parameters for :meth:`matplotlib.pyplot.imshow` will be used as defaults for all images in the grid, but will be replaced by any image-specific arguments (pass image as dict).
 
     Note
     ----
@@ -68,12 +68,14 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     * 2, 3, 4, or 5 dimensional numpy arrays (leading rows will be used as row/column)
 
     #TODO - allow passing ncols or nrows as arguments... move this to squarify?
+    #TODO - allow passing row/col height/width instead of figsize - https://stackoverflow.com/a/4306340/2348288
     """
     defaults = ['hspace', 'wspace', 'left', 'bottom', 'right', 'top']
     for item in defaults:
         if item not in kwargs:
             kwargs[item] = None
     image_kwargs = _extract_method_kwargs(kwargs, plt.imshow)
+    fig_kwargs = _extract_method_kwargs(kwargs, plt.figure)
 
     if len(images) == 1:
         images = images[0]
@@ -121,7 +123,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     else:
         raise ValueError("Invalid input type: {}".format(type(images)))
 
-    fig = plt.figure(figsize=figsize)
+    fig = plt.figure(figsize=figsize, **fig_kwargs)
     gs = fig.add_gridspec(int(rows), int(cols), hspace=kwargs['hspace'], wspace=kwargs['wspace'])
 
     for row in range(rows):

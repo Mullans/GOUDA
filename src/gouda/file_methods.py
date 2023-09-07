@@ -52,12 +52,13 @@ def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name
         The base filename to iterate on
     first_idx : int, optional
         Index of the first numbered copy to check, by default 2
-    path_fmt : _type_, optional
+    path_fmt : str, optional
         Format for subsequent filepaths, by default '{base_name}_{idx:01d}{ext}'
 
     NOTE
     ----
     For path_fmt, base_name is the basename of the file (i.e. the filename without the extension), idx is the index of the numbered copy, and ext is the extension of the file including the period(s) (see :func:`~gouda.file_methods.fullsplit` for path/basename/extension split).
+    The default path_fmt assumes a maximum of 9 numbered copies. If you need more, change the 01d to 02d, 03d, etc. with the center digit indicating the number of digits in the maximum expected index.
     """
     filename = str(filename)
     if os.path.isfile(filename):
@@ -160,7 +161,7 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
         compressed = False
 
     def unnumpy(_data):
-        if isinstance(_data, list):
+        if isinstance(_data, (list, tuple)):
             new_data = []
             for i in range(len(_data)):
                 new_data.append(unnumpy(_data[i]))
