@@ -6,7 +6,7 @@ import os
 
 from gouda import GRAYSCALE, RGB, UNCHANGED, GoudaPath
 from gouda import image as gimage
-from gouda.plot_methods import parse_color
+from gouda.plotting import parse_color
 
 
 def test_imwrite_imread():

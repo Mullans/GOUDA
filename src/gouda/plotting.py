@@ -1,10 +1,13 @@
-"""These are all matplotlib helper methods, and are still being developed."""
-import matplotlib
+"""matplotlib plotting and helper methods"""
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
+from typing import Iterable, Optional, Union
 
+from gouda.data_methods import line_dist, rescale, segment_line
+from gouda.general import is_iter
 from gouda.typing import ColorType
 
 
@@ -19,7 +22,7 @@ def parse_color(color: ColorType, float_cmap='viridis', int_cmap='Set1') -> tupl
     TODO - add lookup to get hexcodes from colors.py
     """
     try:
-        return matplotlib.colors.to_rgb(color)  # type: ignore  # NOTE - same as to_rgba[:3]
+        return mpl.colors.to_rgb(color)  # type: ignore  # NOTE - same as to_rgba[:3]
     except ValueError:
         if isinstance(color, str):
             # Format is comma- and/or space-separated values
@@ -32,15 +35,15 @@ def parse_color(color: ColorType, float_cmap='viridis', int_cmap='Set1') -> tupl
             else:
                 divided = color.split(' ')
             rgb = np.array(divided).astype(np.float32)
-            return matplotlib.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
+            return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
         elif isinstance(color, float):
-            return matplotlib.colormaps.get_cmap(float_cmap)
+            return mpl.colormaps.get_cmap(float_cmap)
         elif isinstance(color, int):
-            return matplotlib.colormaps.get_cmap(int_cmap)(color % 9)
+            return mpl.colormaps.get_cmap(int_cmap)(color % 9)
         else:
             # Format is any array-like set of values
             rgb = np.array(color).astype(np.float32)
-            return matplotlib.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
+            return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
 
 
 def plot_accuracy_curve(acc, thresh, label_height=0.5, line_args={}, thresh_args={}):
@@ -168,3 +171,67 @@ def annotate_arrows(ax,
     mid_x = (min(x_vals) + max(x_vals)) / 2.
     if not repeat_text:
         ax.annotate(text, xy=(mid_x, y_top + y_top_spacing * (len(end_points) - 1)), ha='center', va='bottom', zorder=10)
+
+
+def colorplot(x: Iterable, y: Iterable, ax: Optional[mpl.axes.Axes] = None, cmap: Union[mpl.colors.Colormap, str] = 'jet', step_size: float = 0.01, step_as_percent=True, start_val: float = 0.0, end_val: float = 1.0, **kwargs) -> plt.Axes:
+    """Plot a line with a color gradient
+
+    Parameters
+    ----------
+    x : Iterable
+        x values to plot
+    y : Iterable
+        y values to plot
+    ax : Optional[matplotlib.axes.Axes], optional
+        Pre-existing axes for the plot. If None, uses :meth:`matplotlib.pyplot.gca`. By default None
+    cmap : Union[matplotlib.colors.Colormap, str], optional
+        Colormap to use for coloring the line, by default 'jet'
+    step_size : float, optional
+        Maximum length of each color segment (segments between points will always be at least 1 step), by default 0.01
+    step_as_percent: bool, optional
+        If True, `step_size` will be interpreted as a percent of the total line length. If False, `step_size` will be interpreted as an absolute distance, by default True
+    start_val : float
+        Starting value for the color gradient as a percent of the colormap. Values must be between 0 and 1, the start and end of the colormap respectively. By default 0.0
+    end_val : float
+        Ending value for the color gradient as a percent of the colormap. Values must be between 0 and 1, the start and end of the colormap respectively. By default 1.0
+    **kwargs : dict
+        Optional key-word arguments to be passed to :class:`matplotlib.collections.LineCollection`
+
+    Returns
+    -------
+    plt.Axes
+        The axes used for the plot
+
+    Notes
+    -----
+    The full line will iterate from 0 to 1 along the given colormap.
+
+    Each line segment will always be at least 1 step along the color gradient. If the line segment is longer than 1 step, the segment will be subdivided into smaller segments of approximately length `step_size` (see :meth:`gouda.segment_line` for details).
+    """
+    if not (is_iter(x) and is_iter(y)):
+        raise ValueError('x and y must be iterables of values to plot')
+    if len(x) != len(y):
+        raise ValueError('x and y must be the same length but got {} and {}'.format(len(x), len(y)))
+
+    if ax is None:
+        ax = plt.gca()
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+
+    if step_as_percent:
+        step_size = line_dist(x, y) * step_size
+
+    all_segments = []
+    for idx in range(len(x) - 1):
+        x1, x2 = x[idx: idx + 2]
+        y1, y2 = y[idx: idx + 2]
+        segments = segment_line(x1, x2, y1, y2, step_size=step_size)
+        all_segments.append(segments)
+    all_segments = np.concatenate(all_segments, axis=0)
+    segment_dists = np.sqrt((all_segments[:, 1, 0] - all_segments[:, 0, 0]) ** 2 + (all_segments[:, 1, 1] - all_segments[:, 0, 1]) ** 2)
+    segment_dists = rescale(np.cumsum(segment_dists), start_val, end_val)
+    lc = mpl.collections.LineCollection(all_segments, array=segment_dists, cmap=cmap, norm=mpl.colors.Normalize(vmin=0, vmax=1), **kwargs)
+    ax.add_collection(lc)
+    if ax.get_autoscale_on():
+        ax.autoscale()
+    return ax, lc

@@ -5,7 +5,7 @@ import numpy.typing as npt
 import os
 import warnings
 
-from gouda import constants, data_methods, plot_methods
+from gouda import constants, data_methods, plotting
 from gouda.goudapath import GoudaPath, GPathLike
 from gouda.typing import ColorType, ImageArrayType
 
@@ -169,8 +169,8 @@ def split_signs(mask: npt.NDArray, positive_color: ColorType = (0., 1., 0.), neg
         raise ValueError("Single channel mask required for split_signs")
     negative = -np.clip(mask, -np.inf, 0)
     positive = np.clip(mask, 0, np.inf)
-    negative_image = np.dstack([negative * neg_channel for neg_channel in plot_methods.parse_color(negative_color)])
-    positive_image = np.dstack([positive * pos_channel for pos_channel in plot_methods.parse_color(positive_color)])
+    negative_image = np.dstack([negative * neg_channel for neg_channel in plotting.parse_color(negative_color)])
+    positive_image = np.dstack([positive * pos_channel for pos_channel in plotting.parse_color(positive_color)])
     new_mask = negative_image + positive_image
     return new_mask
 
