@@ -407,3 +407,26 @@ def test_order_normalization():
 
     check = gouda.order_normalization(np.zeros([100]))
     assert check.sum() == 0
+
+
+def test_line_dist():
+    assert gouda.line_dist([0, 1], [0, 0]) == 1.0
+    assert gouda.line_dist([1, 0], [0, 0]) == 1.0
+    assert gouda.line_dist([0, 0], [0, 1]) == 1.0
+    assert gouda.line_dist([0, 0], [1, 0]) == 1.0
+
+    assert gouda.line_dist([0, 1], [4, 10]) == np.sqrt((0 - 1) ** 2 + (4 - 10) ** 2)
+    assert gouda.line_dist([0, 1, 2], [4, 10, 20]) == np.sqrt((0 - 1) ** 2 + (4 - 10) ** 2) + np.sqrt((2 - 1) ** 2 + (20 - 10) ** 2)
+
+    assert gouda.line_dist([0, 1, 2], [0, 0, 0]) == 2.0
+    assert gouda.line_dist([0, 2, 1], [0, 0, 0]) == 3.0
+    assert gouda.line_dist([0, 1, 1], [0, 0, 1]) == 2.0
+
+    with pytest.raises(ValueError):
+        gouda.line_dist(0, [0, 1])
+    with pytest.raises(ValueError):
+        gouda.line_dist([0, 1], 0)
+    with pytest.raises(ValueError):
+        gouda.line_dist([0, 1], [0])
+    with pytest.raises(ValueError):
+        gouda.line_dist(np.zeros([2, 2]), [0, 1])

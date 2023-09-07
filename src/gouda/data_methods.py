@@ -4,8 +4,9 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 import warnings
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Iterable, List, Optional, Tuple, Union
 
+from gouda.general import is_iter
 from gouda.typing import FloatArrayType, LabelArrayType, ShapeType
 
 
@@ -223,7 +224,7 @@ def rescale(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, i
     return (x * new_range) + output_min
 
 
-def order_normalization(data: npt.ArrayLike, order: int = 2, axis: Optional[ShapeType] = None) -> FloatArrayType:
+def order_normalization(data: npt.ArrayLike, order: int = 2, axis: Optional[ShapeType] = None) -> npt.NDArray[np.floating]:
     """Normalize data by its matrix or vector norm
 
     Parameters
@@ -237,7 +238,7 @@ def order_normalization(data: npt.ArrayLike, order: int = 2, axis: Optional[Shap
 
     Returns
     -------
-    FloatArrayType
+    numpy.typing.NDArray[np.floating]
         The normalized data
     """
     norm = np.linalg.norm(data, order, axis)
@@ -782,3 +783,29 @@ def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
         else:
             break
     return reject
+
+
+def line_dist(x: Iterable, y: Iterable) -> float:
+    """Find the total distance along a line of points
+
+    Parameters
+    ----------
+    x : Iterable
+        A 1D list/array of x values along the line
+    y : Iterable
+        A 1D list/array of y values along the line
+
+    Returns
+    -------
+    float
+        Total distance along the line
+    """
+    if not (is_iter(x) and is_iter(y)):
+        raise ValueError('x and y must be iterables of values to plot')
+    x = np.squeeze(np.asarray(x))
+    y = np.squeeze(np.asarray(y))
+    if x.shape != y.shape or x.ndim > 1 or y.ndim > 1:
+        raise ValueError('x and y must be 1D iterables of values along a line but found shapes {} and {}'.format(x.shape, y.shape))
+
+    dists = np.sqrt((x[1:] - x[:-1]) ** 2 + (y[1:] - y[:-1]) ** 2)
+    return np.sum(dists)
