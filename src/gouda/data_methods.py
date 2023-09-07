@@ -785,6 +785,46 @@ def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
     return reject
 
 
+def segment_line(x1: float, x2: float, y1: float, y2: float, segment_size: float = 0.01, num_segments: Optional[int] = None):
+    """Divide a line into smaller segments
+
+    Parameters
+    ----------
+    x1 : float
+        X value of the first point
+    x2 : _type_
+        X value of the second point
+    y1 : _type_
+        Y value of the first point
+    y2 : _type_
+        Y value of the second point
+    segment_size : float, optional
+        Approximate size of each output segment. If greater than the line length, returns a single segment. By default 0.01
+    num_segments : Optional[int], optional
+        Exact number of output segments (overwrites `segment_size` if given). If 1 or less, returns a single segment. By default None
+
+    Returns
+    -------
+    npt.NDArray[np.floating]
+        Line segments as an array with form [[[x1, y1], [x1 + step, y1 + step]], ... [[x2 - step, y2 - step], [x2, y2]]]
+
+    Notes
+    -----
+    `segment_size` is approximate because the number of segments is truncated to the nearest integer. This means that any remainder when dividing the line length by `segment_size` is evenly distributed among the resulting segments, making them slightly larger. Setting `num_segments` allows for exact control over number of result segments.
+    """
+    if num_segments is None:
+        dist = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        num_segments = int(dist / segment_size)
+    if num_segments <= 1:
+        return np.asarray([[[x1, y1], [x2, y2]]])
+
+    x = np.linspace(x1, x2, num_segments + 1)
+    y = np.linspace(y1, y2, num_segments + 1)
+    points = np.asarray([x, y]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    return segments
+
+
 def line_dist(x: Iterable, y: Iterable) -> float:
     """Find the total distance along a line of points
 

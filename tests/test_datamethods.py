@@ -430,3 +430,29 @@ def test_line_dist():
         gouda.line_dist([0, 1], [0])
     with pytest.raises(ValueError):
         gouda.line_dist(np.zeros([2, 2]), [0, 1])
+
+
+def test_segment_line():
+    x = gouda.segment_line(0, 1, 0, 0, segment_size=0.1)
+
+    assert len(x) == 10
+    np.testing.assert_array_equal(x[:, :, 1], 0)
+    np.testing.assert_array_almost_equal(x[:, 0, 0], [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+    np.testing.assert_array_almost_equal(x[:, 1, 0], [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+
+    x = gouda.segment_line(0, 0, 0, 1, num_segments=10)
+    assert len(x) == 10
+    np.testing.assert_array_equal(x[:, :, 0], 0)
+    np.testing.assert_array_almost_equal(x[:, 0, 1], [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+    np.testing.assert_array_almost_equal(x[:, 1, 1], [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+
+    x = gouda.segment_line(0, 1, 0, 1, segment_size=100)
+    assert len(x) == 1
+    np.testing.assert_array_equal(x, np.asarray([[[0, 0], [1, 1]]]))
+
+    x = gouda.segment_line(0, 1, 0, 1, num_segments=1)
+    assert len(x) == 1
+    np.testing.assert_array_equal(x, np.asarray([[[0, 0], [1, 1]]]))
+
+    x = gouda.segment_line(0, 1, 0, 0, segment_size=0.05, num_segments=10)
+    assert len(x) == 10
