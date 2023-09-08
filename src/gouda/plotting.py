@@ -199,7 +199,7 @@ def colorplot(x: Iterable, y: Iterable, ax: Optional[mpl.axes.Axes] = None, cmap
 
     Returns
     -------
-    plt.Axes
+    matplotlib.pyplot.Axes
         The axes used for the plot
 
     Notes
@@ -235,3 +235,61 @@ def colorplot(x: Iterable, y: Iterable, ax: Optional[mpl.axes.Axes] = None, cmap
     if ax.get_autoscale_on():
         ax.autoscale()
     return ax, lc
+
+
+def plot_joint_arrow(x: Iterable, y: Iterable, linewidth: float = 5.0, headwidth: float = 2.0, headlength: Optional[float] = None, ax: Optional[mpl.axes.Axes] = None, color: Optional[ColorType] = None, label: str = None):
+    """Plot a jointed line ending in an arrowhead
+
+    Parameters
+    ----------
+    x : Iterable
+        x values to plot
+    y : Iterable
+        y values to plot
+    linewidth : float, optional
+        Width of the line to draw, by default 5.0
+    headwidth : float, optional
+        Width of the arrowhead relative to `linewidth`, by default 2.0
+    headlength : Optional[float], optional
+        Length of the arrowhead relative to `linewidth`. If None, defaults to `headwidth`. By default None
+    ax : Optional[matplotlib.axes.Axes], optional
+        Pre-existing axes for the plot. If None, uses :meth:`matplotlib.pyplot.gca`. By default None
+    color : Optional[gouda.ColorType], optional
+        Color for the line and arrowhead, by default None
+    label : str, optional
+        Label that will be displayed in the legend, by default None
+
+    Returns
+    -------
+    matplotlib.pyplot.Axes
+        The axes used for the plot
+    """
+    if not (is_iter(x) and is_iter(y)):
+        raise ValueError('x and y must be iterables of values to plot')
+    if len(x) != len(y):
+        raise ValueError('x and y must be the same length but got {} and {}'.format(len(x), len(y)))
+
+    if ax is None:
+        ax = plt.gca()
+
+    linewidth = mpl.rcParams['lines.linewidth'] if linewidth is None else linewidth
+    mutation_scale = mpl.rcParams['font.size']
+    line_kwargs = dict()
+    arrow_kwargs = dict(mutation_scale=mutation_scale)
+    arrowstyle = 'simple'
+    style_scale = linewidth / mutation_scale
+    arrowstyle = mpl.patches.ArrowStyle(arrowstyle,
+                                        tail_width=style_scale,
+                                        head_width=style_scale * headwidth,
+                                        head_length=style_scale * headlength)
+
+    points = np.column_stack([x, y])
+    points[-1] = (points[-2] + points[-1]) / 2  # only go halfway so it doesn't overlap arrowhead
+    path = mpl.path.Path(points, [mpl.path.Path.MOVETO] + [mpl.path.Path.LINETO] * (len(points) - 1))
+    patch = mpl.patches.PathPatch(path, facecolor='none', edgecolor=color, lw=linewidth, label=None, **line_kwargs)
+    ax.add_patch(patch)
+
+    arrow = mpl.patches.FancyArrowPatch([x[-2], y[-2]], [x[-1], y[-1]], color=color, label=label, lw=0, shrinkA=0, shrinkB=0, arrowstyle=arrowstyle, **arrow_kwargs)
+    ax.add_patch(arrow)
+    plt.plot([min(x), max(x)], [min(y), max(y)], alpha=0, label=None)
+    return ax
