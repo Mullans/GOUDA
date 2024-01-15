@@ -6,7 +6,7 @@ import gouda.colors
 def test_sRGB_conversions():
     check_pairs = [([255, 255, 255], [255, 255, 255]), ([0, 0, 0], [0, 0, 0]), ([100, 150, 200], [32, 78, 147])]
     for start_color, mid_color in check_pairs:
-        color_check = np.asarray(start_color)
+        color_check = np.asarray(start_color).astype(np.uint8)
         forward_check = gouda.colors.sRGB2linearRGB(color_check)
         np.testing.assert_allclose(forward_check, np.asarray(mid_color), atol=1)
         reverse_check = gouda.colors.linearRGB2sRGB(forward_check)
@@ -20,7 +20,7 @@ def test_LAB_conversions():
                    ([0, 255, 0], [87.82, -79.29, 80.99]),
                    ([0, 0, 255], [29.57, 69.30, -112.03])]
     for start_color, mid_color in check_pairs:
-        color_check = np.asarray(start_color)
+        color_check = np.asarray(start_color).astype(np.uint8)
         forward_check = gouda.colors.rgb2lab(color_check)
         np.testing.assert_allclose(forward_check, mid_color, atol=10)
         reverse_check = gouda.colors.lab2rgb(forward_check)
