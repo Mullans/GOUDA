@@ -515,6 +515,7 @@ def add_mask(image, mask, color='red', opacity=0.5, mask_threshold=0.5):
     The colors use a maximum value of 1.0 for floating type images, the maximum for the given integer type for integer type images, and the maximum present value for any other types.
     Boolean images will be converted to float32 images with values of 0.0 and 1.0
     """
+    # TODO - allow for colors with alpha channel
     if isinstance(image, list):
         return [add_mask(item, mask, color=color, opacity=opacity) for item in image]
     if opacity < 0.0 or opacity > 1.0:
@@ -548,7 +549,7 @@ def add_mask(image, mask, color='red', opacity=0.5, mask_threshold=0.5):
 
 
 def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5):
-    """Return image with a mask overlay.
+    """Return image with a mask overlay. DEPRECATED - use add_mask instead.
 
     Parameters
     ----------

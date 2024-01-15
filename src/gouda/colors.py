@@ -1,1220 +1,671 @@
-"""This doesn't do anything yet, it's just colors to be used in plotting later"""
-html = {
-    "AliceBlue": "#F0F8FF",
-    "AntiqueWhite": "#FAEBD7",
-    "Aqua": "#00FFFF",
-    "Aquamarine": "#7FFFD4",
-    "Azure": "#F0FFFF",
-    "Beige": "#F5F5DC",
-    "Bisque": "#FFE4C4",
-    "Black": "#000000",
-    "BlanchedAlmond": "#FFEBCD",
-    "Blue": "#0000FF",
-    "BlueViolet": "#8A2BE2",
-    "Brown": "#A52A2A",
-    "BurlyWood": "#DEB887",
-    "CadetBlue": "#5F9EA0",
-    "Chartreuse": "#7FFF00",
-    "Chocolate": "#D2691E",
-    "Coral": "#FF7F50",
-    "CornflowerBlue": "#6495ED",
-    "Cornsilk": "#FFF8DC",
-    "Crimson": "#DC143C",
-    "Cyan": "#00FFFF",
-    "DarkBlue": "#00008B",
-    "DarkCyan": "#008B8B",
-    "DarkGoldenRod": "#B8860B",
-    "DarkGrey": "#A9A9A9",
-    "DarkGreen": "#006400",
-    "DarkKhaki": "#BDB76B",
-    "DarkMagenta": "#8B008B",
-    "DarkOliveGreen": "#556B2F",
-    "Darkorange": "#FF8C00",
-    "DarkOrchid": "#9932CC",
-    "DarkRed": "#8B0000",
-    "DarkSalmon": "#E9967A",
-    "DarkSeaGreen": "#8FBC8F",
-    "DarkSlateBlue": "#483D8B",
-    "DarkSlateGrey": "#2F4F4F",
-    "DarkTurquoise": "#00CED1",
-    "DarkViolet": "#9400D3",
-    "DeepPink": "#FF1493",
-    "DeepSkyBlue": "#00BFFF",
-    "DimGray": "#696969",
-    "DodgerBlue": "#1E90FF",
-    "FireBrick": "#B22222",
-    "FloralWhite": "#FFFAF0",
-    "ForestGreen": "#228B22",
-    "Fuchsia": "#FF00FF",
-    "Gainsboro": "#DCDCDC",
-    "GhostWhite": "#F8F8FF",
-    "Gold": "#FFD700",
-    "GoldenRod": "#DAA520",
-    "Grey": "#808080",
-    "Green": "#008000",
-    "GreenYellow": "#ADFF2F",
-    "HoneyDew": "#F0FFF0",
-    "HotPink": "#FF69B4",
-    "IndianRed": "#CD5C5C",
-    "Indigo": "#4B0082",
-    "Ivory": "#FFFFF0",
-    "Khaki": "#F0E68C",
-    "Lavender": "#E6E6FA",
-    "LavenderBlush": "#FFF0F5",
-    "LawnGreen": "#7CFC00",
-    "LemonChiffon": "#FFFACD",
-    "LightBlue": "#ADD8E6",
-    "LightCoral": "#F08080",
-    "LightCyan": "#E0FFFF",
-    "LightGoldenRodYellow": "#FAFAD2",
-    "LightGrey": "#D3D3D3",
-    "LightGreen": "#90EE90",
-    "LightPink": "#FFB6C1",
-    "LightSalmon": "#FFA07A",
-    "LightSeaGreen": "#20B2AA",
-    "LightSkyBlue": "#87CEFA",
-    "LightSlateGrey": "#778899",
-    "LightSteelBlue": "#B0C4DE",
-    "LightYellow": "#FFFFE0",
-    "Lime": "#00FF00",
-    "LimeGreen": "#32CD32",
-    "Linen": "#FAF0E6",
-    "Magenta": "#FF00FF",
-    "Maroon": "#800000",
-    "MediumAquaMarine": "#66CDAA",
-    "MediumBlue": "#0000CD",
-    "MediumOrchid": "#BA55D3",
-    "MediumPurple": "#9370D8",
-    "MediumSeaGreen": "#3CB371",
-    "MediumSlateBlue": "#7B68EE",
-    "MediumSpringGreen": "#00FA9A",
-    "MediumTurquoise": "#48D1CC",
-    "MediumVioletRed": "#C71585",
-    "MidnightBlue": "#191970",
-    "MintCream": "#F5FFFA",
-    "MistyRose": "#FFE4E1",
-    "Moccasin": "#FFE4B5",
-    "NavajoWhite": "#FFDEAD",
-    "Navy": "#000080",
-    "OldLace": "#FDF5E6",
-    "Olive": "#808000",
-    "OliveDrab": "#6B8E23",
-    "Orange": "#FFA500",
-    "OrangeRed": "#FF4500",
-    "Orchid": "#DA70D6",
-    "PaleGoldenRod": "#EEE8AA",
-    "PaleGreen": "#98FB98",
-    "PaleTurquoise": "#AFEEEE",
-    "PaleVioletRed": "#D87093",
-    "PapayaWhip": "#FFEFD5",
-    "PeachPuff": "#FFDAB9",
-    "Peru": "#CD853F",
-    "Pink": "#FFC0CB",
-    "Plum": "#DDA0DD",
-    "PowderBlue": "#B0E0E6",
-    "Purple": "#800080",
-    "Red": "#FF0000",
-    "RosyBrown": "#BC8F8F",
-    "RoyalBlue": "#4169E1",
-    "SaddleBrown": "#8B4513",
-    "Salmon": "#FA8072",
-    "SandyBrown": "#F4A460",
-    "SeaGreen": "#2E8B57",
-    "SeaShell": "#FFF5EE",
-    "Sienna": "#A0522D",
-    "Silver": "#C0C0C0",
-    "SkyBlue": "#87CEEB",
-    "SlateBlue": "#6A5ACD",
-    "SlateGrey": "#708090",
-    "Snow": "#FFFAFA",
-    "SpringGreen": "#00FF7F",
-    "SteelBlue": "#4682B4",
-    "Tan": "#D2B48C",
-    "Teal": "#008080",
-    "Thistle": "#D8BFD8",
-    "Tomato": "#FF6347",
-    "Turquoise": "#40E0D0",
-    "Violet": "#EE82EE",
-    "Wheat": "#F5DEB3",
-    "White": "#FFFFFF",
-    "WhiteSmoke": "#F5F5F5",
-    "Yellow": "#FFFF00",
-    "YellowGreen": "#9ACD32",
+import copy
+import numpy as np
+from enum import Enum
+from typing import Callable, Union
+
+# NOTE - Color distance and color palette generation functions in this file are adapted from media lab's javascript iwanthue library - https://medialab.github.io/iwanthue/js/libs/chroma.palette-gen.js
+# NOTE - Color distance conversion functions are adapted from the chroma.js library - https://github.com/gka/chroma.js
+# NOTE - Color vision deficiency adapted from the DaltonLens implementation of the Brettel, Viénot & Mollon 1997 algorithm - https://daltonlens.org/colorblindness-simulator
+
+
+# CONSTANTS
+
+LAB_CONSTANTS = {
+    # Corresponds roughly to RGB brighter/darker
+    'Kn': 18.0,
+
+    # D65 standard XYZ values normalized to Y = 1
+    'Xn': 0.950470,
+    'Yn': 1.0,
+    'Zn': 1.088830,
+
+    't0': 0.137931034,  # 4 / 29
+    't1': 0.206896552,  # 6 / 29
+    't2': 0.12841855,   # 3 * t1 * t1
+    't3': 0.008856452,  # t1 * t1 * t1
 }
 
-# https://github.com/mwaskom/seaborn/blob/master/seaborn/colors/crayons.py
-crayons = {
-    'Almond': '#EFDECD',
-    'Antique Brass': '#CD9575',
-    'Apricot': '#FDD9B5',
-    'Aquamarine': '#78DBE2',
-    'Asparagus': '#87A96B',
-    'Atomic Tangerine': '#FFA474',
-    'Banana Mania': '#FAE7B5',
-    'Beaver': '#9F8170',
-    'Bittersweet': '#FD7C6E',
-    'Black': '#000000',
-    'Blue': '#1F75FE',
-    'Blue Bell': '#A2A2D0',
-    'Blue Green': '#0D98BA',
-    'Blue Violet': '#7366BD',
-    'Blush': '#DE5D83',
-    'Brick Red': '#CB4154',
-    'Brown': '#B4674D',
-    'Burnt Orange': '#FF7F49',
-    'Burnt Sienna': '#EA7E5D',
-    'Cadet Blue': '#B0B7C6',
-    'Canary': '#FFFF99',
-    'Caribbean Green': '#00CC99',
-    'Carnation Pink': '#FFAACC',
-    'Cerise': '#DD4492',
-    'Cerulean': '#1DACD6',
-    'Chestnut': '#BC5D58',
-    'Copper': '#DD9475',
-    'Cornflower': '#9ACEEB',
-    'Cotton Candy': '#FFBCD9',
-    'Dandelion': '#FDDB6D',
-    'Denim': '#2B6CC4',
-    'Desert Sand': '#EFCDB8',
-    'Eggplant': '#6E5160',
-    'Electric Lime': '#CEFF1D',
-    'Fern': '#71BC78',
-    'Forest Green': '#6DAE81',
-    'Fuchsia': '#C364C5',
-    'Fuzzy Wuzzy': '#CC6666',
-    'Gold': '#E7C697',
-    'Goldenrod': '#FCD975',
-    'Granny Smith Apple': '#A8E4A0',
-    'Gray': '#95918C',
-    'Green': '#1CAC78',
-    'Green Yellow': '#F0E891',
-    'Hot Magenta': '#FF1DCE',
-    'Inchworm': '#B2EC5D',
-    'Indigo': '#5D76CB',
-    'Jazzberry Jam': '#CA3767',
-    'Jungle Green': '#3BB08F',
-    'Laser Lemon': '#FEFE22',
-    'Lavender': '#FCB4D5',
-    'Macaroni and Cheese': '#FFBD88',
-    'Magenta': '#F664AF',
-    'Mahogany': '#CD4A4C',
-    'Manatee': '#979AAA',
-    'Mango Tango': '#FF8243',
-    'Maroon': '#C8385A',
-    'Mauvelous': '#EF98AA',
-    'Melon': '#FDBCB4',
-    'Midnight Blue': '#1A4876',
-    'Mountain Meadow': '#30BA8F',
-    'Navy Blue': '#1974D2',
-    'Neon Carrot': '#FFA343',
-    'Olive Green': '#BAB86C',
-    'Orange': '#FF7538',
-    'Orchid': '#E6A8D7',
-    'Outer Space': '#414A4C',
-    'Outrageous Orange': '#FF6E4A',
-    'Pacific Blue': '#1CA9C9',
-    'Peach': '#FFCFAB',
-    'Periwinkle': '#C5D0E6',
-    'Piggy Pink': '#FDDDE6',
-    'Pine Green': '#158078',
-    'Pink Flamingo': '#FC74FD',
-    'Pink Sherbert': '#F78FA7',
-    'Plum': '#8E4585',
-    'Purple Heart': '#7442C8',
-    "Purple Mountains' Majesty": '#9D81BA',
-    'Purple Pizzazz': '#FE4EDA',
-    'Radical Red': '#FF496C',
-    'Raw Sienna': '#D68A59',
-    'Razzle Dazzle Rose': '#FF48D0',
-    'Razzmatazz': '#E3256B',
-    'Red': '#EE204D',
-    'Red Orange': '#FF5349',
-    'Red Violet': '#C0448F',
-    "Robin's Egg Blue": '#1FCECB',
-    'Royal Purple': '#7851A9',
-    'Salmon': '#FF9BAA',
-    'Scarlet': '#FC2847',
-    "Screamin' Green": '#76FF7A',
-    'Sea Green': '#93DFB8',
-    'Sepia': '#A5694F',
-    'Shadow': '#8A795D',
-    'Shamrock': '#45CEA2',
-    'Shocking Pink': '#FB7EFD',
-    'Silver': '#CDC5C2',
-    'Sky Blue': '#80DAEB',
-    'Spring Green': '#ECEABE',
-    'Sunglow': '#FFCF48',
-    'Sunset Orange': '#FD5E53',
-    'Tan': '#FAA76C',
-    'Tickle Me Pink': '#FC89AC',
-    'Timberwolf': '#DBD7D2',
-    'Tropical Rain Forest': '#17806D',
-    'Tumbleweed': '#DEAA88',
-    'Turquoise Blue': '#77DDE7',
-    'Unmellow Yellow': '#FFFF66',
-    'Violet (Purple)': '#926EAE',
-    'Violet Red': '#F75394',
-    'Vivid Tangerine': '#FFA089',
-    'Vivid Violet': '#8F509D',
-    'White': '#FFFFFF',
-    'Wild Blue Yonder': '#A2ADD0',
-    'Wild Strawberry': '#FF43A4',
-    'Wild Watermelon': '#FC6C85',
-    'Wisteria': '#CDA4DE',
-    'Yellow': '#FCE883',
-    'Yellow Green': '#C5E384',
-    'Yellow Orange': '#FFAE42'
-}
 
-# https://xkcd.com/color/rgb.txt
-xkcd_rgb = {
-    'acid green': '#8ffe09',
-    'adobe': '#bd6c48',
-    'algae': '#54ac68',
-    'algae green': '#21c36f',
-    'almost black': '#070d0d',
-    'amber': '#feb308',
-    'amethyst': '#9b5fc0',
-    'apple': '#6ecb3c',
-    'apple green': '#76cd26',
-    'apricot': '#ffb16d',
-    'aqua': '#13eac9',
-    'aqua blue': '#02d8e9',
-    'aqua green': '#12e193',
-    'aqua marine': '#2ee8bb',
-    'aquamarine': '#04d8b2',
-    'army green': '#4b5d16',
-    'asparagus': '#77ab56',
-    'aubergine': '#3d0734',
-    'auburn': '#9a3001',
-    'avocado': '#90b134',
-    'avocado green': '#87a922',
-    'azul': '#1d5dec',
-    'azure': '#069af3',
-    'baby blue': '#a2cffe',
-    'baby green': '#8cff9e',
-    'baby pink': '#ffb7ce',
-    'baby poo': '#ab9004',
-    'baby poop': '#937c00',
-    'baby poop green': '#8f9805',
-    'baby puke green': '#b6c406',
-    'baby purple': '#ca9bf7',
-    'baby shit brown': '#ad900d',
-    'baby shit green': '#889717',
-    'banana': '#ffff7e',
-    'banana yellow': '#fafe4b',
-    'barbie pink': '#fe46a5',
-    'barf green': '#94ac02',
-    'barney': '#ac1db8',
-    'barney purple': '#a00498',
-    'battleship grey': '#6b7c85',
-    'beige': '#e6daa6',
-    'berry': '#990f4b',
-    'bile': '#b5c306',
-    'black': '#000000',
-    'bland': '#afa88b',
-    'blood': '#770001',
-    'blood orange': '#fe4b03',
-    'blood red': '#980002',
-    'blue': '#0343df',
-    'blue blue': '#2242c7',
-    'blue green': '#137e6d',
-    'blue grey': '#607c8e',
-    'blue purple': '#5729ce',
-    'blue violet': '#5d06e9',
-    'blue with a hint of purple': '#533cc6',
-    'blue/green': '#0f9b8e',
-    'blue/grey': '#758da3',
-    'blue/purple': '#5a06ef',
-    'blueberry': '#464196',
-    'bluegreen': '#017a79',
-    'bluegrey': '#85a3b2',
-    'bluey green': '#2bb179',
-    'bluey grey': '#89a0b0',
-    'bluey purple': '#6241c7',
-    'bluish': '#2976bb',
-    'bluish green': '#10a674',
-    'bluish grey': '#748b97',
-    'bluish purple': '#703be7',
-    'blurple': '#5539cc',
-    'blush': '#f29e8e',
-    'blush pink': '#fe828c',
-    'booger': '#9bb53c',
-    'booger green': '#96b403',
-    'bordeaux': '#7b002c',
-    'boring green': '#63b365',
-    'bottle green': '#044a05',
-    'brick': '#a03623',
-    'brick orange': '#c14a09',
-    'brick red': '#8f1402',
-    'bright aqua': '#0bf9ea',
-    'bright blue': '#0165fc',
-    'bright cyan': '#41fdfe',
-    'bright green': '#01ff07',
-    'bright lavender': '#c760ff',
-    'bright light blue': '#26f7fd',
-    'bright light green': '#2dfe54',
-    'bright lilac': '#c95efb',
-    'bright lime': '#87fd05',
-    'bright lime green': '#65fe08',
-    'bright magenta': '#ff08e8',
-    'bright olive': '#9cbb04',
-    'bright orange': '#ff5b00',
-    'bright pink': '#fe01b1',
-    'bright purple': '#be03fd',
-    'bright red': '#ff000d',
-    'bright sea green': '#05ffa6',
-    'bright sky blue': '#02ccfe',
-    'bright teal': '#01f9c6',
-    'bright turquoise': '#0ffef9',
-    'bright violet': '#ad0afd',
-    'bright yellow': '#fffd01',
-    'bright yellow green': '#9dff00',
-    'british racing green': '#05480d',
-    'bronze': '#a87900',
-    'brown': '#653700',
-    'brown green': '#706c11',
-    'brown grey': '#8d8468',
-    'brown orange': '#b96902',
-    'brown red': '#922b05',
-    'brown yellow': '#b29705',
-    'brownish': '#9c6d57',
-    'brownish green': '#6a6e09',
-    'brownish grey': '#86775f',
-    'brownish orange': '#cb7723',
-    'brownish pink': '#c27e79',
-    'brownish purple': '#76424e',
-    'brownish red': '#9e3623',
-    'brownish yellow': '#c9b003',
-    'browny green': '#6f6c0a',
-    'browny orange': '#ca6b02',
-    'bruise': '#7e4071',
-    'bubble gum pink': '#ff69af',
-    'bubblegum': '#ff6cb5',
-    'bubblegum pink': '#fe83cc',
-    'buff': '#fef69e',
-    'burgundy': '#610023',
-    'burnt orange': '#c04e01',
-    'burnt red': '#9f2305',
-    'burnt siena': '#b75203',
-    'burnt sienna': '#b04e0f',
-    'burnt umber': '#a0450e',
-    'burnt yellow': '#d5ab09',
-    'burple': '#6832e3',
-    'butter': '#ffff81',
-    'butter yellow': '#fffd74',
-    'butterscotch': '#fdb147',
-    'cadet blue': '#4e7496',
-    'camel': '#c69f59',
-    'camo': '#7f8f4e',
-    'camo green': '#526525',
-    'camouflage green': '#4b6113',
-    'canary': '#fdff63',
-    'canary yellow': '#fffe40',
-    'candy pink': '#ff63e9',
-    'caramel': '#af6f09',
-    'carmine': '#9d0216',
-    'carnation': '#fd798f',
-    'carnation pink': '#ff7fa7',
-    'carolina blue': '#8ab8fe',
-    'celadon': '#befdb7',
-    'celery': '#c1fd95',
-    'cement': '#a5a391',
-    'cerise': '#de0c62',
-    'cerulean': '#0485d1',
-    'cerulean blue': '#056eee',
-    'charcoal': '#343837',
-    'charcoal grey': '#3c4142',
-    'chartreuse': '#c1f80a',
-    'cherry': '#cf0234',
-    'cherry red': '#f7022a',
-    'chestnut': '#742802',
-    'chocolate': '#3d1c02',
-    'chocolate brown': '#411900',
-    'cinnamon': '#ac4f06',
-    'claret': '#680018',
-    'clay': '#b66a50',
-    'clay brown': '#b2713d',
-    'clear blue': '#247afd',
-    'cloudy blue': '#acc2d9',
-    'cobalt': '#1e488f',
-    'cobalt blue': '#030aa7',
-    'cocoa': '#875f42',
-    'coffee': '#a6814c',
-    'cool blue': '#4984b8',
-    'cool green': '#33b864',
-    'cool grey': '#95a3a6',
-    'copper': '#b66325',
-    'coral': '#fc5a50',
-    'coral pink': '#ff6163',
-    'cornflower': '#6a79f7',
-    'cornflower blue': '#5170d7',
-    'cranberry': '#9e003a',
-    'cream': '#ffffc2',
-    'creme': '#ffffb6',
-    'crimson': '#8c000f',
-    'custard': '#fffd78',
-    'cyan': '#00ffff',
-    'dandelion': '#fedf08',
-    'dark': '#1b2431',
-    'dark aqua': '#05696b',
-    'dark aquamarine': '#017371',
-    'dark beige': '#ac9362',
-    'dark blue': '#00035b',
-    'dark blue green': '#005249',
-    'dark blue grey': '#1f3b4d',
-    'dark brown': '#341c02',
-    'dark coral': '#cf524e',
-    'dark cream': '#fff39a',
-    'dark cyan': '#0a888a',
-    'dark forest green': '#002d04',
-    'dark fuchsia': '#9d0759',
-    'dark gold': '#b59410',
-    'dark grass green': '#388004',
-    'dark green': '#033500',
-    'dark green blue': '#1f6357',
-    'dark grey': '#363737',
-    'dark grey blue': '#29465b',
-    'dark hot pink': '#d90166',
-    'dark indigo': '#1f0954',
-    'dark khaki': '#9b8f55',
-    'dark lavender': '#856798',
-    'dark lilac': '#9c6da5',
-    'dark lime': '#84b701',
-    'dark lime green': '#7ebd01',
-    'dark magenta': '#960056',
-    'dark maroon': '#3c0008',
-    'dark mauve': '#874c62',
-    'dark mint': '#48c072',
-    'dark mint green': '#20c073',
-    'dark mustard': '#a88905',
-    'dark navy': '#000435',
-    'dark navy blue': '#00022e',
-    'dark olive': '#373e02',
-    'dark olive green': '#3c4d03',
-    'dark orange': '#c65102',
-    'dark pastel green': '#56ae57',
-    'dark peach': '#de7e5d',
-    'dark periwinkle': '#665fd1',
-    'dark pink': '#cb416b',
-    'dark plum': '#3f012c',
-    'dark purple': '#35063e',
-    'dark red': '#840000',
-    'dark rose': '#b5485d',
-    'dark royal blue': '#02066f',
-    'dark sage': '#598556',
-    'dark salmon': '#c85a53',
-    'dark sand': '#a88f59',
-    'dark sea green': '#11875d',
-    'dark seafoam': '#1fb57a',
-    'dark seafoam green': '#3eaf76',
-    'dark sky blue': '#448ee4',
-    'dark slate blue': '#214761',
-    'dark tan': '#af884a',
-    'dark taupe': '#7f684e',
-    'dark teal': '#014d4e',
-    'dark turquoise': '#045c5a',
-    'dark violet': '#34013f',
-    'dark yellow': '#d5b60a',
-    'dark yellow green': '#728f02',
-    'darkblue': '#030764',
-    'darkgreen': '#054907',
-    'darkish blue': '#014182',
-    'darkish green': '#287c37',
-    'darkish pink': '#da467d',
-    'darkish purple': '#751973',
-    'darkish red': '#a90308',
-    'deep aqua': '#08787f',
-    'deep blue': '#040273',
-    'deep brown': '#410200',
-    'deep green': '#02590f',
-    'deep lavender': '#8d5eb7',
-    'deep lilac': '#966ebd',
-    'deep magenta': '#a0025c',
-    'deep orange': '#dc4d01',
-    'deep pink': '#cb0162',
-    'deep purple': '#36013f',
-    'deep red': '#9a0200',
-    'deep rose': '#c74767',
-    'deep sea blue': '#015482',
-    'deep sky blue': '#0d75f8',
-    'deep teal': '#00555a',
-    'deep turquoise': '#017374',
-    'deep violet': '#490648',
-    'denim': '#3b638c',
-    'denim blue': '#3b5b92',
-    'desert': '#ccad60',
-    'diarrhea': '#9f8303',
-    'dirt': '#8a6e45',
-    'dirt brown': '#836539',
-    'dirty blue': '#3f829d',
-    'dirty green': '#667e2c',
-    'dirty orange': '#c87606',
-    'dirty pink': '#ca7b80',
-    'dirty purple': '#734a65',
-    'dirty yellow': '#cdc50a',
-    'dodger blue': '#3e82fc',
-    'drab': '#828344',
-    'drab green': '#749551',
-    'dried blood': '#4b0101',
-    'duck egg blue': '#c3fbf4',
-    'dull blue': '#49759c',
-    'dull brown': '#876e4b',
-    'dull green': '#74a662',
-    'dull orange': '#d8863b',
-    'dull pink': '#d5869d',
-    'dull purple': '#84597e',
-    'dull red': '#bb3f3f',
-    'dull teal': '#5f9e8f',
-    'dull yellow': '#eedc5b',
-    'dusk': '#4e5481',
-    'dusk blue': '#26538d',
-    'dusky blue': '#475f94',
-    'dusky pink': '#cc7a8b',
-    'dusky purple': '#895b7b',
-    'dusky rose': '#ba6873',
-    'dust': '#b2996e',
-    'dusty blue': '#5a86ad',
-    'dusty green': '#76a973',
-    'dusty lavender': '#ac86a8',
-    'dusty orange': '#f0833a',
-    'dusty pink': '#d58a94',
-    'dusty purple': '#825f87',
-    'dusty red': '#b9484e',
-    'dusty rose': '#c0737a',
-    'dusty teal': '#4c9085',
-    'earth': '#a2653e',
-    'easter green': '#8cfd7e',
-    'easter purple': '#c071fe',
-    'ecru': '#feffca',
-    'egg shell': '#fffcc4',
-    'eggplant': '#380835',
-    'eggplant purple': '#430541',
-    'eggshell': '#ffffd4',
-    'eggshell blue': '#c4fff7',
-    'electric blue': '#0652ff',
-    'electric green': '#21fc0d',
-    'electric lime': '#a8ff04',
-    'electric pink': '#ff0490',
-    'electric purple': '#aa23ff',
-    'emerald': '#01a049',
-    'emerald green': '#028f1e',
-    'evergreen': '#05472a',
-    'faded blue': '#658cbb',
-    'faded green': '#7bb274',
-    'faded orange': '#f0944d',
-    'faded pink': '#de9dac',
-    'faded purple': '#916e99',
-    'faded red': '#d3494e',
-    'faded yellow': '#feff7f',
-    'fawn': '#cfaf7b',
-    'fern': '#63a950',
-    'fern green': '#548d44',
-    'fire engine red': '#fe0002',
-    'flat blue': '#3c73a8',
-    'flat green': '#699d4c',
-    'fluorescent green': '#08ff08',
-    'fluro green': '#0aff02',
-    'foam green': '#90fda9',
-    'forest': '#0b5509',
-    'forest green': '#06470c',
-    'forrest green': '#154406',
-    'french blue': '#436bad',
-    'fresh green': '#69d84f',
-    'frog green': '#58bc08',
-    'fuchsia': '#ed0dd9',
-    'gold': '#dbb40c',
-    'golden': '#f5bf03',
-    'golden brown': '#b27a01',
-    'golden rod': '#f9bc08',
-    'golden yellow': '#fec615',
-    'goldenrod': '#fac205',
-    'grape': '#6c3461',
-    'grape purple': '#5d1451',
-    'grapefruit': '#fd5956',
-    'grass': '#5cac2d',
-    'grass green': '#3f9b0b',
-    'grassy green': '#419c03',
-    'green': '#15b01a',
-    'green apple': '#5edc1f',
-    'green blue': '#06b48b',
-    'green brown': '#544e03',
-    'green grey': '#77926f',
-    'green teal': '#0cb577',
-    'green yellow': '#c9ff27',
-    'green/blue': '#01c08d',
-    'green/yellow': '#b5ce08',
-    'greenblue': '#23c48b',
-    'greenish': '#40a368',
-    'greenish beige': '#c9d179',
-    'greenish blue': '#0b8b87',
-    'greenish brown': '#696112',
-    'greenish cyan': '#2afeb7',
-    'greenish grey': '#96ae8d',
-    'greenish tan': '#bccb7a',
-    'greenish teal': '#32bf84',
-    'greenish turquoise': '#00fbb0',
-    'greenish yellow': '#cdfd02',
-    'greeny blue': '#42b395',
-    'greeny brown': '#696006',
-    'greeny grey': '#7ea07a',
-    'greeny yellow': '#c6f808',
-    'grey': '#929591',
-    'grey blue': '#6b8ba4',
-    'grey brown': '#7f7053',
-    'grey green': '#789b73',
-    'grey pink': '#c3909b',
-    'grey purple': '#826d8c',
-    'grey teal': '#5e9b8a',
-    'grey/blue': '#647d8e',
-    'grey/green': '#86a17d',
-    'greyblue': '#77a1b5',
-    'greyish': '#a8a495',
-    'greyish blue': '#5e819d',
-    'greyish brown': '#7a6a4f',
-    'greyish green': '#82a67d',
-    'greyish pink': '#c88d94',
-    'greyish purple': '#887191',
-    'greyish teal': '#719f91',
-    'gross green': '#a0bf16',
-    'gunmetal': '#536267',
-    'hazel': '#8e7618',
-    'heather': '#a484ac',
-    'heliotrope': '#d94ff5',
-    'highlighter green': '#1bfc06',
-    'hospital green': '#9be5aa',
-    'hot green': '#25ff29',
-    'hot magenta': '#f504c9',
-    'hot pink': '#ff028d',
-    'hot purple': '#cb00f5',
-    'hunter green': '#0b4008',
-    'ice': '#d6fffa',
-    'ice blue': '#d7fffe',
-    'icky green': '#8fae22',
-    'indian red': '#850e04',
-    'indigo': '#380282',
-    'indigo blue': '#3a18b1',
-    'iris': '#6258c4',
-    'irish green': '#019529',
-    'ivory': '#ffffcb',
-    'jade': '#1fa774',
-    'jade green': '#2baf6a',
-    'jungle green': '#048243',
-    'kelley green': '#009337',
-    'kelly green': '#02ab2e',
-    'kermit green': '#5cb200',
-    'key lime': '#aeff6e',
-    'khaki': '#aaa662',
-    'khaki green': '#728639',
-    'kiwi': '#9cef43',
-    'kiwi green': '#8ee53f',
-    'lavender': '#c79fef',
-    'lavender blue': '#8b88f8',
-    'lavender pink': '#dd85d7',
-    'lawn green': '#4da409',
-    'leaf': '#71aa34',
-    'leaf green': '#5ca904',
-    'leafy green': '#51b73b',
-    'leather': '#ac7434',
-    'lemon': '#fdff52',
-    'lemon green': '#adf802',
-    'lemon lime': '#bffe28',
-    'lemon yellow': '#fdff38',
-    'lichen': '#8fb67b',
-    'light aqua': '#8cffdb',
-    'light aquamarine': '#7bfdc7',
-    'light beige': '#fffeb6',
-    'light blue': '#95d0fc',
-    'light blue green': '#7efbb3',
-    'light blue grey': '#b7c9e2',
-    'light bluish green': '#76fda8',
-    'light bright green': '#53fe5c',
-    'light brown': '#ad8150',
-    'light burgundy': '#a8415b',
-    'light cyan': '#acfffc',
-    'light eggplant': '#894585',
-    'light forest green': '#4f9153',
-    'light gold': '#fddc5c',
-    'light grass green': '#9af764',
-    'light green': '#96f97b',
-    'light green blue': '#56fca2',
-    'light greenish blue': '#63f7b4',
-    'light grey': '#d8dcd6',
-    'light grey blue': '#9dbcd4',
-    'light grey green': '#b7e1a1',
-    'light indigo': '#6d5acf',
-    'light khaki': '#e6f2a2',
-    'light lavendar': '#efc0fe',
-    'light lavender': '#dfc5fe',
-    'light light blue': '#cafffb',
-    'light light green': '#c8ffb0',
-    'light lilac': '#edc8ff',
-    'light lime': '#aefd6c',
-    'light lime green': '#b9ff66',
-    'light magenta': '#fa5ff7',
-    'light maroon': '#a24857',
-    'light mauve': '#c292a1',
-    'light mint': '#b6ffbb',
-    'light mint green': '#a6fbb2',
-    'light moss green': '#a6c875',
-    'light mustard': '#f7d560',
-    'light navy': '#155084',
-    'light navy blue': '#2e5a88',
-    'light neon green': '#4efd54',
-    'light olive': '#acbf69',
-    'light olive green': '#a4be5c',
-    'light orange': '#fdaa48',
-    'light pastel green': '#b2fba5',
-    'light pea green': '#c4fe82',
-    'light peach': '#ffd8b1',
-    'light periwinkle': '#c1c6fc',
-    'light pink': '#ffd1df',
-    'light plum': '#9d5783',
-    'light purple': '#bf77f6',
-    'light red': '#ff474c',
-    'light rose': '#ffc5cb',
-    'light royal blue': '#3a2efe',
-    'light sage': '#bcecac',
-    'light salmon': '#fea993',
-    'light sea green': '#98f6b0',
-    'light seafoam': '#a0febf',
-    'light seafoam green': '#a7ffb5',
-    'light sky blue': '#c6fcff',
-    'light tan': '#fbeeac',
-    'light teal': '#90e4c1',
-    'light turquoise': '#7ef4cc',
-    'light urple': '#b36ff6',
-    'light violet': '#d6b4fc',
-    'light yellow': '#fffe7a',
-    'light yellow green': '#ccfd7f',
-    'light yellowish green': '#c2ff89',
-    'lightblue': '#7bc8f6',
-    'lighter green': '#75fd63',
-    'lighter purple': '#a55af4',
-    'lightgreen': '#76ff7b',
-    'lightish blue': '#3d7afd',
-    'lightish green': '#61e160',
-    'lightish purple': '#a552e6',
-    'lightish red': '#fe2f4a',
-    'lilac': '#cea2fd',
-    'liliac': '#c48efd',
-    'lime': '#aaff32',
-    'lime green': '#89fe05',
-    'lime yellow': '#d0fe1d',
-    'lipstick': '#d5174e',
-    'lipstick red': '#c0022f',
-    'macaroni and cheese': '#efb435',
-    'magenta': '#c20078',
-    'mahogany': '#4a0100',
-    'maize': '#f4d054',
-    'mango': '#ffa62b',
-    'manilla': '#fffa86',
-    'marigold': '#fcc006',
-    'marine': '#042e60',
-    'marine blue': '#01386a',
-    'maroon': '#650021',
-    'mauve': '#ae7181',
-    'medium blue': '#2c6fbb',
-    'medium brown': '#7f5112',
-    'medium green': '#39ad48',
-    'medium grey': '#7d7f7c',
-    'medium pink': '#f36196',
-    'medium purple': '#9e43a2',
-    'melon': '#ff7855',
-    'merlot': '#730039',
-    'metallic blue': '#4f738e',
-    'mid blue': '#276ab3',
-    'mid green': '#50a747',
-    'midnight': '#03012d',
-    'midnight blue': '#020035',
-    'midnight purple': '#280137',
-    'military green': '#667c3e',
-    'milk chocolate': '#7f4e1e',
-    'mint': '#9ffeb0',
-    'mint green': '#8fff9f',
-    'minty green': '#0bf77d',
-    'mocha': '#9d7651',
-    'moss': '#769958',
-    'moss green': '#658b38',
-    'mossy green': '#638b27',
-    'mud': '#735c12',
-    'mud brown': '#60460f',
-    'mud green': '#606602',
-    'muddy brown': '#886806',
-    'muddy green': '#657432',
-    'muddy yellow': '#bfac05',
-    'mulberry': '#920a4e',
-    'murky green': '#6c7a0e',
-    'mushroom': '#ba9e88',
-    'mustard': '#ceb301',
-    'mustard brown': '#ac7e04',
-    'mustard green': '#a8b504',
-    'mustard yellow': '#d2bd0a',
-    'muted blue': '#3b719f',
-    'muted green': '#5fa052',
-    'muted pink': '#d1768f',
-    'muted purple': '#805b87',
-    'nasty green': '#70b23f',
-    'navy': '#01153e',
-    'navy blue': '#001146',
-    'navy green': '#35530a',
-    'neon blue': '#04d9ff',
-    'neon green': '#0cff0c',
-    'neon pink': '#fe019a',
-    'neon purple': '#bc13fe',
-    'neon red': '#ff073a',
-    'neon yellow': '#cfff04',
-    'nice blue': '#107ab0',
-    'night blue': '#040348',
-    'ocean': '#017b92',
-    'ocean blue': '#03719c',
-    'ocean green': '#3d9973',
-    'ocher': '#bf9b0c',
-    'ochre': '#bf9005',
-    'ocre': '#c69c04',
-    'off blue': '#5684ae',
-    'off green': '#6ba353',
-    'off white': '#ffffe4',
-    'off yellow': '#f1f33f',
-    'old pink': '#c77986',
-    'old rose': '#c87f89',
-    'olive': '#6e750e',
-    'olive brown': '#645403',
-    'olive drab': '#6f7632',
-    'olive green': '#677a04',
-    'olive yellow': '#c2b709',
-    'orange': '#f97306',
-    'orange brown': '#be6400',
-    'orange pink': '#ff6f52',
-    'orange red': '#fd411e',
-    'orange yellow': '#ffad01',
-    'orangeish': '#fd8d49',
-    'orangered': '#fe420f',
-    'orangey brown': '#b16002',
-    'orangey red': '#fa4224',
-    'orangey yellow': '#fdb915',
-    'orangish': '#fc824a',
-    'orangish brown': '#b25f03',
-    'orangish red': '#f43605',
-    'orchid': '#c875c4',
-    'pale': '#fff9d0',
-    'pale aqua': '#b8ffeb',
-    'pale blue': '#d0fefe',
-    'pale brown': '#b1916e',
-    'pale cyan': '#b7fffa',
-    'pale gold': '#fdde6c',
-    'pale green': '#c7fdb5',
-    'pale grey': '#fdfdfe',
-    'pale lavender': '#eecffe',
-    'pale light green': '#b1fc99',
-    'pale lilac': '#e4cbff',
-    'pale lime': '#befd73',
-    'pale lime green': '#b1ff65',
-    'pale magenta': '#d767ad',
-    'pale mauve': '#fed0fc',
-    'pale olive': '#b9cc81',
-    'pale olive green': '#b1d27b',
-    'pale orange': '#ffa756',
-    'pale peach': '#ffe5ad',
-    'pale pink': '#ffcfdc',
-    'pale purple': '#b790d4',
-    'pale red': '#d9544d',
-    'pale rose': '#fdc1c5',
-    'pale salmon': '#ffb19a',
-    'pale sky blue': '#bdf6fe',
-    'pale teal': '#82cbb2',
-    'pale turquoise': '#a5fbd5',
-    'pale violet': '#ceaefa',
-    'pale yellow': '#ffff84',
-    'parchment': '#fefcaf',
-    'pastel blue': '#a2bffe',
-    'pastel green': '#b0ff9d',
-    'pastel orange': '#ff964f',
-    'pastel pink': '#ffbacd',
-    'pastel purple': '#caa0ff',
-    'pastel red': '#db5856',
-    'pastel yellow': '#fffe71',
-    'pea': '#a4bf20',
-    'pea green': '#8eab12',
-    'pea soup': '#929901',
-    'pea soup green': '#94a617',
-    'peach': '#ffb07c',
-    'peachy pink': '#ff9a8a',
-    'peacock blue': '#016795',
-    'pear': '#cbf85f',
-    'periwinkle': '#8e82fe',
-    'periwinkle blue': '#8f99fb',
-    'perrywinkle': '#8f8ce7',
-    'petrol': '#005f6a',
-    'pig pink': '#e78ea5',
-    'pine': '#2b5d34',
-    'pine green': '#0a481e',
-    'pink': '#ff81c0',
-    'pink purple': '#db4bda',
-    'pink red': '#f5054f',
-    'pink/purple': '#ef1de7',
-    'pinkish': '#d46a7e',
-    'pinkish brown': '#b17261',
-    'pinkish grey': '#c8aca9',
-    'pinkish orange': '#ff724c',
-    'pinkish purple': '#d648d7',
-    'pinkish red': '#f10c45',
-    'pinkish tan': '#d99b82',
-    'pinky': '#fc86aa',
-    'pinky purple': '#c94cbe',
-    'pinky red': '#fc2647',
-    'piss yellow': '#ddd618',
-    'pistachio': '#c0fa8b',
-    'plum': '#580f41',
-    'plum purple': '#4e0550',
-    'poison green': '#40fd14',
-    'poo': '#8f7303',
-    'poo brown': '#885f01',
-    'poop': '#7f5e00',
-    'poop brown': '#7a5901',
-    'poop green': '#6f7c00',
-    'powder blue': '#b1d1fc',
-    'powder pink': '#ffb2d0',
-    'primary blue': '#0804f9',
-    'prussian blue': '#004577',
-    'puce': '#a57e52',
-    'puke': '#a5a502',
-    'puke brown': '#947706',
-    'puke green': '#9aae07',
-    'puke yellow': '#c2be0e',
-    'pumpkin': '#e17701',
-    'pumpkin orange': '#fb7d07',
-    'pure blue': '#0203e2',
-    'purple': '#7e1e9c',
-    'purple blue': '#632de9',
-    'purple brown': '#673a3f',
-    'purple grey': '#866f85',
-    'purple pink': '#e03fd8',
-    'purple red': '#990147',
-    'purple/blue': '#5d21d0',
-    'purple/pink': '#d725de',
-    'purpleish': '#98568d',
-    'purpleish blue': '#6140ef',
-    'purpleish pink': '#df4ec8',
-    'purpley': '#8756e4',
-    'purpley blue': '#5f34e7',
-    'purpley grey': '#947e94',
-    'purpley pink': '#c83cb9',
-    'purplish': '#94568c',
-    'purplish blue': '#601ef9',
-    'purplish brown': '#6b4247',
-    'purplish grey': '#7a687f',
-    'purplish pink': '#ce5dae',
-    'purplish red': '#b0054b',
-    'purply': '#983fb2',
-    'purply blue': '#661aee',
-    'purply pink': '#f075e6',
-    'putty': '#beae8a',
-    'racing green': '#014600',
-    'radioactive green': '#2cfa1f',
-    'raspberry': '#b00149',
-    'raw sienna': '#9a6200',
-    'raw umber': '#a75e09',
-    'really light blue': '#d4ffff',
-    'red': '#e50000',
-    'red brown': '#8b2e16',
-    'red orange': '#fd3c06',
-    'red pink': '#fa2a55',
-    'red purple': '#820747',
-    'red violet': '#9e0168',
-    'red wine': '#8c0034',
-    'reddish': '#c44240',
-    'reddish brown': '#7f2b0a',
-    'reddish grey': '#997570',
-    'reddish orange': '#f8481c',
-    'reddish pink': '#fe2c54',
-    'reddish purple': '#910951',
-    'reddy brown': '#6e1005',
-    'rich blue': '#021bf9',
-    'rich purple': '#720058',
-    'robin egg blue': '#8af1fe',
-    "robin's egg": '#6dedfd',
-    "robin's egg blue": '#98eff9',
-    'rosa': '#fe86a4',
-    'rose': '#cf6275',
-    'rose pink': '#f7879a',
-    'rose red': '#be013c',
-    'rosy pink': '#f6688e',
-    'rouge': '#ab1239',
-    'royal': '#0c1793',
-    'royal blue': '#0504aa',
-    'royal purple': '#4b006e',
-    'ruby': '#ca0147',
-    'russet': '#a13905',
-    'rust': '#a83c09',
-    'rust brown': '#8b3103',
-    'rust orange': '#c45508',
-    'rust red': '#aa2704',
-    'rusty orange': '#cd5909',
-    'rusty red': '#af2f0d',
-    'saffron': '#feb209',
-    'sage': '#87ae73',
-    'sage green': '#88b378',
-    'salmon': '#ff796c',
-    'salmon pink': '#fe7b7c',
-    'sand': '#e2ca76',
-    'sand brown': '#cba560',
-    'sand yellow': '#fce166',
-    'sandstone': '#c9ae74',
-    'sandy': '#f1da7a',
-    'sandy brown': '#c4a661',
-    'sandy yellow': '#fdee73',
-    'sap green': '#5c8b15',
-    'sapphire': '#2138ab',
-    'scarlet': '#be0119',
-    'sea': '#3c9992',
-    'sea blue': '#047495',
-    'sea green': '#53fca1',
-    'seafoam': '#80f9ad',
-    'seafoam blue': '#78d1b6',
-    'seafoam green': '#7af9ab',
-    'seaweed': '#18d17b',
-    'seaweed green': '#35ad6b',
-    'sepia': '#985e2b',
-    'shamrock': '#01b44c',
-    'shamrock green': '#02c14d',
-    'shit': '#7f5f00',
-    'shit brown': '#7b5804',
-    'shit green': '#758000',
-    'shocking pink': '#fe02a2',
-    'sick green': '#9db92c',
-    'sickly green': '#94b21c',
-    'sickly yellow': '#d0e429',
-    'sienna': '#a9561e',
-    'silver': '#c5c9c7',
-    'sky': '#82cafc',
-    'sky blue': '#75bbfd',
-    'slate': '#516572',
-    'slate blue': '#5b7c99',
-    'slate green': '#658d6d',
-    'slate grey': '#59656d',
-    'slime green': '#99cc04',
-    'snot': '#acbb0d',
-    'snot green': '#9dc100',
-    'soft blue': '#6488ea',
-    'soft green': '#6fc276',
-    'soft pink': '#fdb0c0',
-    'soft purple': '#a66fb5',
-    'spearmint': '#1ef876',
-    'spring green': '#a9f971',
-    'spruce': '#0a5f38',
-    'squash': '#f2ab15',
-    'steel': '#738595',
-    'steel blue': '#5a7d9a',
-    'steel grey': '#6f828a',
-    'stone': '#ada587',
-    'stormy blue': '#507b9c',
-    'straw': '#fcf679',
-    'strawberry': '#fb2943',
-    'strong blue': '#0c06f7',
-    'strong pink': '#ff0789',
-    'sun yellow': '#ffdf22',
-    'sunflower': '#ffc512',
-    'sunflower yellow': '#ffda03',
-    'sunny yellow': '#fff917',
-    'sunshine yellow': '#fffd37',
-    'swamp': '#698339',
-    'swamp green': '#748500',
-    'tan': '#d1b26f',
-    'tan brown': '#ab7e4c',
-    'tan green': '#a9be70',
-    'tangerine': '#ff9408',
-    'taupe': '#b9a281',
-    'tea': '#65ab7c',
-    'tea green': '#bdf8a3',
-    'teal': '#029386',
-    'teal blue': '#01889f',
-    'teal green': '#25a36f',
-    'tealish': '#24bca8',
-    'tealish green': '#0cdc73',
-    'terra cotta': '#c9643b',
-    'terracota': '#cb6843',
-    'terracotta': '#ca6641',
-    'tiffany blue': '#7bf2da',
-    'tomato': '#ef4026',
-    'tomato red': '#ec2d01',
-    'topaz': '#13bbaf',
-    'toupe': '#c7ac7d',
-    'toxic green': '#61de2a',
-    'tree green': '#2a7e19',
-    'true blue': '#010fcc',
-    'true green': '#089404',
-    'turquoise': '#06c2ac',
-    'turquoise blue': '#06b1c4',
-    'turquoise green': '#04f489',
-    'turtle green': '#75b84f',
-    'twilight': '#4e518b',
-    'twilight blue': '#0a437a',
-    'ugly blue': '#31668a',
-    'ugly brown': '#7d7103',
-    'ugly green': '#7a9703',
-    'ugly pink': '#cd7584',
-    'ugly purple': '#a442a0',
-    'ugly yellow': '#d0c101',
-    'ultramarine': '#2000b1',
-    'ultramarine blue': '#1805db',
-    'umber': '#b26400',
-    'velvet': '#750851',
-    'vermillion': '#f4320c',
-    'very dark blue': '#000133',
-    'very dark brown': '#1d0200',
-    'very dark green': '#062e03',
-    'very dark purple': '#2a0134',
-    'very light blue': '#d5ffff',
-    'very light brown': '#d3b683',
-    'very light green': '#d1ffbd',
-    'very light pink': '#fff4f2',
-    'very light purple': '#f6cefc',
-    'very pale blue': '#d6fffe',
-    'very pale green': '#cffdbc',
-    'vibrant blue': '#0339f8',
-    'vibrant green': '#0add08',
-    'vibrant purple': '#ad03de',
-    'violet': '#9a0eea',
-    'violet blue': '#510ac9',
-    'violet pink': '#fb5ffc',
-    'violet red': '#a50055',
-    'viridian': '#1e9167',
-    'vivid blue': '#152eff',
-    'vivid green': '#2fef10',
-    'vivid purple': '#9900fa',
-    'vomit': '#a2a415',
-    'vomit green': '#89a203',
-    'vomit yellow': '#c7c10c',
-    'warm blue': '#4b57db',
-    'warm brown': '#964e02',
-    'warm grey': '#978a84',
-    'warm pink': '#fb5581',
-    'warm purple': '#952e8f',
-    'washed out green': '#bcf5a6',
-    'water blue': '#0e87cc',
-    'watermelon': '#fd4659',
-    'weird green': '#3ae57f',
-    'wheat': '#fbdd7e',
-    'white': '#ffffff',
-    'windows blue': '#3778bf',
-    'wine': '#80013f',
-    'wine red': '#7b0323',
-    'wintergreen': '#20f986',
-    'wisteria': '#a87dc2',
-    'yellow': '#ffff14',
-    'yellow brown': '#b79400',
-    'yellow green': '#c0fb2d',
-    'yellow ochre': '#cb9d06',
-    'yellow orange': '#fcb001',
-    'yellow tan': '#ffe36e',
-    'yellow/green': '#c8fd3d',
-    'yellowgreen': '#bbf90f',
-    'yellowish': '#faee66',
-    'yellowish brown': '#9b7a01',
-    'yellowish green': '#b0dd16',
-    'yellowish orange': '#ffab0f',
-    'yellowish tan': '#fcfc81',
-    'yellowy brown': '#ae8b0c',
-    'yellowy green': '#bff128'
-}
+class Deficiency(Enum):
+    PROTAN = 0
+    DEUTAN = 1
+    TRITAN = 2
+
+
+# COLOR CONVERSIONS #################
+
+def sRGB2linearRGB(arr: np.ndarray) -> np.ndarray:
+    """Convert sRGB to linearRGB, removing the gamma correction.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        sRGB color to convert to linear RGB, should be float in range [0., 1.] or uint8 in range [0, 255]
+    """
+    arr = np.asarray(arr)
+    convert_back = False
+    if arr.dtype == np.uint8:
+        arr = arr.astype(np.float32) / 255.0
+        convert_back = True
+    out = np.zeros_like(arr)
+    small_mask = arr < 0.04045
+    large_mask = np.logical_not(small_mask)
+    out[small_mask] = arr[small_mask] / 12.92
+    out[large_mask] = np.power((arr[large_mask] + 0.055) / 1.055, 2.4)
+    if convert_back:
+        out = np.clip(out, 0.0, 1.0)
+        out = np.round(out * 255.0).astype(np.uint8)
+    return out
+
+
+def linearRGB2sRGB(arr: np.ndarray) -> np.ndarray:
+    """Convert linearRGB to sRGB, applying the gamma correction.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        linear RGB color to convert to sRGB, should be float in range [0., 1.] or uint8 in range [0, 255]
+    """
+    arr = np.asarray(arr)
+    convert_back = False
+    if arr.dtype == np.uint8:
+        arr = arr.astype(np.float32) / 255.0
+        convert_back = True
+    out = np.zeros_like(arr)
+    arr = np.clip(arr, 0., 1.)
+    small_mask = arr < 0.0031308
+    large_mask = np.logical_not(small_mask)
+    out[small_mask] = arr[small_mask] * 12.92
+    out[large_mask] = np.power(arr[large_mask], 1.0 / 2.4) * 1.055 - 0.055
+    if convert_back:
+        out = np.clip(out, 0.0, 1.0)
+        out = np.round(out * 255.0).astype(np.uint8)
+    return out
+
+
+def lab2rgb(lab: np.ndarray) -> np.ndarray:
+    """Convert a CIE L*a*b* color to RGB
+
+    Parameters
+    ----------
+    lab : np.ndarray
+        CIE L*a*b* color to convert to RGB, should have shape [3,]
+    """
+    l, a, b = lab
+    y = (l + 16.0) / 116.0
+    x = y + a / 500.0  # if y is not Nan else y
+    z = y - b / 200.0  # if y is not Nan else y
+
+    y = LAB_CONSTANTS['Yn'] * lab_xyz(y)
+    x = LAB_CONSTANTS['Xn'] * lab_xyz(x)
+    z = LAB_CONSTANTS['Zn'] * lab_xyz(z)
+
+    r = _xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z)  # D65 -> sRGB
+    g = _xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z)
+    b_ = _xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z)
+    return np.round([r, g, b_]).astype(np.uint8)
+
+
+def rgb2lab(rgb):
+    """Convert an RGB color to CIE L*a*b*
+
+    Parameters
+    ----------
+    rgb : np.ndarray
+        RGB color to convert to CIE L*a*b*, should have shape [3,]
+    """
+    r, g, b = rgb
+    x, y, z = _rgb2xyz(r, g, b)
+    light = 116 * y - 16
+    return max(0, light), 500 * (x - y), 200 * (y - z)
+
+
+def _rgb2xyz(r, g, b):
+    r = _rgb_xyz(r)
+    g = _rgb_xyz(g)
+    b = _rgb_xyz(b)
+    x = _xyz_lab((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB_CONSTANTS['Xn'])
+    y = _xyz_lab((0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / LAB_CONSTANTS['Yn'])
+    z = _xyz_lab((0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / LAB_CONSTANTS['Zn'])
+    return x, y, z
+
+
+def _rgb_xyz(r):
+    r /= 255
+    if r <= 0.04045:
+        return r / 12.92
+    else:
+        return np.power((r + 0.055) / 1.055, 2.4)
+
+
+def _xyz_rgb(r: float) -> float:
+    if r <= 0.00304:
+        result = 12.92 * r
+    else:
+        result = 1.055 * np.power(r, 1 / 2.4) - 0.055
+    return 255 * result
+
+
+def lab_xyz(t):
+    if t > LAB_CONSTANTS['t1']:
+        return t ** 3.0
+    else:
+        return LAB_CONSTANTS['t2'] * (t - LAB_CONSTANTS['t0'])
+
+
+def _xyz_lab(t):
+    if t > LAB_CONSTANTS['t3']:
+        return np.power(t, 1 / 3.0)
+    else:
+        return t / LAB_CONSTANTS['t2'] + LAB_CONSTANTS['t0']
+
+
+def validate_lab(lab: np.ndarray) -> bool:
+    """Validate that a CIE L*a*b* color is within the valid range for both L*a*b* and RGB colors
+
+    Parameters
+    ----------
+    lab : np.ndarray
+        The CIE L*a*b* color to validate
+    """
+    l, a, b = lab
+    l_check = l >= 0 and l <= 100
+    a_check = a >= -128 and a <= 128
+    b_check = b >= -128 and b <= 128
+    if not (l_check and a_check and b_check):
+        return False
+    y = (l + 16) / 116
+    x = y + a / 500
+    z = y - b / 200
+    y = LAB_CONSTANTS['Yn'] * lab_xyz(y)
+    x = LAB_CONSTANTS['Xn'] * lab_xyz(x)
+    z = LAB_CONSTANTS['Zn'] * lab_xyz(z)
+
+    r = _xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z)
+    g = _xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z)
+    b = _xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z)
+
+    r_check = r >= 0 and r <= 255
+    g_check = g >= 0 and g <= 255
+    b_check = b >= 0 and b <= 255
+    return r_check and g_check and b_check
+
+
+# COLORBLIND SIMULATION #############
+
+def _plane_projection_matrix(normal, deficiency: Deficiency):
+    if deficiency == Deficiency.PROTAN:
+        return np.array([
+            [0., -normal[1] / normal[0], -normal[2] / normal[0]],
+            [0, 1, 0],
+            [0, 0, 1]
+        ])
+    elif deficiency == Deficiency.DEUTAN:
+        return np.array([
+            [1, 0, 0],
+            [-normal[0] / normal[1], 0, -normal[2] / normal[1]],
+            [0, 0, 1]
+        ])
+    elif deficiency == Deficiency.TRITAN:
+        return np.array([
+            [1, 0, 0],
+            [0, 1, 0],
+            [-normal[0] / normal[2], -normal[1] / normal[2], 0]
+        ])
+    else:
+        raise ValueError("Unknown color deficiency")
+
+
+class CVD_Simulator(object):
+    """Color vision deficiency simulator adapted from the DaltonLens implementation of (Brettel, Viénot & Mollon, 1997) 'Computerized simulation of color appearance for dichromats' - https://daltonlens.org/colorblindness-simulator
+
+    NOTE
+    ----
+    The DaltonLens implementation offers significantly more configurations. This is only their Brettel1997 implementation without Vischeck anchors, using white as the neutral color, and using similar values as their SmithPokorny75 LMS color model. A lot of values here have been pre-computed, so check out https://github.com/DaltonLens for their work.
+    """
+
+    def __init__(self):
+        # XYZJuddVos_from_linearRGB_BT709 @ LMS_from_XYZJuddVos_Smith_Pokorny_1975
+        self._LMS_from_linearRGB = np.array([[1.78824041e-01, 4.35160906e-01, 4.11934969e-02],
+                                             [3.45564232e-02, 2.71553825e-01, 3.86713084e-02],
+                                             [2.99565576e-04, 1.84308960e-03, 1.46708614e-02]])
+        self._linearRGB_from_LMS = np.linalg.inv(self._LMS_from_linearRGB)
+        self._lms_neutral = self._LMS_from_linearRGB @ np.array([1.0, 1.0, 1.0])
+        self._precomputed = {}
+
+    def simulate_cvd_color(self, base_color, deficiency: Deficiency, severity: float = 1.0):
+        """Simulate the appearance of a color for the given color vision deficiency
+
+        Parameters
+        ----------
+        base_color : np.ndarray
+            The input sRGB color as a uint8 array with shape (3,) and values in [0,255]
+        deficiency : Deficiency
+            The color vision deficiency to simulate.
+        severity : float, optional
+            The color blindness severity between 0 (normal vision) and 1 (complete dichromacy), by default 1.0
+
+        Returns
+        -------
+        np.ndarray
+            The simulated sRGB color as a uint8 array with shape (3,) and values in [0,255]
+        """
+        linear_rgb = np.asarray(base_color).astype(np.float32) / 255.0
+        linear_rgb = sRGB2linearRGB(linear_rgb)
+
+        cvd_linear_rgb = self._simulate_cvd_linear_rgb(linear_rgb, deficiency, severity)
+
+        cvd_linear_rgb = np.clip(cvd_linear_rgb, 0.0, 1.0)
+        cvd_float = linearRGB2sRGB(cvd_linear_rgb)
+
+        return (np.clip(cvd_float, 0.0, 1.0) * 255.0).astype(np.uint8)
+
+    def simulate_cvd_image(self, image, deficiency: Deficiency, severity: float = 1.0):
+        """Simulate the appearance of an image for the given color vision deficiency
+
+        Parameters
+        ----------
+        image : np.ndarray
+            The input sRGB image as a uint8 array with shape (X, Y, 3) and values in [0,255]
+        deficiency : Deficiency
+            The color vision deficiency to simulate.
+        severity : float, optional
+            The color blindness severity between 0 (normal vision) and 1 (complete dichromacy), by default 1.0
+
+        Returns
+        -------
+        np.ndarray
+            The simulated sRGB image as a uint8 array with shape (X, Y, 3) and values in [0,255]
+        """
+        im_linear_rgb = np.asarray(image).astype(np.float32) / 255.0
+        im_linear_rgb = sRGB2linearRGB(im_linear_rgb)
+
+        im_cvd_linear_rgb = self._simulate_cvd_linear_rgb(im_linear_rgb, deficiency, severity)
+
+        im_cvd_float = linearRGB2sRGB(im_cvd_linear_rgb)
+
+        return (np.clip(im_cvd_float, 0.0, 1.0) * 255.0).astype(np.uint8)
+
+    def _simulate_cvd_linear_rgb(self, image_linear_rgb_float32, deficiency: Deficiency, severity: float):
+        if deficiency == Deficiency.PROTAN or deficiency == Deficiency.DEUTAN:
+            H1, H2, n_sep_plane = self._compute_matrices(deficiency)
+        elif deficiency == Deficiency.TRITAN:
+            H1, H2, n_sep_plane = self._compute_matrices(deficiency)
+        else:
+            raise ValueError("Unknown color deficiency")
+
+        im_lms = image_linear_rgb_float32 @ self._LMS_from_linearRGB.T
+        im_H1 = im_lms @ H1.T
+        im_H2 = im_lms @ H2.T
+        H2_indices = np.dot(im_lms, n_sep_plane) < 0
+
+        im_H1[H2_indices] = im_H2[H2_indices]
+        im_dichromacy = im_H1 @ self._linearRGB_from_LMS.T
+
+        if severity < 1.0:
+            return im_dichromacy * severity + image_linear_rgb_float32 * (1.0 - severity)
+        else:
+            return im_dichromacy
+
+    def _compute_matrices(self, deficiency):
+        if deficiency in self._precomputed:
+            return self._precomputed[deficiency]
+
+        if deficiency == Deficiency.PROTAN or deficiency == Deficiency.DEUTAN:
+            lms_on_wing1 = np.array([0.05093842, 0.06189707, 0.01515058])  # lms_475
+            lms_on_wing2 = np.array([6.28133927e-01, 2.87409450e-01, 3.16776000e-05])  # lms_575
+        else:
+            lms_on_wing1 = np.array([0.08183212, 0.08803109, 0.00942931])  # lms_485
+            lms_on_wing2 = np.array([5.82021668e-02, 2.79539320e-03, 1.60800000e-07])  # lms_660
+
+        n1 = np.cross(self._lms_neutral, lms_on_wing1)
+        n2 = np.cross(self._lms_neutral, lms_on_wing2)
+        confusion_axis = np.array([0.0, 0.0, 0.0])
+        confusion_axis[deficiency.value] = 1.0
+        n_sep_plane = np.cross(self._lms_neutral, confusion_axis)
+        if np.dot(n_sep_plane, lms_on_wing1) < 0:
+            n1, n2 = n2, n1
+            lms_on_wing1, lms_on_wing2 = lms_on_wing2, lms_on_wing1
+        H1 = _plane_projection_matrix(n1, deficiency)
+        H2 = _plane_projection_matrix(n2, deficiency)
+        self._precomputed[deficiency] = (H1, H2, n_sep_plane)
+        return (H1, H2, n_sep_plane)
+
+
+# COLOR DISTANCES ###################
+
+def get_color_distance(color1: np.ndarray, color2: np.ndarray, dist_type: str = 'euclidean', colorblind_simulator: CVD_Simulator = None, from_rgb: bool = False) -> float:
+    """Compute the distance between two CIE L*a*b* colors
+
+    Parameters
+    ----------
+    color1 : np.ndarray
+        The first color to compare
+    color2 : np.ndarray
+        The second color to compare
+    dist_type : str, optional
+        The type of distance metric to use, by default 'euclidean'
+    from_rgb: bool, optional
+        If true, converts the colors from RGB to L*a*b before computing distance, by default False
+
+    Returns
+    -------
+    float
+        The distance between the colors
+    """
+    color1 = np.asarray(color1)
+    color2 = np.asarray(color2)
+    if from_rgb:
+        color1 = rgb2lab(color1)
+        color2 = rgb2lab(color2)
+    dist_type = dist_type.lower()
+    if dist_type == 'euclidean':
+        return euclidean_distance(color1, color2)
+    elif dist_type == 'cmc':
+        return cmc_distance(color1, color2, 2, 1)
+    elif dist_type == 'compromise':
+        return compromise_distance(color1, color2, colorblind_simulator)
+    elif isinstance(dist_type, Deficiency):
+        return colorblind_distance(color1, color2, dist_type, colorblind_simulator)
+    else:
+        raise ValueError('Unknown color distance type')
+
+
+def euclidean_distance(color1: np.ndarray, color2: np.ndarray) -> float:
+    """Return the euclidean distance between two colors
+
+    Parameters
+    ----------
+    color1 : np.ndarray
+        The first color to compare
+    color2 : np.ndarray
+        The second color to compare
+
+    Returns
+    -------
+    float
+        The distance between the colors
+    """
+    color1 = np.asarray(color1)
+    color2 = np.asarray(color2)
+    return np.sqrt(np.sum((color1 - color2) ** 2))
+
+
+def cmc_distance(lab_color1: np.ndarray, lab_color2: np.ndarray, lightness: int = 2, chroma: int = 1) -> float:
+    """Return the CIE Delta E distance between two CIE L*a*b* colors, often referred to as the Color Measurement Committee (CMC).
+
+    Parameters
+    ----------
+    color1 : np.ndarray
+        The first color to compare
+    color2 : np.ndarray
+        The second color to compare
+    lightness : int
+        The lightness parameter for the CMC calculation, by default 2
+    c : int
+        The chroma parameter for the CMC calculation, by default 1
+
+    Notes
+    -----
+    This is the 1984 CMC l:c version - see https://en.wikipedia.org/wiki/Color_difference#CMC_l:c_(1984)
+    See http://www.brucelindbloom.com/index.html?Eqn_DeltaE_CMC.html for more information.
+    General lightness:chroma value combinations are either 2:1 (acceptability) or 1:1 (perceptibility)
+
+    Returns
+    -------
+    float
+        The distance between the colors
+    """
+    L1, a1, b1 = lab_color1
+    L2, a2, b2 = lab_color2
+
+    C1 = np.sqrt(a1 ** 2 + b1 ** 2)
+    C2 = np.sqrt(a2 ** 2 + b2 ** 2)
+    deltaC = C1 - C2
+    deltaL = L1 - L2
+    deltaa = a1 - a2
+    deltab = b1 - b2
+    deltaH = np.sqrt(deltaa ** 2 + deltab ** 2 - deltaC ** 2)
+    H1 = np.arctan2(b1, a1) * (180 / np.pi)
+    while H1 < 0:
+        H1 += 360
+    F = np.sqrt(C1 ** 4 / (C1 ** 4 + 1900))
+    T = 0.56 + np.abs(0.2 * np.cos(H1 + 168)) if 164 <= H1 and H1 <= 345 else 0.36 + np.abs(0.4 * np.cos(H1 + 35))
+    S_L = 0.511 if lab_color1[0] < 16 else (0.040975 * L1 / (1 + 0.01765 * L1))
+    S_C = (0.0638 * C1 / (1 + 0.0131 * C1)) + 0.638
+    S_H = S_C * (F * T + 1 - F)
+    return np.sqrt((deltaL / (lightness * S_L)) ** 2 + (deltaC / (chroma * S_C)) ** 2 + (deltaH / S_H) ** 2)
+
+
+def compromise_distance(color1: np.ndarray, color2: np.ndarray, colorblind_simulator: CVD_Simulator) -> float:
+    """Return the CMC distance between two CIE L*a*b* colors weighted across their colorblind representations
+
+    Parameters
+    ----------
+    color1 : np.ndarray
+        The first color to compare
+    color2 : np.ndarray
+        The second color to compare
+
+    Returns
+    -------
+    float
+        The distance between the colors
+    """
+    distances = []
+    coeffs = []
+    distances.append(cmc_distance(color1, color2, 2, 1))
+    coeffs.append(1000)
+    rgb_color1 = lab2rgb(color1)
+    rgb_color2 = lab2rgb(color2)
+    for deficiency in Deficiency:
+        cvd_color1 = colorblind_simulator.simulate_cvd_color(rgb_color1, deficiency)
+        cvd_color2 = colorblind_simulator.simulate_cvd_color(rgb_color2, deficiency)
+        lab_color1 = rgb2lab(cvd_color1)
+        lab_color2 = rgb2lab(cvd_color2)
+        if lab_color1 is None or lab_color2 is None:
+            if type == 'Protanope':
+                c = 100
+            elif type == 'Deuteranope':
+                c = 500
+            elif type == 'Tritanope':
+                c = 1
+            else:
+                raise ValueError('Impossible situation')
+            distances.append(cmc_distance(lab_color1, lab_color2, 2, 1))
+            coeffs.append(c)
+    total = 0
+    count = 0
+    for idx, dist in enumerate(distances):
+        total += coeffs[idx] * dist
+        count += coeffs[idx]
+    return total / count
+
+
+def colorblind_distance(color1: np.ndarray, color2: np.ndarray, deficiency: Deficiency, colorblind_simulator: CVD_Simulator) -> float:
+    """Return the CMC distance between two CIE L*a*b* colors when converted to a completely colorblind representation
+
+    Parameters
+    ----------
+    color1 : np.ndarray
+        The first color to compare
+    color2 : np.ndarray
+        The second color to compare
+    type : str
+        The tpye of color blindness to consider (protanope, deuteranope, tritanope)
+
+    Returns
+    -------
+    float
+        The distance between the colors
+    """
+    cvd_color1 = lab2rgb(color1)
+    cvd_color2 = lab2rgb(color2)
+    cvd_color1 = colorblind_simulator.simulate_cvd_color(cvd_color1, deficiency)
+    cvd_color2 = colorblind_simulator.simulate_cvd_color(cvd_color2, deficiency)
+    color1 = rgb2lab(cvd_color1)
+    color2 = rgb2lab(cvd_color2)
+    return cmc_distance(color1, color2, 2, 1)
+
+
+# COLOR PALETTES
+
+def generate_palette(num_colors: int, check_color: Callable[[np.ndarray], bool] = lambda x: True, force_mode: bool = True, quality: int = 50, ultra_precision: bool = False, distance_type: Union[str, Deficiency] = 'compromise', as_rgb: bool = True, seed: Union[None, int, np.random.Generator] = None) -> list[np.ndarray]:
+    """Generate a perceptually differentiable color palette
+
+    Parameters
+    ----------
+    num_colors : int
+        The number of colors to generate
+    check_color : Callable[[np.ndarray], bool], optional
+        An additional function to validate selected colors
+    force_mode : bool, optional
+        Whether to use force vectors for color selection (if false, uses k-means), by default True
+    quality : int, optional
+        A scaler for the number of steps taken when optimizing colors, by default 50
+    ultra_precision : bool, optional
+        If true, samples 20 times more potential colors during k-means (no effect on force vectors), by default False
+    distance_type : str | Deficiency, optional
+        The method to use when computing color distance (can be "euclidean", "cmc", "compromise" or a Deficiency enum value), by default 'compromise'
+    as_rgb : bool, optional
+        Whether to return colors as RGB (True) or CIE L*a*b* (False), by default True
+    seed : Union[None, int, np.random.Generator], optional
+        A seed for the random generator, by default None
+
+    Returns
+    -------
+    list[np.ndarray]
+        A list of generated colors
+
+    Note
+    ----
+    If a Deficiency enum value is passed for `distance_type`, colors will be optimized for that colorblindness type using "cmc" distance
+    """
+    random = np.random.default_rng(seed)
+    colorblind_simulator = CVD_Simulator()
+
+    def check_lab(x):
+        return validate_lab(x) and check_color(x)
+    if force_mode:  # force vector mode
+        colors = []
+        vectors = {}
+        for i in range(num_colors):
+            color = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
+            while not check_lab(color):
+                color = [100 * np.random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
+            colors.append(color)
+
+        repulsion = 100
+        speed = 100
+        steps = quality * 20
+        for _ in range(steps):
+            for i in range(len(colors)):
+                vectors[i] = {'dl': 0, 'da': 0, 'db': 0}
+            for i in range(len(colors)):
+                color_a = colors[i]
+                for j in range(i):
+                    color_b = colors[j]
+
+                    dl = color_a[0] - color_b[0]
+                    da = color_a[1] - color_b[1]
+                    db = color_a[2] - color_b[2]
+                    try:
+                        d = get_color_distance(color_a, color_b, distance_type, colorblind_simulator)
+                    except TypeError:
+                        print(color_a, color_b)
+                        raise
+                    if d > 0:
+                        force = repulsion / (d ** 2)
+                        vectors[i]['dl'] += dl * force / d
+                        vectors[i]['da'] += da * force / d
+                        vectors[i]['db'] += db * force / d
+
+                        vectors[j]['dl'] += -dl * force / d
+                        vectors[j]['da'] += -da * force / d
+                        vectors[j]['db'] += -db * force / d
+                    else:
+                        vectors[j]['dl'] += 2 - 4 * random.random()
+                        vectors[j]['da'] += 2 - 4 * random.random()
+                        vectors[j]['db'] += 2 - 4 * random.random()
+
+            for i in range(len(colors)):
+                color = colors[i]
+                displacement = speed * np.sqrt(np.power(vectors[i]['dl'], 2) + np.power(vectors[i]['da'], 2) + np.power(vectors[i]['db'], 2))
+                if displacement > 0:
+                    ratio = speed * min(0.1, displacement) / displacement
+                    candidate_lab = [color[0] + vectors[i]['dl'] * ratio, color[1] + vectors[i]['da'] * ratio, color[2] + vectors[i]['db'] * ratio]
+                    if check_lab(candidate_lab):
+                        colors[i] = candidate_lab
+    else:
+        k_means = []
+        for i in range(num_colors):
+            lab = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
+            failsafe = 10
+            while not check_color(lab) and failsafe > 0:
+                failsafe -= 1
+                lab = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
+            k_means.append(lab)
+
+        color_samples = []
+        samples_closest = []
+        if ultra_precision:
+            for light in range(101):
+                for a in range(-100, 101, 5):
+                    for b in range(-100, 101, 5):
+                        if check_color([light, a, b]):
+                            color_samples.append([light, a, b])
+                            samples_closest.append(-1)
+        else:
+            for light in range(0, 101, 5):
+                for a in range(-100, 101, 10):
+                    for b in range(-100, 101, 10):
+                        if check_color([light, a, b]):
+                            color_samples.append([light, a, b])
+                            samples_closest.append(-1)
+
+        steps = quality
+        while steps > 0:
+            steps -= 1
+            for i in range(len(color_samples)):
+                lab = color_samples[i]
+                min_distance = np.inf
+                for j in range(len(k_means)):
+                    k_mean = k_means[j]
+                    distance = get_color_distance(lab, k_mean, distance_type, colorblind_simulator)
+                    if distance < min_distance:
+                        min_distance = distance
+                        samples_closest[i] = j
+
+            free_color_samples = copy.deepcopy(color_samples)
+            for j in range(len(k_means)):
+                count = 0
+                candidate_kmean = [0, 0, 0]
+                for i in range(len(color_samples)):
+                    if samples_closest[i] == j:
+                        count += 1
+                        candidate_kmean[0] += color_samples[i][0]
+                        candidate_kmean[1] += color_samples[i][1]
+                        candidate_kmean[2] += color_samples[i][2]
+                if count != 0:
+                    candidate_kmean[0] /= count
+                    candidate_kmean[1] /= count
+                    candidate_kmean[2] /= count
+                if count != 0 and check_color(candidate_kmean):  # and candidate_kmean  # Is this an existance check? Why?
+                    k_means[j] = candidate_kmean
+                else:
+                    if len(free_color_samples) > 0:
+                        min_distance = np.inf
+                        closest = -1
+                        for i in range(len(color_samples)):
+                            distance = get_color_distance(color_samples[1], candidate_kmean, distance_type, colorblind_simulator)
+                            if distance < min_distance:
+                                min_distance = distance
+                                closest = i
+                        if closest >= 0:
+                            k_means[j] = color_samples[closest]
+                free_color_samples = filter(lambda x: x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2], free_color_samples)
+                free_color_samples = list(free_color_samples)
+        colors = k_means
+    if as_rgb:
+        colors = [lab2rgb(color) for color in colors]
+    return colors
