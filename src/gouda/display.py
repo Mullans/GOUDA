@@ -69,6 +69,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
 
     #TODO - allow passing ncols or nrows as arguments... move this to squarify?
     #TODO - allow passing row/col height/width instead of figsize - https://stackoverflow.com/a/4306340/2348288
+    #TODO - allow passing row/col labels
     """
     defaults = ['hspace', 'wspace', 'left', 'bottom', 'right', 'top']
     for item in defaults:
