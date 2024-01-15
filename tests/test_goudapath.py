@@ -150,6 +150,15 @@ def test_relation():
     assert len(globbed) == 3
     assert test_dir('check_dir1').path in globbed
 
+    first_glob = test_dir.globfirst('*')
+    assert first_glob == globbed[0]
+    first_glob = test_dir.globfirst('*', as_gouda=True)
+    assert isinstance(first_glob, gouda.GoudaPath)
+    assert first_glob.path == globbed[0]
+    first_glob = test_dir.globfirst('*', basename=True)
+    assert first_glob == os.path.basename(globbed[0])
+    assert test_dir.globfirst('aksjdfhakljsdfhklajsdhfkjash3') is None
+
     globbed = test_dir.glob('*.txt', basenames=True)
     assert 'check_file.txt' in globbed
 
