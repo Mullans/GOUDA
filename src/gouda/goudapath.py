@@ -154,7 +154,7 @@ class GoudaPath(os.PathLike):
         recursive : bool
             The setting for the glob recursive argument (the default is False)
         sort : bool
-            Whether to sort the results (the default is False)
+            Whether to sort the results using the sorted function (the default is False)
         """
         results = glob.glob(os.path.join(self.__path, pattern), recursive=recursive)
         if basenames:
@@ -164,6 +164,27 @@ class GoudaPath(os.PathLike):
         if as_gouda:
             results = [GoudaPath(item, use_absolute=self.use_absolute) for item in results]
         return results
+
+    def globfirst(self, pattern, as_gouda=False, basename=False, recursive=False):
+        """Make a glob call starting from the current path and return only the first result in glob order.
+
+        Parameters
+        ----------
+        pattern : str
+            Pattern to match with the glob
+        as_gouda : bool
+            Whether to return the result as a GoudaPath object (the default is False)
+        basename : bool
+            Whether to return only the basename of the result (the default is False)
+        recursive : bool
+            The setting for the glob recursive argument (the default is False)
+        """
+        for item in glob.iglob(os.path.join(self.__path, pattern), recursive=recursive):
+            if basename:
+                item = os.path.basename(item)
+            if as_gouda:
+                item = GoudaPath(item, use_absolute=self.use_absolute)
+            return item
 
     def parent_dir(self):
         """Return the parent directory of the current path."""
