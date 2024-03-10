@@ -2,6 +2,7 @@ import pytest
 
 import numpy as np
 import os
+import pathlib
 
 import gouda
 
@@ -59,7 +60,7 @@ def test_init_call():
     assert [item.path for item in test_rel(*file_list)] == [os.path.join('relative', item) for item in file_list]
 
     assert test_abs.abspath == test_abs.realpath
-    test_rel.resolve_links()
+    test_rel = test_rel.resolve_links()
     assert test_rel.path == test_rel.realpath
 
 
@@ -74,7 +75,7 @@ def test_representations():
     assert repr(test_rel) == "GoudaPath('{}')".format('relative')
 
     assert os.fspath(test_abs) == os.path.abspath('absolute')
-    assert os.fspath(test_rel) == os.path.abspath('relative')
+    assert os.fspath(test_rel) == os.fspath('relative')
 
     assert test_abs.add_basename(test_abs).path == test_abs('absolute').path
 
@@ -86,10 +87,12 @@ def test_navigation():
     assert (test_rel // 'check').path == os.path.abspath(os.path.join('relative', 'check'))
     assert (test_rel + 'check').path == test_rel.path + 'check'
     assert (test_rel / 'check')[1] == 'check'
-    assert (test_rel // 'check')[1] == os.path.abspath(os.path.join('relative', 'check'))[1:].split(os.path.sep)[1]
-    assert (test_rel // 'check')[1:2] == os.path.sep.join(os.path.abspath(os.path.join('relative', 'check'))[1:].split(os.path.sep)[1:2])
+    flavour = pathlib._windows_flavour if os.name == 'nt' else pathlib._posix_flavour
+    check_parts = flavour.parse_parts((os.path.abspath(os.path.join('relative', 'check')),))[-1]
+    assert (test_rel // 'check')[1] == check_parts[1]
+    assert flavour.parse_parts(((test_rel // 'check')[:3],))[-1] == check_parts[:3]
     assert len(test_rel) == 1
-    assert len(test_rel(use_absolute=True)) == len(os.path.abspath('relative')[1:].split(os.path.sep))
+    assert len(test_rel(use_absolute=True)) == len(flavour.parse_parts((os.path.abspath('relative'),))[-1])
 
     multiples = test_rel(['a', 'b', 'c'])
     assert len(multiples) == 3
@@ -108,6 +111,10 @@ def test_relation():
     gouda.ensure_dir(test_dir / 'check_dir2')
     with open(test_dir / 'check_file.txt', 'w') as _:
         pass
+    test_dir('.hidden.txt').touch()
+    assert test_dir('.hidden.txt').is_hidden()
+    with pytest.raises(FileNotFoundError):
+        test_dir('.fake_file.txt').is_hidden()
     if test_dir('image1.png').exists():
         os.remove(test_dir('image1.png'))
     if test_dir('image2.png').exists():
@@ -139,12 +146,15 @@ def test_relation():
     assert 'check_dir1' in children
     assert 'check_dir2' in children
 
-    assert test_dir.num_children(dirs_only=False, files_only=False, include_hidden=True) == 3
+    assert test_dir.num_children(dirs_only=False, files_only=False, include_hidden=True) == 4
     assert test_dir.num_children(dirs_only=True, files_only=False, include_hidden=False) == 2
-    assert test_dir.num_children(dirs_only=False, files_only=True, include_hidden=True) == 1
+    assert test_dir.num_children(dirs_only=False, files_only=True, include_hidden=True) == 2
 
     with pytest.raises(NotADirectoryError):
         assert test_dir('check_file.txt').children()
+    with pytest.raises(NotADirectoryError):
+        for item in test_dir('check_file.txt').iterdir():
+            pass
 
     globbed = test_dir.glob('*')
     assert len(globbed) == 3
@@ -186,6 +196,7 @@ def test_relation():
     assert setitem_tester3[2] == 'test'
 
     os.remove(test_dir / 'check_file.txt')
+    os.remove(test_dir / '.hidden.txt')
     os.removedirs(test_dir / 'check_dir1')
     os.removedirs(test_dir / 'check_dir2')
 
@@ -258,18 +269,18 @@ def test_strings():
     path = gouda.GoudaPath('test.txt')
     assert path[-1] == 'test.txt'
     assert path.basename() == 'test.txt'
-    assert path.basicname() == 'test'
+    assert path.stem() == 'test'
 
     path = gouda.GoudaPath('path/to/file/test.nii.gz')
-    assert path.basicname() == 'test'
+    assert path.stem() == 'test'
     assert path.extension() == '.nii.gz'
 
     path = gouda.GoudaPath('path/to/file/..code.txt')
-    assert path.basicname() == '..code'
+    assert path.stem() == '..code'
     assert path.extension() == '.txt'
 
     path = gouda.GoudaPath('path/to/file/..code')
-    assert path.basicname() == '..code'
+    assert path.stem() == '..code'
     assert path.extension() == ''
 
 
@@ -303,3 +314,88 @@ def test_ensure_dir():
     for check_dir in ['check_dir', 'check_dir2', 'check_dir3', 'check_dir4']:
         if os.path.exists(f'ScratchFiles/goudapath_ensuretest_directory/{check_dir}'):
             os.removedirs(f'ScratchFiles/goudapath_ensuretest_directory/{check_dir}')
+
+
+def test_insert_compare():
+    test_path = gouda.GoudaPath('path/to/file.txt', use_absolute=False)
+    assert test_path == 'path/to/file.txt'
+    alt_test_path = gouda.GoudaPath('path/to/file.txt', use_absolute=False)
+    assert test_path == alt_test_path
+    assert test_path <= alt_test_path
+    assert alt_test_path >= test_path
+    assert test_path == 'path/to/file.txt'
+    assert test_path <= 'path/to/file.txt'
+    assert 'path/to/file.txt' >= test_path
+
+    test_path[1] = 'from'
+    assert test_path == 'path/from/file.txt'
+    assert test_path != alt_test_path
+    assert test_path < alt_test_path
+    assert test_path <= alt_test_path
+    assert alt_test_path > test_path
+    assert alt_test_path >= test_path
+    assert test_path != 'path/to/file.txt'
+    assert test_path < 'path/to/file.txt'
+    assert test_path <= 'path/to/file.txt'
+    assert 'path/to/file.txt' > test_path
+    assert 'path/to/file.txt' >= test_path
+    assert gouda.GoudaPath('path/to/file.txt') > 'path/from/file.txt'
+    assert gouda.GoudaPath('path/to/file.txt') >= 'path/from/file.txt'
+
+    test_path.insert(2, 'this')
+    assert test_path == 'path/from/this/file.txt'
+
+    assert test_path.with_stem('other_file') == 'path/from/this/other_file.txt'
+    assert test_path.with_basename('other_file.csv') == 'path/from/this/other_file.csv'
+    assert test_path.with_extension('.csv') == 'path/from/this/file.csv'
+    assert test_path.with_extension('csv') == 'path/from/this/file.csv'
+    assert isinstance(test_path.as_pathlib(), type(pathlib.Path()))
+    assert test_path.as_pathlib() == pathlib.Path('path/from/this/file.txt')
+
+    test_path2 = gouda.GoudaPath('test/file.tar.gz')
+    assert test_path2.with_extension('csv') == 'test/file.csv'
+    assert test_path2.with_stem('other_file') == 'test/other_file.tar.gz'
+    assert test_path2.with_basename('other_file.csv') == 'test/other_file.csv'
+
+    windows_test_path = gouda.GoudaPath(r'C:\\Windows\test\path.txt')
+    windows_test_path.flavour = pathlib._windows_flavour
+    windows_test_path._clear_cache()
+    print(windows_test_path.as_posix())
+    assert windows_test_path.as_posix() == 'C://Windows/test/path.txt'
+
+    assert gouda.GoudaPath.cwd() == os.getcwd()
+    assert gouda.GoudaPath('~/test').expanduser() == os.path.expanduser('~/test')
+
+
+def test_readwrite():
+    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_readwrite_directory').ensure_dir()
+    with open(test_dir / 'test.txt', 'w') as f:
+        f.write('test\n')
+        f.write('test_line2')
+    with open(test_dir / 'test.txt', 'r') as f:
+        assert f.read() == 'test\ntest_line2'
+    with open(test_dir / 'test.txt', 'r') as f:
+        assert f.readlines() == ['test\n', 'test_line2']
+    test_dir('test2.txt').write_text('here is a test')
+    with open(test_dir('test2.txt')) as f:
+        assert f.read() == 'here is a test'
+    assert test_dir('test2.txt').read_text() == 'here is a test'
+    with pytest.raises(TypeError):
+        test_dir('test2.txt').write_text(b'bytes test')
+
+    test_bytes = b'bytes_test'
+    with open(test_dir('test3.bin'), 'wb') as f:
+        f.write(memoryview(test_bytes))
+    with open(test_dir('test3.bin'), 'rb') as f:
+        assert f.read() == b'bytes_test'
+    test_dir('test4.bin').write_bytes(b'more bytes test')
+    assert test_dir('test4.bin').read_bytes() == b'more bytes test'
+
+    with pytest.raises(FileExistsError):
+        test_dir('test4.bin').touch(exist_ok=False)
+
+    os.remove(test_dir / 'test.txt')
+    os.remove(test_dir / 'test2.txt')
+    os.remove(test_dir / 'test3.bin')
+    os.remove(test_dir / 'test4.bin')
+    os.removedirs(test_dir)
