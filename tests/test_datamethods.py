@@ -456,3 +456,54 @@ def test_segment_line():
 
     x = gouda.segment_line(0, 1, 0, 0, segment_size=0.05, num_segments=10)
     assert len(x) == 10
+
+
+def test_to_uint8():
+    first = np.zeros([10, 10], dtype=np.uint8)
+    first[:5] = 127
+    check = gouda.to_uint8(first)
+    assert check[0, 0] == 127
+    assert check[9, 0] == 0
+    print(np.unique(check))
+    np.testing.assert_array_equal(np.unique(check), [0, 127])
+    assert check.dtype == 'uint8'
+
+    check = gouda.to_uint8(first, allow_rescale=True)
+    assert check[0, 0] == 255
+    assert check[9, 0] == 0
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'
+
+    second = np.zeros([10, 10], dtype=np.float32)
+    second[:5] = 127.5
+    check = gouda.to_uint8(second)
+    np.testing.assert_array_equal(np.unique(check), [0, 127])
+    assert check.dtype == 'uint8'
+
+    check = gouda.to_uint8(second, allow_rescale=True)
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'
+
+    third = np.zeros([10, 10], dtype=np.float32)
+    third[:4] = -1
+    third[6:] = 0.5
+    check = gouda.to_uint8(third)
+    np.testing.assert_array_equal(np.unique(check), [0, 127, 191])
+    assert check.dtype == 'uint8'
+
+    check = gouda.to_uint8(third, allow_rescale=True)
+    np.testing.assert_array_equal(np.unique(check), [0, 170, 255])
+    assert check.dtype == 'uint8'
+
+    fourth = np.zeros([10, 10], dtype=np.float32)
+    fourth[:5] = 1000
+    with pytest.warns(UserWarning):
+        check = gouda.to_uint8(fourth)
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'
+
+    fourth[5:] = -1000
+    with pytest.warns(UserWarning):
+        check = gouda.to_uint8(fourth)
+    np.testing.assert_array_equal(np.unique(check), [0, 255])
+    assert check.dtype == 'uint8'

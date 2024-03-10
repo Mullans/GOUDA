@@ -10,6 +10,44 @@ from gouda.general import is_iter
 from gouda.typing import FloatArrayType, LabelArrayType, ShapeType
 
 
+def to_uint8(x: npt.NDArray, allow_rescale: bool = False) -> npt.NDArray[np.uint8]:
+    """Convert an image/array to a uint8 type with range [0, 255] based on inferred normalization type.
+
+    Parameters
+    ----------
+    x : npt.NDArray
+        Input array to convert
+    allow_rescale : bool, optional
+        Whether to allow rescaling values (see NOTES), by default False
+
+    Returns
+    -------
+    npt.NDArray[np.uint8]
+        Converted array
+
+    NOTES
+    -----
+    input range [0, 255] -> cast to uint8
+    input range [-1, 1] -> x * 127.5 + 127.5 -> cast to uint8
+    input range [0, 1] -> x * 255 -> cast to uint8
+    input range OTHER -> (x - x_min) / (x_max - x_min) -> cast to uint8
+    """
+    if allow_rescale:
+        x = rescale(x, 0, 255)  # rescale to [0, 255] for any input range
+    elif x.dtype == np.uint8:
+        return x
+    elif x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
+        pass
+    elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:  # input range [-1, 1]
+        x = ((x * 127.5) + 127.5)
+    elif x.min() >= 0 and x.max() <= 1:  # input range [0, 1]
+        x = (x * 255.0)
+    else:
+        warnings.warn("Cannot determine input range. Rescaling to [0, 1]")
+        x = rescale(x, 0, 255)
+    return x.astype(np.uint8)
+
+
 def arr_sample(arr: np.ndarray, rate: float) -> np.ndarray:
     """Return an array linearly sampled from the input array at the given rate.
 

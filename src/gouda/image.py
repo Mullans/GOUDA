@@ -77,32 +77,6 @@ def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
         cv2.imwrite(path, image)
 
 
-def to_uint8(x: npt.NDArray, rescale: bool = False) -> npt.NDArray[np.uint8]:
-    """Convert an image to a uint8 type with range [0, 255] based on inferred normalization type.
-
-    NOTES
-    -----
-    input range [0, 255] -> cast to uint8
-    input range [-1, 1] -> x * 127.5 + 127.5 -> cast to uint8
-    input range [0, 1] -> x * 255 -> cast to uint8
-    input range OTHER -> (x - x_min) / (x_max - x_min) -> cast to uint8
-    """
-    if rescale:
-        x = data_methods.rescale(x, 0, 255)  # rescale to [0, 255] for any input range
-    elif x.dtype == np.uint8:
-        return x
-    elif x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
-        pass
-    elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:  # input range [-1, 1]
-        x = ((x * 127.5) + 127.5)
-    elif x.min() >= 0 and x.max() <= 1:  # input range [0, 1]
-        x = (x * 255.0)
-    else:
-        warnings.warn("Cannot determine input range. Rescaling to [0, 1]")
-        x = data_methods.rescale(x, 0, 255)
-    return x.astype(np.uint8)
-
-
 def stack_label(label: npt.NDArray, label_channel: int = 0, as_uint8: bool = True) -> npt.NDArray:
     """Convert 2d label to 3d.
 
@@ -117,7 +91,7 @@ def stack_label(label: npt.NDArray, label_channel: int = 0, as_uint8: bool = Tru
     """
     label = np.squeeze(label)
     if as_uint8:
-        label = to_uint8(label)
+        label = data_methods.to_uint8(label)
     if label_channel < 0:
         return np.dstack([label, label, label])
     elif label_channel < 3:
@@ -579,7 +553,7 @@ def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5)
     else:
         raise ValueError("Mask must have shape [x, y] or [x, y, z], not {}".format(mask.shape))
     if image.dtype == np.uint8:
-        mask = to_uint8(mask)
+        mask = data_methods.to_uint8(mask)
 
     if output.ndim == 2:
         output = np.dstack([output, output, output])

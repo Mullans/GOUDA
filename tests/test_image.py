@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import os
 
+import gouda
 from gouda import GRAYSCALE, RGB, UNCHANGED, GoudaPath
 from gouda import image as gimage
 from gouda.plotting import parse_color
@@ -128,7 +129,7 @@ def test_add_overlay():
 
     label_5 = label_3 * 10
     with pytest.warns(UserWarning):
-        gimage.to_uint8(label_5)
+        gouda.to_uint8(label_5)
 
     with pytest.raises(ValueError):
         bad_label = np.ones([50, 50])
@@ -441,7 +442,7 @@ def test_add_mask():
 
     label *= 10
     with pytest.warns(UserWarning):
-        gimage.to_uint8(label)
+        gouda.to_uint8(label)
 
 
 def test_split_signs():
@@ -456,57 +457,6 @@ def test_split_signs():
     check = gimage.split_signs(mask, positive_color='orange', negative_color='purple')
     np.testing.assert_array_almost_equal(check[0, 0], parse_color('orange'), )
     np.testing.assert_array_almost_equal(check[99, 99], parse_color('purple'))
-
-
-def test_to_uint8():
-    first = np.zeros([10, 10], dtype=np.uint8)
-    first[:5] = 127
-    check = gimage.to_uint8(first)
-    assert check[0, 0] == 127
-    assert check[9, 0] == 0
-    print(np.unique(check))
-    np.testing.assert_array_equal(np.unique(check), [0, 127])
-    assert check.dtype == 'uint8'
-
-    check = gimage.to_uint8(first, rescale=True)
-    assert check[0, 0] == 255
-    assert check[9, 0] == 0
-    np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
-
-    second = np.zeros([10, 10], dtype=np.float32)
-    second[:5] = 127.5
-    check = gimage.to_uint8(second)
-    np.testing.assert_array_equal(np.unique(check), [0, 127])
-    assert check.dtype == 'uint8'
-
-    check = gimage.to_uint8(second, rescale=True)
-    np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
-
-    third = np.zeros([10, 10], dtype=np.float32)
-    third[:4] = -1
-    third[6:] = 0.5
-    check = gimage.to_uint8(third)
-    np.testing.assert_array_equal(np.unique(check), [0, 127, 191])
-    assert check.dtype == 'uint8'
-
-    check = gimage.to_uint8(third, rescale=True)
-    np.testing.assert_array_equal(np.unique(check), [0, 170, 255])
-    assert check.dtype == 'uint8'
-
-    fourth = np.zeros([10, 10], dtype=np.float32)
-    fourth[:5] = 1000
-    with pytest.warns(UserWarning):
-        check = gimage.to_uint8(fourth)
-    np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
-
-    fourth[5:] = -1000
-    with pytest.warns(UserWarning):
-        check = gimage.to_uint8(fourth)
-    np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
 
 
 def test_fast_label():

@@ -3,7 +3,7 @@ import inspect
 import matplotlib.pyplot as plt
 import numpy as np
 
-import gouda.image as gimage
+from gouda import data_methods
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -313,7 +313,7 @@ class VideoWriter:
             if self.output_shape is None:
                 self.output_shape = np.squeeze(data).shape[:2]
             self.start_writer()
-        data = gimage.to_uint8(data)
+        data = data_methods.to_uint8(data)
         if data.ndim == 2:
             # TODO - allow for color maps
             data = np.dstack([data] * 3)
