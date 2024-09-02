@@ -5,6 +5,7 @@ import os
 import pathlib
 
 import gouda
+import gouda.image
 
 # def test_ensure_dir():
 #     test_dir = gouda.ensure_dir("test_dir")

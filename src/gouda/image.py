@@ -36,6 +36,8 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
     """
     if isinstance(path, GoudaPath):
         path = path.path
+    else:
+        path = str(path)
     if not os.path.exists(path):
         raise ValueError("No file found at path '{}'".format(path))
     if flag == constants.GRAYSCALE:
@@ -45,7 +47,7 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
     elif flag == constants.UNCHANGED:
         return cv2.imread(path, -1)
     else:
-        return cv2.imread(path)
+        return cv2.imread(path, 1)
 
 
 def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
@@ -62,6 +64,8 @@ def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
         """
     if isinstance(path, GoudaPath):
         path = path.path
+    else:
+        path = str(path)
     if image.ndim == 2:
         image = image[:, :, np.newaxis]
         as_RGB = False
@@ -75,6 +79,9 @@ def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
         cv2.imwrite(path, image[:, :, ::-1])
     else:
         cv2.imwrite(path, image)
+
+
+imsave = imwrite
 
 
 def stack_label(label: npt.NDArray, label_channel: int = 0, as_uint8: bool = True) -> npt.NDArray:
