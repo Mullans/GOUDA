@@ -7,4 +7,9 @@
     https://pytest.org/latest/plugins.html
 """
 
-# import pytest
+import pytest
+
+
+@pytest.fixture(scope='session')
+def scratch_path(tmp_path_factory):
+    return tmp_path_factory.mktemp('ScratchFiles')

@@ -1,12 +1,15 @@
 """General file method and JSON handling"""
 import copy
+import fnmatch
 import glob
 import gzip
 import imghdr
 import json
 import numpy as np
 import os
+import re
 import warnings
+from typing import Union
 
 from gouda.data_methods import num_digits
 
@@ -77,6 +80,7 @@ def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name
 # JSON methods
 def load_json(filename):
     """Load a JSON file, and re-form any numpy arrays if :func:`~gouda.save_json` was used to write them."""
+    filename = str(filename)
     with open(filename, 'r') as f:
         data = json.load(f)
     if isinstance(data, dict) and 'slice_start' in data:
@@ -154,6 +158,7 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
     ----
     JSON files saved this way can be read with any JSON reader, but will have an extra numpy tag at the end that is used to tell :func:`~gouda.load_json` how to read the arrays back in.
     """
+    filename = str(filename)
     out_arrays = {}
     used_arrays = [False]
     if embed_arrays and compressed:
@@ -250,6 +255,108 @@ def basicname(path):
     return fullsplit(path)[1]
 
 
+def fast_glob(base_path: str,
+              glob_pattern: Union[str, re.Pattern],
+              regex_flags: int = 0,
+              sort: bool = False,
+              basenames: bool = False,
+              recursive: bool = False,
+              follow_symlinks: bool = False) -> list[str]:
+    """Fast globbing method that uses scandir to find files and directories whose basename match a given pattern.
+
+    Parameters
+    ----------
+    base_path : str
+        The base directory to search in
+    glob_pattern : str | re.Pattern
+        The pattern to check against the basenames of the files and directories
+    regex_flags : int, optional
+        Flags to pass to `re.compile(glob_pattern)`, by default 0
+    sort : bool, optional
+        If True, sort results by basename, by default False
+    basenames : bool, optional
+        If True, only return basenames of files, by default False
+    recursive : bool, optional
+        If True, recurse into sub-directories, by default False
+    follow_symlinks : bool, optional
+        If True and `recursive` is True, follow directory symlinks when recursing, by default False
+
+    Returns
+    -------
+    list[str]
+        The list of files and directories that match the glob pattern
+    """
+    if not isinstance(glob_pattern, re.Pattern):
+        glob_pattern = fnmatch.translate(glob_pattern)
+        glob_pattern = re.compile(glob_pattern, flags=regex_flags)
+    results = []
+    for item in os.scandir(base_path):
+        if recursive and item.is_dir(follow_symlinks=follow_symlinks):
+            results.extend(fast_glob(item.path,
+                                     glob_pattern,
+                                     regex_flags=regex_flags,
+                                     sort=False,
+                                     basenames=basenames,
+                                     recursive=recursive,
+                                     follow_symlinks=follow_symlinks))
+        if glob_pattern.match(item.name):
+            results.append(item.name if basenames else item.path)
+    if sort:
+        results = sorted(results, key=lambda x: basicname(x))
+    return results
+
+
+def find_images(base_path: str,
+                sort: bool = False,
+                basenames: bool = False,
+                recursive: bool = False,
+                follow_symlinks: bool = False,
+                fast_check: bool = False) -> list[str]:
+    """_summary_
+
+    Parameters
+    ----------
+    base_path : str
+        The base directory to search in
+    sort : bool, optional
+        If True, sort results by basename, by default False
+    basenames : bool, optional
+        If True, only return basenames of files, by default False
+    recursive : bool, optional
+        If True, recurse into sub-directories, by default False
+    follow_symlinks : bool, optional
+        If True and `recursive` is True, follow directory symlinks when recursing, by default False
+    fast_check : bool, optional
+        If True, check files by extension. If False, use imghdr to check for image bytes. by default False
+
+    Returns
+    -------
+    list[str]
+        The list of images
+    """
+    if fast_check:
+        pattern = '|'.join(['\.jpe?g', '\.png', '\.tiff', '\.gif', '\.bmp'])  # noqa W605
+        regex = re.compile(r'.*({})$'.format(pattern), re.I)
+        images = fast_glob(base_path, regex, regex_flags=re.I, sort=False, basenames=basenames, recursive=recursive, follow_symlinks=follow_symlinks)
+    else:
+        images = []
+        for item in os.scandir(base_path):
+            if recursive and item.is_dir(follow_symlinks=follow_symlinks):
+                images.extend(find_images(item.path,
+                                          sort=False,
+                                          basenames=basenames,
+                                          recursive=recursive,
+                                          follow_symlinks=follow_symlinks,
+                                          fast_check=False))
+            elif item.is_dir():
+                continue
+            elif imghdr.what(item.path) is not None:
+                images.append(item.name if basenames else item.path)
+    if sort:
+        images = sorted(images, key=lambda x: basicname(x))
+    return images
+
+
 def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
     """Sort filenames based on ending digits
 
@@ -304,6 +411,7 @@ def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
 
 
 def save_arr(path, arr):
+    path = str(path)
     if path.endswith('.gz'):
         with gzip.open(path, 'wb') as f:
             np.save(f, arr)
@@ -312,6 +420,7 @@ def save_arr(path, arr):
 
 
 def read_arr(path):
+    path = str(path)
     if path.endswith('.gz'):
         with gzip.open(path, 'rb') as f:
             data = np.load(f)
