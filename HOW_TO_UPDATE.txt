@@ -1,0 +1,46 @@
+Testing
+1. Start Gouda environment in conda
+2. tox
+
+1. Commit & Push (finalize code)
+2. Right click on commit in GitKraken and choose "Create tag here"
+3. Name tag vA.B.0 where A is the major version and B is the minor version
+4. Push that too (Right click on tag and choose push tag)
+5. `python setup.py sdist bdist_wheel`
+6. `twine upload dist/GOUDA-A.B.0*` (again A major, B minor)
+
+To update the docs:
+1. Raw files stored in GOUDA/docs
+2. file_methods/data_methods need explicit :members: and :noindex: so that they can both cite methods without redundancy
+3. Run sphinx-build -b html docs build
+4. All built html files will be in the build folder
+
+To generate package for Conda
+1. conda install conda-build conda-verify anaconda-client
+2. anaconda login --username smullan
+3a. Update version in conda.recipe/meta.yaml
+3b. conda build --output-folder conda_build conda.recipe -c conda-forge
+  * Alt. if there is no recipe: `python setup.py bdist_conda`
+  * need to set version in recipe for now
+4. anaconda upload $LOCATION_OF_BUILD {-v version:0.5.5} {--label label} --package gouda
+4ex. `anaconda upload conda_build/noarch/gouda-0.5.8-py_0.tar.bz2 --package gouda`
+* Optional. `conda build purge` to clear old packages
+
+To generate package for Conda-Forge (v2)
+1. fork and clone https://github.com/conda-forge/staged-recipes
+2. cd staged-recipes/recipes
+3. grayskull pypi GOUDA
+4a. https://conda-forge.org/docs/maintainer/adding_pkgs.html#
+4b. https://github.com/pyscaffold/pyscaffold/discussions/422
+
+
+To update PyScaffold
+1. mamba update -c conda-forge pyscaffold
+2. putup --update path/to/GOUDA --no-skeleton -p gouda
+3. pip install pre-commit
+4. pre-commit autoupdate
+5. pip install pyscaffoldext-travis
+
+
+To create the Dev environment
+1. mamba create -n GoudaDev -c conda-forge python=3.9 opencv matplotlib numpy opencv scipy tqdm tox pyscaffold jupyter ipykernel colorama pyscaffoldext-markdown tox-conda twine conda-build conda-verify anaconda-client
