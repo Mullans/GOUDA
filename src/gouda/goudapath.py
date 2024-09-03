@@ -8,7 +8,7 @@ import re
 import warnings
 from typing import Generator, Optional, TypeVar, Union
 
-from gouda.file_methods import ensure_dir
+from gouda.file_methods import ensure_dir, fast_glob, find_images
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -44,7 +44,7 @@ class GoudaPath(os.PathLike):
             path = os.path.join(*path)
 
         self.use_absolute = use_absolute
-        if use_absolute:
+        if self.use_absolute:
             self.__path = os.path.abspath(path)
         else:
             self.__path = path
@@ -154,7 +154,7 @@ class GoudaPath(os.PathLike):
 
     def glob(self: TGoudaPath,
              pattern: GPathLike,
-             as_gouda: bool = False,
+             as_gouda: bool = True,
              basenames: bool = False,
              recursive: bool = False,
              sort: bool = False) -> list[Union[str, TGoudaPath]]:
@@ -182,9 +182,43 @@ class GoudaPath(os.PathLike):
             results = [GoudaPath(item, use_absolute=self.use_absolute) for item in results]
         return results
 
+    def search(self: TGoudaPath,
+               pattern: Union[GPathLike, re.Pattern],
+               as_gouda: bool = True,
+               basenames: bool = False,
+               recursive: bool = False,
+               sort: bool = False,
+               iter: bool = False) -> list[Union[str, TGoudaPath]]:
+        """Make a fast_glob call starting from the current path (matches basenames against pattern).
+
+        Parameters
+        ----------
+        pattern : str
+            Pattern to match with the glob
+        as_gouda : bool
+            Whether to return results as GoudaPath objects (the default is False)
+        basenames : bool
+            Whether to return only the basenames of results (the default is False)
+        recursive : bool
+            The setting for the glob recursive argument (the default is False)
+        sort : bool
+            Whether to sort the results using the sorted function (the default is False)
+        iter : bool
+            If True, return a generator instead of a list (the default is False)
+        """
+        def search_gen():
+            for item in fast_glob(self.__path, pattern, basenames=basenames, sort=sort, recursive=recursive):
+                if as_gouda:
+                    item = GoudaPath(item, use_absolute=self.use_absolute)
+                yield item
+        if iter:
+            return search_gen()
+        else:
+            return list(search_gen())
+
     def globfirst(self: TGoudaPath,
                   pattern: GPathLike,
-                  as_gouda: bool = False,
+                  as_gouda: bool = True,
                   basename: bool = False,
                   recursive: bool = False) -> Union[str, TGoudaPath]:
         """Make a glob call starting from the current path and return only the first result in glob order.
@@ -287,7 +321,9 @@ class GoudaPath(os.PathLike):
     def get_images(self: TGoudaPath,
                    sort: bool = False,
                    basenames: bool = False,
-                   fast_check: bool = False) -> list[str]:
+                   recursive: bool = False,
+                   fast_check: bool = True,
+                   iter: bool = False) -> list[str]:
         """Return all images contained in the directory of the path
 
         Parameters
@@ -300,30 +336,12 @@ class GoudaPath(os.PathLike):
             If true, this only checks the file extension for jpg, jpeg, png,
             tiff, gif, and bmp extensions. If false, this uses imghdr to check
             the content of each file for image data.
+        iter : bool, optional
+            If true, return a generator instead of a list (the default is False)
         """
         if not self.is_dir():
             raise NotADirectoryError("Not a directory: {}".format(self.__path))
-        images = []
-        if fast_check:
-            pattern = '|'.join(['\.jpe?g', '\.png', '.tiff', '.gif', '.bmp'])  # noqa W605
-            regex = re.compile(r'({})$'.format(pattern), re.I)
-            for item in os.scandir(self.__path):
-                if bool(regex.findall(item.name)):
-                    images.append(item.name if basenames else item.path)
-        else:
-            for item in os.listdir(self.__path):
-                try:
-                    check_item = os.path.join(self.__path, item)
-                    if imghdr.what(check_item) is not None:
-                        if basenames:
-                            images.append(item)
-                        else:
-                            images.append(check_item)
-                except IsADirectoryError:
-                    continue
-        if sort:
-            images = sorted(images, key=lambda x: os.path.basename(x))
-        return images
+        return find_images(self.__path, sort=sort, basenames=basenames, recursive=recursive, fast_check=fast_check, iter=iter)
 
     def resolve_links(self: TGoudaPath) -> TGoudaPath:
         """Resolve any symbolic links in the path using realpath"""
