@@ -83,6 +83,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     if hasattr(images, '__array__'):
         images = np.array(images)
     if isinstance(images, (list, tuple)):
+        if len(images) == 0:
+            raise ValueError('No images to display')
         if isinstance(images[0], (list, tuple)):
             # list of lists of images
             rows = len(images)
@@ -123,6 +125,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
         to_show = [[images]]
     else:
         raise ValueError("Invalid input type: {}".format(type(images)))
+    if rows == 0 or cols == 0:
+        raise ValueError('No images to display')
 
     fig = plt.figure(figsize=figsize, **fig_kwargs)
     gs = fig.add_gridspec(int(rows), int(cols), hspace=kwargs['hspace'], wspace=kwargs['wspace'])
@@ -131,7 +135,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
         image_row = to_show[row]
         for col in range(len(image_row)):
             image = image_row[col]
-            if image is None:
+            if image is None or (isinstance(image, dict) and image['image'] is None):
                 continue
             ax = fig.add_subplot(gs[row, col])
 
@@ -142,6 +146,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
                     if key not in image_dict:
                         image_dict[key] = image_kwargs[key]
                 imshow_kwargs = _extract_method_kwargs(image_dict, plt.imshow)
+                if image.dtype == bool:
+                    image = image.astype(np.uint8)
                 plt.imshow(image, **imshow_kwargs)
                 if 'title' in image_dict:
                     ax.set_title(image_dict['title'])

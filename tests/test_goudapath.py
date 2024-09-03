@@ -182,6 +182,24 @@ def test_relation():
     globbed = test_dir.parent_dir().glob('**/*.txt', recursive=True)
     assert test_dir('check_file.txt').path in globbed
 
+    ##
+    searched = test_dir.search('*')
+    assert len(searched) == 4
+    assert test_dir('check_dir1').path in searched
+
+    searched = test_dir.search('*.txt', basenames=True)
+    assert 'check_file.txt' in searched
+
+    searched = test_dir.search('*', sort=True)
+    assert test_dir('.hidden.txt').path == searched[0]
+
+    searched = test_dir.search('*', sort=True, as_gouda=True)
+    assert isinstance(searched[0], gouda.GoudaPath)
+
+    searched = test_dir.parent_dir().search('*.txt', recursive=True)
+    assert test_dir('check_file.txt').path in searched
+    ##
+
     setitem_tester = test_dir / 'check_file.txt'
     assert setitem_tester[-1] == 'check_file.txt'
     assert setitem_tester[-2] == test_dir.basename()

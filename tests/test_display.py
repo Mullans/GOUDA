@@ -123,6 +123,10 @@ def test_print_grid():
     assert display.print_grid(test_image, show=False, return_grid_shape=True, left=0.1) == (1, 1)
     plt.close()
 
+    display.print_grid(np.ones([10, 10], dtype=bool), show=False)
+    with pytest.raises(ValueError):
+        assert display.print_grid([])
+
 
 def test_print_grid_tofile():
     test_image = np.ones([10, 10])
