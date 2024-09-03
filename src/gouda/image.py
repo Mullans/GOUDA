@@ -295,7 +295,7 @@ def crop_to_mask(image, mask, with_label=False, smoothing=True):
     return masked_image[x0:x1, y0:y1]
 
 
-def get_bounds(mask: np.ndarray, bg_val: float = 0) -> list[tuple[int, int]]:
+def get_bounds(mask: np.ndarray, bg_val: float = 0, as_slice: bool = False) -> list[tuple[int, int]]:
     """Get the corners of the bounding box/cube for the given binary label
 
     Returns
@@ -310,20 +310,19 @@ def get_bounds(mask: np.ndarray, bg_val: float = 0) -> list[tuple[int, int]]:
         axis_check = np.any(mask, axis=tuple([j for j in range(mask.ndim) if j != i]))
         axis_range = np.where(axis_check == True) # noqa
         bounds.append([axis_range[0][0], axis_range[0][-1] + 1])
+    if as_slice:
+        bounds = tuple([slice(b[0], b[1]) for b in bounds])
     return bounds
 
 
 def crop_to_content(image, return_bounds=False):
     """Crop image to only be as large as the contained image excluding black space."""
-    vert = np.mean(image, axis=(-1, 0))
-    y_range = np.where(vert > 0)
-    horiz = np.mean(image, axis=(-1, 1))
-    x_range = np.where(horiz > 0)
-    x0, x1 = x_range[0][0], x_range[0][-1]
-    y0, y1 = y_range[0][0], y_range[0][-1]
     if return_bounds:
-        return (x0, x1), (y0, y1)
-    return image[x0:x1, y0:y1]
+        bounds = get_bounds(image, bg_val=0, as_slice=False)
+        bounds_slice = tuple([slice(*b) for b in bounds])
+        return image[bounds_slice], bounds
+    else:
+        return image[get_bounds(image, bg_val=0, as_slice=True)]
 
 
 def rotate(img, degrees=90, allow_resize=True):

@@ -229,13 +229,13 @@ def test_get_bounds():
 
 def test_crop_to_content():
     image_test = np.zeros([100, 100, 3], dtype=np.uint8)
-    image_test[25:76, 25:76] = 1
+    image_test[25:75, 25:75] = 1
     crop_test = gimage.crop_to_content(image_test)
     assert crop_test.shape == (50, 50, 3)
     assert crop_test.sum() == crop_test.size
 
-    bounds = gimage.crop_to_content(image_test, return_bounds=True)
-    assert bounds == ((25, 75), (25, 75))
+    image, bounds = gimage.crop_to_content(image_test, return_bounds=True)
+    assert bounds == [[25, 75], [25, 75], [0, 3]]
 
 
 def test_rotate():
