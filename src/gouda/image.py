@@ -175,7 +175,7 @@ def masked_lineup(image, label):
     """
     return [
         image,
-        add_overlay(image, label),
+        add_mask(image, label),
         np.dstack([label * 255,
                    np.zeros_like(label),
                    np.zeros_like(label)]).astype(np.uint8)
@@ -528,45 +528,45 @@ def add_mask(image, mask, color='red', opacity=0.5, mask_threshold=0.5):
     return image
 
 
-def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5):
-    """Return image with a mask overlay. DEPRECATED - use add_mask instead.
+# def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5):
+#     """Return image with a mask overlay. DEPRECATED - use add_mask instead.
 
-    Parameters
-    ----------
-        image: numpy.ndarray
-            Image array with shape (x, y, channels)
-        mask: numpy.ndarray
-            np array with shape (x, y) and range [0, 1]
-        label_channel : int
-            The color channel to use for the overlay if separate_signs is False (the default is 0)
-        separate_signs : bool
-            Whether to separate +/- values of the mask into green/red channels
-    """
-    warnings.warn('add_overlay has been deprecated, use add_mask instead', DeprecationWarning)
-    output = np.squeeze(image)
-    mask = np.squeeze(mask)
-    if mask.dtype == 'bool':
-        mask = mask.astype(np.float32)
-    if mask.shape[:2] != image.shape[:2]:
-        raise ValueError('Mask width/height does not match image width/height: {} != {}'.format(mask.shape[:2], image.shape[:2]))
-    if mask.ndim == 2:
-        if separate_signs:
-            mask = split_signs(mask)
-        else:
-            mask = stack_label(mask, label_channel, as_uint8=False)
-    elif mask.ndim == 3 and mask.shape[2] == 3:
-        pass
-    else:
-        raise ValueError("Mask must have shape [x, y] or [x, y, z], not {}".format(mask.shape))
-    if image.dtype == np.uint8:
-        mask = data_methods.to_uint8(mask)
+#     Parameters
+#     ----------
+#         image: numpy.ndarray
+#             Image array with shape (x, y, channels)
+#         mask: numpy.ndarray
+#             np array with shape (x, y) and range [0, 1]
+#         label_channel : int
+#             The color channel to use for the overlay if separate_signs is False (the default is 0)
+#         separate_signs : bool
+#             Whether to separate +/- values of the mask into green/red channels
+#     """
+#     warnings.warn('add_overlay has been deprecated, use add_mask instead', DeprecationWarning)
+#     output = np.squeeze(image)
+#     mask = np.squeeze(mask)
+#     if mask.dtype == 'bool':
+#         mask = mask.astype(np.float32)
+#     if mask.shape[:2] != image.shape[:2]:
+#         raise ValueError('Mask width/height does not match image width/height: {} != {}'.format(mask.shape[:2], image.shape[:2]))
+#     if mask.ndim == 2:
+#         if separate_signs:
+#             mask = split_signs(mask)
+#         else:
+#             mask = stack_label(mask, label_channel, as_uint8=False)
+#     elif mask.ndim == 3 and mask.shape[2] == 3:
+#         pass
+#     else:
+#         raise ValueError("Mask must have shape [x, y] or [x, y, z], not {}".format(mask.shape))
+#     if image.dtype == np.uint8:
+#         mask = data_methods.to_uint8(mask)
 
-    if output.ndim == 2:
-        output = np.dstack([output, output, output])
+#     if output.ndim == 2:
+#         output = np.dstack([output, output, output])
 
-    overlay = cv2.addWeighted(output, 1 - opacity, mask, opacity, 0)
-    output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
-    return output
+#     overlay = cv2.addWeighted(output, 1 - opacity, mask, opacity, 0)
+#     output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
+#     return output
 
 
 def fast_label(item):

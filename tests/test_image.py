@@ -90,57 +90,57 @@ def test_sobel_var():
     assert gimage.sobel_var(image_test) == 629.1456
 
 
-def test_add_overlay():
-    image_1 = np.zeros([100, 100], dtype=np.uint8)
-    label_1 = np.zeros([100, 100], dtype=np.uint8)
-    label_1[:50] = 255
-    overlay1 = gimage.add_overlay(image_1, label_1)
-    np.testing.assert_array_equal(np.unique(overlay1), np.array([0, 128]))
+# def test_add_overlay():
+#     image_1 = np.zeros([100, 100], dtype=np.uint8)
+#     label_1 = np.zeros([100, 100], dtype=np.uint8)
+#     label_1[:50] = 255
+#     overlay1 = gimage.add_overlay(image_1, label_1)
+#     np.testing.assert_array_equal(np.unique(overlay1), np.array([0, 128]))
 
-    overlay1b = gimage.add_overlay(image_1, np.dstack([label_1, np.zeros([100, 100]), np.zeros([100, 100])]))
-    np.testing.assert_array_equal(overlay1, overlay1b)
+#     overlay1b = gimage.add_overlay(image_1, np.dstack([label_1, np.zeros([100, 100]), np.zeros([100, 100])]))
+#     np.testing.assert_array_equal(overlay1, overlay1b)
 
-    label_2 = np.copy(label_1).astype(float)
-    label_2[:50] = 1
-    overlay2 = gimage.add_overlay(image_1[:, :, np.newaxis], label_2)
-    np.testing.assert_array_equal(overlay1, overlay2)
+#     label_2 = np.copy(label_1).astype(float)
+#     label_2[:50] = 1
+#     overlay2 = gimage.add_overlay(image_1[:, :, np.newaxis], label_2)
+#     np.testing.assert_array_equal(overlay1, overlay2)
 
-    overlay2b = gimage.add_overlay(image_1.astype(np.float32), label_2.astype(np.float32))
-    np.testing.assert_array_equal(np.sign(overlay2) * 0.5, overlay2b)
+#     overlay2b = gimage.add_overlay(image_1.astype(np.float32), label_2.astype(np.float32))
+#     np.testing.assert_array_equal(np.sign(overlay2) * 0.5, overlay2b)
 
-    image_2 = np.zeros([100, 100, 3], dtype=np.uint8)
-    overlay3 = gimage.add_overlay(image_2, label_2)
-    np.testing.assert_array_equal(overlay1, overlay3)
+#     image_2 = np.zeros([100, 100, 3], dtype=np.uint8)
+#     overlay3 = gimage.add_overlay(image_2, label_2)
+#     np.testing.assert_array_equal(overlay1, overlay3)
 
-    label_3 = np.copy(label_2)
-    label_3[:50] = 255
-    overlay4 = gimage.add_overlay(image_2, label_3)
-    np.testing.assert_array_equal(overlay1, overlay4)
+#     label_3 = np.copy(label_2)
+#     label_3[:50] = 255
+#     overlay4 = gimage.add_overlay(image_2, label_3)
+#     np.testing.assert_array_equal(overlay1, overlay4)
 
-    label_4 = np.copy(label_2)
-    label_4[50:] = -1
-    overlay5 = gimage.add_overlay(image_2, label_4)
-    np.testing.assert_array_equal(overlay5[0, 0], np.array([128, 64, 64]))
-    np.testing.assert_array_equal(overlay5[-1, -1], np.array([0, 64, 64]))
+#     label_4 = np.copy(label_2)
+#     label_4[50:] = -1
+#     overlay5 = gimage.add_overlay(image_2, label_4)
+#     np.testing.assert_array_equal(overlay5[0, 0], np.array([128, 64, 64]))
+#     np.testing.assert_array_equal(overlay5[-1, -1], np.array([0, 64, 64]))
 
-    overlay6 = gimage.add_overlay(image_2, label_4, separate_signs=True)
-    np.testing.assert_array_equal(overlay6[0, 0], np.array([0, 128, 0]))
-    np.testing.assert_array_equal(overlay6[-1, -1], np.array([128, 0, 0]))
+#     overlay6 = gimage.add_overlay(image_2, label_4, separate_signs=True)
+#     np.testing.assert_array_equal(overlay6[0, 0], np.array([0, 128, 0]))
+#     np.testing.assert_array_equal(overlay6[-1, -1], np.array([128, 0, 0]))
 
-    label_5 = label_3 * 10
-    with pytest.warns(UserWarning):
-        gouda.to_uint8(label_5)
+#     label_5 = label_3 * 10
+#     with pytest.warns(UserWarning):
+#         gouda.to_uint8(label_5)
 
-    with pytest.raises(ValueError):
-        bad_label = np.ones([50, 50])
-        gimage.add_overlay(image_1, bad_label)
+#     with pytest.raises(ValueError):
+#         bad_label = np.ones([50, 50])
+#         gimage.add_overlay(image_1, bad_label)
 
-    with pytest.raises(ValueError):
-        bad_label = np.ones([100, 100, 50])
-        gimage.add_overlay(image_1, bad_label)
+#     with pytest.raises(ValueError):
+#         bad_label = np.ones([100, 100, 50])
+#         gimage.add_overlay(image_1, bad_label)
 
-    with pytest.raises(ValueError):
-        gimage.split_signs(np.dstack([label_1, label_1, label_1]))
+#     with pytest.raises(ValueError):
+#         gimage.split_signs(np.dstack([label_1, label_1, label_1]))
 
 
 def test_masked_lineup():
@@ -151,7 +151,7 @@ def test_masked_lineup():
     label_test[:, :50] -= 1
     lineup_test = gimage.masked_lineup(image_test, label_test)
     np.testing.assert_array_equal(lineup_test[0], image_test)
-    np.testing.assert_array_equal(lineup_test[1], gimage.add_overlay(image_test, label_test))
+    np.testing.assert_array_equal(lineup_test[1], gimage.add_mask(image_test, label_test))
     np.testing.assert_array_equal(lineup_test[2][:, :, 0], label_test * 255)
 
 

@@ -68,3 +68,5 @@ ScratchFiles
 .vscode/
 
 cov.xml
+
+scratch_path/
