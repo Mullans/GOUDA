@@ -261,7 +261,8 @@ def fast_glob(base_path: str,
               sort: bool = False,
               basenames: bool = False,
               recursive: bool = False,
-              follow_symlinks: bool = False) -> list[str]:
+              follow_symlinks: bool = False,
+              iter: bool = False) -> list[str]:
     """Fast globbing method that uses scandir to find files and directories whose basename match a given pattern.
 
     Parameters
@@ -280,6 +281,12 @@ def fast_glob(base_path: str,
         If True, recurse into sub-directories, by default False
     follow_symlinks : bool, optional
         If True and `recursive` is True, follow directory symlinks when recursing, by default False
+    iter : bool, optional
+        If True, return an iterator instead of a list, by default False
+
+    Note
+    ----
+    * `sort` is only applied if `iter` is False
 
     Returns
     -------
@@ -289,21 +296,27 @@ def fast_glob(base_path: str,
     if not isinstance(glob_pattern, re.Pattern):
         glob_pattern = fnmatch.translate(glob_pattern)
         glob_pattern = re.compile(glob_pattern, flags=regex_flags)
-    results = []
-    for item in os.scandir(base_path):
-        if recursive and item.is_dir(follow_symlinks=follow_symlinks):
-            results.extend(fast_glob(item.path,
+
+    def search_generator():
+        for item in os.scandir(base_path):
+            if recursive and item.is_dir(follow_symlinks=follow_symlinks):
+                yield from fast_glob(item.path,
                                      glob_pattern,
                                      regex_flags=regex_flags,
                                      sort=False,
                                      basenames=basenames,
                                      recursive=recursive,
-                                     follow_symlinks=follow_symlinks))
-        if glob_pattern.match(item.name):
-            results.append(item.name if basenames else item.path)
-    if sort:
-        results = sorted(results, key=lambda x: basicname(x))
-    return results
+                                     follow_symlinks=follow_symlinks,
+                                     iter=iter)
+            if glob_pattern.match(item.name):
+                yield item.name if basenames else item.path
+    if iter:
+        return search_generator()
+    else:
+        results = list(search_generator())
+        if sort:
+            results = sorted(results, key=lambda x: basicname(x))
+        return results
 
 
 def find_images(base_path: str,
@@ -311,7 +324,8 @@ def find_images(base_path: str,
                 basenames: bool = False,
                 recursive: bool = False,
                 follow_symlinks: bool = False,
-                fast_check: bool = False) -> list[str]:
+                fast_check: bool = False,
+                iter: bool = False) -> list[str]:
     """_summary_
 
     Parameters
@@ -328,33 +342,43 @@ def find_images(base_path: str,
         If True and `recursive` is True, follow directory symlinks when recursing, by default False
     fast_check : bool, optional
         If True, check files by extension. If False, use imghdr to check for image bytes. by default False
+    iter : bool, optional
+        If True, return an iterator instead of a list, by default False
+
+    Note
+    ----
+    * `sort` is only applied if `iter` is False
 
     Returns
     -------
     list[str]
         The list of images
     """
-    if fast_check:
-        pattern = '|'.join(['\.jpe?g', '\.png', '\.tiff', '\.gif', '\.bmp'])  # noqa W605
-        regex = re.compile(r'.*({})$'.format(pattern), re.I)
-        images = fast_glob(base_path, regex, regex_flags=re.I, sort=False, basenames=basenames, recursive=recursive, follow_symlinks=follow_symlinks)
+    def image_generator():
+        if fast_check:
+            pattern = '|'.join(['\.jpe?g', '\.png', '\.tiff', '\.gif', '\.bmp'])  # noqa W605
+            regex = re.compile(r'.*({})$'.format(pattern), re.I)
+            yield from fast_glob(base_path, regex, regex_flags=re.I, sort=False, basenames=basenames, recursive=recursive, follow_symlinks=follow_symlinks, iter=True)
+        else:
+            for item in os.scandir(base_path):
+                if recursive and item.is_dir(follow_symlinks=follow_symlinks):
+                    yield from find_images(item.path,
+                                           sort=False,
+                                           basenames=basenames,
+                                           recursive=recursive,
+                                           follow_symlinks=follow_symlinks,
+                                           fast_check=False, iter=iter)
+                elif item.is_dir():
+                    continue
+                elif imghdr.what(item.path) is not None:
+                    yield item.name if basenames else item.path
+    if iter:
+        return image_generator()
     else:
-        images = []
-        for item in os.scandir(base_path):
-            if recursive and item.is_dir(follow_symlinks=follow_symlinks):
-                images.extend(find_images(item.path,
-                                          sort=False,
-                                          basenames=basenames,
-                                          recursive=recursive,
-                                          follow_symlinks=follow_symlinks,
-                                          fast_check=False))
-            elif item.is_dir():
-                continue
-            elif imghdr.what(item.path) is not None:
-                images.append(item.name if basenames else item.path)
-    if sort:
-        images = sorted(images, key=lambda x: basicname(x))
-    return images
+        images = list(image_generator())
+        if sort:
+            images = sorted(images, key=lambda x: basicname(x))
+        return images
 
 
 def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
