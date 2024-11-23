@@ -9,6 +9,7 @@ import numpy as np
 import os
 import re
 import warnings
+from contextlib import nullcontext
 from typing import Union
 
 from gouda.data_methods import num_digits
@@ -83,51 +84,53 @@ def load_json(filename):
     filename = str(filename)
     with open(filename, 'r') as f:
         data = json.load(f)
+    np_filename = None
     if isinstance(data, dict) and 'slice_start' in data:
         data = slice(data['slice_start'], data['slice_stop'], data['slice_step'])
     elif isinstance(data, list):
         if data[-1] == 'numpy':
             np_filename = filename.rsplit('.', 1)[0] + '_array.npz'
-            arrays = np.load(np_filename)
             data = data[0]
         elif data[-1] == 'numpy_zip':
             np_filename = filename.rsplit('.', 1)[0] + '_arrayzip.npz'
-            arrays = np.load(np_filename)
             data = data[0]
         elif data[-1] == 'numpy_embed':
             data = data[0]
         # else:
         #     return data
+    with open(np_filename, 'rb') if np_filename is not None else nullcontext() as numpy_file:
+        if np_filename is not None:
+            arrays = np.load(numpy_file)
 
-    def renumpy(_data):
-        if isinstance(_data, list):
-            if len(_data) == 2 and isinstance(_data[0], str):
-                if 'numpy.' in _data[0]:
-                    _data = np.dtype(_data[0][6:]).type(_data[1])
-                elif 'set.' in _data[0]:
-                    _data = set(renumpy(_data[1]))
-            else:
-                for i in range(len(_data)):
-                    _data[i] = renumpy(_data[i])
-        elif isinstance(_data, dict):
-            if 'numpy_array' in _data:
-                if isinstance(_data['numpy_array'], list):
-                    new_data = np.array(_data['numpy_array'], dtype=_data['dtype']).reshape(_data['shape'])
+        def renumpy(_data):
+            if isinstance(_data, list):
+                if len(_data) == 2 and isinstance(_data[0], str):
+                    if 'numpy.' in _data[0]:
+                        _data = np.dtype(_data[0][6:]).type(_data[1])
+                    elif 'set.' in _data[0]:
+                        _data = set(renumpy(_data[1]))
                 else:
-                    new_data = arrays[_data['numpy_array']]
-                    if new_data.dtype != _data['dtype'] or list(new_data.shape) != _data['shape']:
-                        raise ValueError("Numpy array file doesn't match expected stored numpy array data")
-                return new_data
-            elif 'slice_start' in _data:
-                _data = slice(_data['slice_start'], _data['slice_stop'], _data['slice_step'])
-            else:
-                for key in _data.keys():
-                    _data[key] = renumpy(_data[key])
-        return _data
+                    for i in range(len(_data)):
+                        _data[i] = renumpy(_data[i])
+            elif isinstance(_data, dict):
+                if 'numpy_array' in _data:
+                    if isinstance(_data['numpy_array'], list):
+                        new_data = np.array(_data['numpy_array'], dtype=_data['dtype']).reshape(_data['shape'])
+                    else:
+                        new_data = arrays[_data['numpy_array']]
+                        if new_data.dtype != _data['dtype'] or list(new_data.shape) != _data['shape']:
+                            raise ValueError("Numpy array file doesn't match expected stored numpy array data")
+                    return new_data
+                elif 'slice_start' in _data:
+                    _data = slice(_data['slice_start'], _data['slice_stop'], _data['slice_step'])
+                else:
+                    for key in _data.keys():
+                        _data[key] = renumpy(_data[key])
+            return _data
 
         # if len(data) == 1:
         #     data = data[0]
-    data = renumpy(data)
+        data = renumpy(data)
     return data
 
 
@@ -449,5 +452,6 @@ def read_arr(path):
         with gzip.open(path, 'rb') as f:
             data = np.load(f)
     else:
-        data = np.load(path)
+        with open(path, 'rb') as f:
+            data = np.load(f)
     return data
