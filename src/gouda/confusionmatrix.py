@@ -297,7 +297,7 @@ class ConfusionMatrix(object):
         """
         if threshold is None:
             threshold = self.threshold
-        if isinstance(predicted, (float, np.float_)):
+        if isinstance(predicted, (float, np.floating)):
             # Single value: prediction of True (class 1)
             if self.threshold is not None:
                 predicted_class = 1 if predicted > threshold else 0
@@ -306,12 +306,12 @@ class ConfusionMatrix(object):
                     self.add_warned = True
                     print("Warning: Float predicted classes without a threshold are rounded to the nearest integer.")
                 predicted_class = np.round(predicted).astype(int)
-        elif isinstance(predicted, (bool, np.bool_)):
+        elif isinstance(predicted, bool):
             predicted_class = 1 if predicted else 0
-        elif isinstance(predicted, (int, np.int_)):
+        elif isinstance(predicted, (int, np.integer)):
             # Single value: class label
             predicted_class = predicted
-        elif isinstance(expected, (float, int, bool, np.bool_)) and isinstance(predicted, (list, np.ndarray)):
+        elif isinstance(expected, (float, int, bool)) and isinstance(predicted, (list, np.ndarray)):
             # Class probabilities with single expected label
             predicted_class = np.argmax(predicted).astype(int)
         elif isinstance(predicted, (list, np.ndarray)) and isinstance(expected, (list, np.ndarray)) and len(predicted) == len(expected):
@@ -322,10 +322,10 @@ class ConfusionMatrix(object):
         else:
             raise ValueError("Unsupported input format")
 
-        if not isinstance(expected, (float, np.float_, np.int_, int, bool, np.bool_)):
+        if not isinstance(expected, (float, int, bool, np.floating, np.integer)):
             print(type(expected))
             raise ValueError("Only 1 expected value per prediction is supported")
-        if isinstance(expected, (bool, np.bool_)):
+        if isinstance(expected, (bool, np.bool)):
             expected_class = 1 if expected else 0
         elif expected % 1 == 0:
             expected_class = np.round(expected).astype(int)
