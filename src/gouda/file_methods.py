@@ -220,10 +220,10 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
 def is_image(path):
     """Check if the path is an image file"""
     path = str(path)
-    try:
-        return imghdr.what(path) is not None
-    except IsADirectoryError:
+    if os.path.isdir(path):
         return False
+    return imghdr.what(path) is not None
+
 
 
 def fullsplit(path):
