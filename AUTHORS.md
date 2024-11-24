@@ -1,3 +1,3 @@
 # Contributors
 
-* Sean Mullan <sean-mullan@uiowa.edu>
+* Sean Mullan <sean.mullan450@gmail.com>
