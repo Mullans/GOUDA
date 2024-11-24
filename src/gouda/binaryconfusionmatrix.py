@@ -256,7 +256,7 @@ class BinaryConfusionMatrix():
     def save(self, path, title=None):
         """Save the current binary confusion matrix to a text file"""
         title = self.title if title is None else title
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             f.write(title + '\n')
             f.write('Threshold: {}\n'.format(self.threshold))
             f.write('Datatype: {}\n'.format(str(self.dtype)))

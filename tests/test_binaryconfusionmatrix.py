@@ -185,12 +185,12 @@ def test_underline():
     assert underlined[4:-4] == test_string
 
 
-def test_save_load():
+def test_save_load(scratch_path):
     test_mat = gouda.BinaryConfusionMatrix()
     test_arr = np.array([[1, 1, 0], [1, 1, 0]])
     test_mat.add(test_arr)
     np.testing.assert_array_equal(test_mat.matrix, np.array([[1, 0], [0, 2]]))
-    test_mat.save('ScratchFiles/test_mat.txt')
+    test_mat.save(scratch_path / 'test_mat.txt')
 
-    test_mat2 = gouda.BinaryConfusionMatrix.load('ScratchFiles/test_mat.txt')
+    test_mat2 = gouda.BinaryConfusionMatrix.load(scratch_path / 'test_mat.txt')
     np.testing.assert_array_equal(test_mat.matrix, test_mat2.matrix)

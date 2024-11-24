@@ -404,7 +404,7 @@ def find_images(base_path: str,
     """
     def image_generator():
         if fast_check:
-            pattern = '|'.join(['\.jpe?g', '\.png', '\.tiff', '\.gif', '\.bmp'])  # noqa W605
+            pattern = '|'.join([r'\.jpe?g', r'\.png', r'\.tiff', r'\.gif', r'\.bmp'])  # noqa W605
             regex = re.compile(r'.*({})$'.format(pattern), re.I)
             yield from fast_glob(base_path, regex, regex_flags=re.I, sort=False, basenames=basenames, recursive=recursive, follow_symlinks=follow_symlinks, iter=True)
         else:
