@@ -35,7 +35,7 @@ def _extract_method_kwargs(kwargs, method, remove=True):
     return method_kwargs
 
 
-def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shape=False, return_fig=False, cmap='gray', **kwargs):
+def print_grid(*images, figsize=(8, 8), toFile=None, do_squarify=False, show=True, return_grid_shape=False, return_fig=False, cmap='gray', **kwargs):
     """Print out images as a grid.
 
     Parameters
@@ -46,6 +46,8 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
         Figure size to pass to pyplot
     toFile : str
         File to save image to
+    do_squarify : bool
+        If True, runs :py:meth:`gouda.display.squarify` on the images before displaying
     show : bool
         Whether to show the grid or not (the default is True)
     return_grid_shape : bool
@@ -53,7 +55,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     image_kwargs : dict
         Keyword arguments to be used for each matplotlib.pyplot.imshow call.
     **kwargs : dict
-        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust` or :meth:`matplotlib.pyplot.figure` can be passed for use in the grid. Parameters for :meth:`matplotlib.pyplot.imshow` will be used as defaults for all images in the grid, but will be replaced by any image-specific arguments (pass image as dict).
+        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust`, :meth:`matplotlib.pyplot.figure`, or :meth:`gouda.display.squarify` can be passed for use in the grid. Parameters for :meth:`matplotlib.pyplot.imshow` will be used as defaults for all images in the grid, but will be replaced by any image-specific arguments (pass image as dict).
 
     Note
     ----
@@ -78,6 +80,10 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     kwargs['cmap'] = cmap
     image_kwargs = _extract_method_kwargs(kwargs, plt.imshow)
     fig_kwargs = _extract_method_kwargs(kwargs, plt.figure)
+    squarify_kwargs = _extract_method_kwargs(kwargs, squarify)
+
+    if do_squarify:
+        images = squarify(images, **squarify_kwargs)
 
     if len(images) == 1:
         images = images[0]
@@ -244,7 +250,7 @@ def print_image(image, figsize=(8, 6.5), toFile=None, show=True, allow_interpola
         plt.show()
 
 
-def squarify(image, axis=0, as_array=False):
+def squarify(image, axis=0, num_cols=None, as_array=False):
     """Reshape a list/array of images into nested elements with the same numbers of rows and columns.
 
     Parameters
@@ -253,6 +259,8 @@ def squarify(image, axis=0, as_array=False):
         The list/array of images to reshape
     axis: int
         If the image is an array, the axis to split it along (the default is 0)
+    num_cols: int | None, optional
+        If provided, the number of columns to use in the reshaped array (the default is None)
     as_array: bool
         Whether to convert the result into an array with rows and columns as the first two axes (the default is False)
 
@@ -261,7 +269,7 @@ def squarify(image, axis=0, as_array=False):
     If there are not a square number of images, then the last row will have None values as placeholders. If as_array is True, these will be zeros instead.
     If as_array is True, this assumes that all images have the same shape.
     """
-    if isinstance(image, list):
+    if isinstance(image, (tuple, list)):
         num_images = len(image)
         images = [item for item in image]
     else:
@@ -273,11 +281,12 @@ def squarify(image, axis=0, as_array=False):
         for idx in range(num_images):
             axis_slice[axis] = idx
             images.append(image[tuple(axis_slice)])
-    num_rows = int(np.ceil(np.sqrt(num_images)))
+    if num_cols is None:
+        num_cols = int(np.ceil(np.sqrt(num_images)))
     outer_list = []
-    for i in range(0, num_images, num_rows):
+    for i in range(0, num_images, num_cols):
         inner_list = []
-        for j in range(0, num_rows):
+        for j in range(0, num_cols):
             if i + j >= num_images:
                 if as_array:
                     inner_list.append(np.zeros_like(images[0]))

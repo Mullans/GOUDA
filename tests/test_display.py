@@ -128,13 +128,28 @@ def test_print_grid():
         assert display.print_grid([])
 
 
-def test_print_grid_tofile():
-    test_image = np.ones([10, 10])
-    display.print_grid(test_image, show=False, toFile='ScratchFiles/testprintgrid.png')
-    assert os.path.exists('ScratchFiles/testprintgrid.png')
-    os.remove('ScratchFiles/testprintgrid.png')
-    assert not os.path.exists('ScratchFiles/testprintgrid.png')
+def test_print_grid_squarify():
+    image_0c = np.random.randint(0, 255, size=[100, 100])
+    image_1c = np.random.randint(0, 255, size=[100, 100, 1])
+    image_3c = np.random.randint(0, 255, size=[100, 100, 3])
+    images = [image_0c, image_1c, image_3c, image_1c, image_0c, image_3c]
+    size = display.print_grid(*images, return_grid_shape=True, return_fig=False, do_squarify=False, show=False)
+    assert size == (1, 6)
+    plt.close()
+    size = display.print_grid(*images, return_grid_shape=True, return_fig=False, do_squarify=True, show=False)
+    assert size == (2, 3)
+    plt.close()
+    size = display.print_grid(*images, return_grid_shape=True, return_fig=False, do_squarify=True, num_cols=2, show=False)
+    assert size == (3, 2)
+    plt.close()
 
+
+
+def test_print_grid_tofile(scratch_path):
+    test_image = np.ones([10, 10])
+    display.print_grid(test_image, show=False, toFile=scratch_path / 'testprintgrid.png')
+    assert os.path.exists(scratch_path / 'testprintgrid.png')
+    plt.close()
 
 def test_print_grid_exceptions():
     test_image = np.ones([5, 5, 100, 100, 5])
@@ -145,7 +160,7 @@ def test_print_grid_exceptions():
         assert display.print_grid('string')
 
 
-def test_print_image():
+def test_print_image(scratch_path):
     test_image = np.ones([100, 100])
     test_image[25:75, 25:75] = 0
     display.print_image(test_image, show=False, left=0.1)
@@ -155,11 +170,9 @@ def test_print_image():
 
     test_image = np.ones([100, 100, 3], dtype=np.uint8) * 255
     test_image[25:75, 25:75] = 0
-    display.print_image(test_image, toFile='ScratchFiles/test_image.png', show=False)
+    display.print_image(test_image, toFile=scratch_path / 'test_image.png', show=False)
     plt.close()
-    assert os.path.exists('ScratchFiles/test_image.png')
-    os.remove('ScratchFiles/test_image.png')
-    assert not os.path.exists('ScratchFiles/test_image.png')
+    assert os.path.exists(scratch_path / 'test_image.png')
 
 
 def test_squarify():
