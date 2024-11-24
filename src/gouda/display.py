@@ -35,7 +35,7 @@ def _extract_method_kwargs(kwargs, method, remove=True):
     return method_kwargs
 
 
-def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shape=False, return_fig=False, **kwargs):
+def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shape=False, return_fig=False, cmap='gray', **kwargs):
     """Print out images as a grid.
 
     Parameters
@@ -75,6 +75,7 @@ def print_grid(*images, figsize=(8, 8), toFile=None, show=True, return_grid_shap
     for item in defaults:
         if item not in kwargs:
             kwargs[item] = None
+    kwargs['cmap'] = cmap
     image_kwargs = _extract_method_kwargs(kwargs, plt.imshow)
     fig_kwargs = _extract_method_kwargs(kwargs, plt.figure)
 
