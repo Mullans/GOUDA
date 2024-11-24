@@ -3,7 +3,7 @@ import copy
 import fnmatch
 import glob
 import gzip
-import imghdr
+import importlib
 import json
 import numpy as np
 import os
@@ -265,14 +265,43 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
             np.savez(np_filename + '_array.npz', **out_arrays)
 
 
-def is_image(path):
-    """Check if the path is an image file"""
-    path = str(path)
-    if os.path.isdir(path):
-        return False
-    return imghdr.what(path) is not None
+def create_image_checker():
+    """Create the :meth:`gouda.is_image` method that can be used to check if a file is an image based on available libraries"""
+    if importlib.util.find_spec('PIL.Image'):
+        import PIL.Image
+        def is_image(path):
+            """Check if the path is an image file"""
+            path = str(path)
+            if os.path.isdir(path):
+                return False
+            try:
+                PIL.Image.open(path)
+                return True
+            except PIL.UnidentifiedImageError:
+                return False
+    elif importlib.util.find_spec('puremagic'):
+        import puremagic
+        def is_image(path):
+            """Check if the path is an image file"""
+            path = str(path)
+            if os.path.isdir(path):
+                return False
+            return puremagic.magic_file(path)[0].mime_type.startswith('image/')
+    elif importlib.util.find_spec('imghdr'):
+        import imghdr
+        def is_image(path):
+            """Check if the path is an image file"""
+            path = str(path)
+            if os.path.isdir(path):
+                return False
+            return imghdr.what(path) is not None
+    else:
+        def is_image(path):
+            """Check if the path is an image file"""
+            raise ImportError("No image checking libraries found - install PIL, puremagic, or imghdr")
+    return is_image
 
-
+is_image = create_image_checker()
 
 def fullsplit(path):
     """Split the path into head, basename, and extension
@@ -396,6 +425,7 @@ def find_images(base_path: str,
     Note
     ----
     * `sort` is only applied if `iter` is False
+    * `fast_check` only checks for common image extensions, while :meth:`gouda.file_methods.is_image` checks for image bytes
 
     Returns
     -------
@@ -404,7 +434,7 @@ def find_images(base_path: str,
     """
     def image_generator():
         if fast_check:
-            pattern = '|'.join([r'\.jpe?g', r'\.png', r'\.tiff', r'\.gif', r'\.bmp'])  # noqa W605
+            pattern = '|'.join([r'\.jpe?g', r'\.png', r'\.tiff', r'\.gif', r'\.bmp', r'\.webp'])  # noqa W605
             regex = re.compile(r'.*({})$'.format(pattern), re.I)
             yield from fast_glob(base_path, regex, regex_flags=re.I, sort=False, basenames=basenames, recursive=recursive, follow_symlinks=follow_symlinks, iter=True)
         else:
@@ -416,9 +446,7 @@ def find_images(base_path: str,
                                            recursive=recursive,
                                            follow_symlinks=follow_symlinks,
                                            fast_check=False, iter=iter)
-                elif item.is_dir():
-                    continue
-                elif imghdr.what(item.path) is not None:
+                elif is_image(item.path):
                     yield item.name if basenames else item.path
     if iter:
         return image_generator()
@@ -474,7 +502,7 @@ def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
         if len(item) != 2:
             return x
         key = item[int(ending)]
-        path = item[int(~ending)]
+        path = item[int(not ending)]
         if str.isdigit(key):
             key = key_string.format(int(key))
         return sep.join([path, key]) if ending else sep.join([key, path])

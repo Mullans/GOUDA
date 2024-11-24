@@ -1,6 +1,5 @@
 """Path-like class for easier file navigation"""
 import glob
-import imghdr
 import io
 import os
 import pathlib
