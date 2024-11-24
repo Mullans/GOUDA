@@ -20,7 +20,7 @@ GPathLike = Union[str, TGoudaPath, os.PathLike]
 
 
 class GoudaPath(os.PathLike):
-    # flavour = pathlib._windows_flavour if os.name == 'nt' else pathlib._posix_flavour
+    # Eventually, subclass pathlib.Path (available in 3.12+)
     __slots__ = (
         '_hash', '_parts_normcase_cached', 'use_absolute', '_parsed_parts', '__path'
     )
@@ -110,13 +110,12 @@ class GoudaPath(os.PathLike):
         try:
             return self._parsed_parts
         except AttributeError:
-            # self._parsed_parts = tuple(self.flavour.parse_parts((self.path,))[-1])
             self._parsed_parts = pathlib.Path(self.path).parts
             return self._parsed_parts
 
     def __getitem__(self: TGoudaPath, index: int) -> str:
         """Get part of the current path hierarchy."""
-        split_path = self.parts  # parse_parts returns drive, root, parts
+        split_path = self.parts
         if isinstance(index, slice):
             return os.path.join(*split_path[index])
         return split_path[index]
@@ -383,10 +382,6 @@ class GoudaPath(os.PathLike):
     def is_image(self: TGoudaPath) -> bool:
         """Check if the path is an image (see imghdr.what for image types)"""
         return is_image(self.__path)
-        # try:
-        #     return imghdr.what(self.__path) is not None
-        # except (IsADirectoryError, FileNotFoundError):
-        #     return False
 
     def is_hidden(self: TGoudaPath) -> bool:
         """Check if the file is hidden in the filesystem (starts with .)"""
@@ -547,9 +542,6 @@ class GoudaPath(os.PathLike):
             return self._parts_normcase_cached
         except AttributeError:
             self._parts_normcase_cached = pathlib.Path(os.path.normcase(self.__path)).parts
-            # self._parts_normcase_cached = tuple(self.flavour.casefold_parts(self.flavour.parse_parts((self.__path,))[-1]))
-            # self._parsed_parts = tuple(self.flavour.parse_parts((self.path,))[-1])
-            # self._parsed_parts = pathlib.Path(self.path).parts
             return self._parts_normcase_cached
 
     def __hash__(self: TGoudaPath):
