@@ -8,7 +8,7 @@ import re
 import warnings
 from typing import Generator, Optional, TypeVar, Union
 
-from gouda.file_methods import ensure_dir, fast_glob, find_images
+from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -20,9 +20,9 @@ GPathLike = Union[str, TGoudaPath, os.PathLike]
 
 
 class GoudaPath(os.PathLike):
-    flavour = pathlib._windows_flavour if os.name == 'nt' else pathlib._posix_flavour
+    # flavour = pathlib._windows_flavour if os.name == 'nt' else pathlib._posix_flavour
     __slots__ = (
-        '_hash', '_cached_cparts', 'use_absolute', '_pparts', '__path'
+        '_hash', '_parts_normcase_cached', 'use_absolute', '_parsed_parts', '__path'
     )
 
     def __init__(self: TGoudaPath, *path: GPathLike, use_absolute: bool = False, ensure_dir: bool = False) -> None:
@@ -35,7 +35,6 @@ class GoudaPath(os.PathLike):
         use_absolute : bool
             Whether to convert the path to the absolute path (the default is False)
         """
-        # Steal the pathlib flavours
         if len(path) == 1 and isinstance(path[0], GoudaPath):
             path = path[0].path
         elif len(path) == 0:
@@ -48,6 +47,7 @@ class GoudaPath(os.PathLike):
             self.__path = os.path.abspath(path)
         else:
             self.__path = path
+        self.__path = os.path.normpath(self.__path)  # Normalize the path, mostly needed for os separators
 
         if ensure_dir:
             self.ensure_dir()
@@ -108,10 +108,11 @@ class GoudaPath(os.PathLike):
     @property
     def parts(self: TGoudaPath) -> list[str]:
         try:
-            return self._pparts
+            return self._parsed_parts
         except AttributeError:
-            self._pparts = tuple(self.flavour.parse_parts((self.path,))[-1])
-            return self._pparts
+            # self._parsed_parts = tuple(self.flavour.parse_parts((self.path,))[-1])
+            self._parsed_parts = pathlib.Path(self.path).parts
+            return self._parsed_parts
 
     def __getitem__(self: TGoudaPath, index: int) -> str:
         """Get part of the current path hierarchy."""
@@ -381,10 +382,11 @@ class GoudaPath(os.PathLike):
 
     def is_image(self: TGoudaPath) -> bool:
         """Check if the path is an image (see imghdr.what for image types)"""
-        try:
-            return imghdr.what(self.__path) is not None
-        except (IsADirectoryError, FileNotFoundError):
-            return False
+        return is_image(self.__path)
+        # try:
+        #     return imghdr.what(self.__path) is not None
+        # except (IsADirectoryError, FileNotFoundError):
+        #     return False
 
     def is_hidden(self: TGoudaPath) -> bool:
         """Check if the file is hidden in the filesystem (starts with .)"""
@@ -467,7 +469,7 @@ class GoudaPath(os.PathLike):
 
     def as_posix(self: TGoudaPath) -> str:
         """Return the string path with forward slashes."""
-        return (self.__path).replace(self.flavour.sep, '/')
+        return (self.__path).replace(os.path.sep, '/')
 
     def as_pathlib(self: TGoudaPath) -> pathlib.Path:
         """Return the path as a pathlib.Path object"""
@@ -532,20 +534,23 @@ class GoudaPath(os.PathLike):
         return GoudaPath(os.path.expanduser(self.path))
 
     def _clear_cache(self: TGoudaPath) -> None:
-        if hasattr(self, '_cached_cparts'):
-            del self._cached_cparts
+        if hasattr(self, '_parts_normcase_cached'):
+            del self._parts_normcase_cached
         if hasattr(self, '_hash'):
             del self._hash
-        if hasattr(self, '_pparts'):
-            del self._pparts
+        if hasattr(self, '_parsed_parts'):
+            del self._parsed_parts
 
     @property
     def _cparts(self: TGoudaPath):
         try:
-            return self._cached_cparts
+            return self._parts_normcase_cached
         except AttributeError:
-            self._cached_cparts = tuple(self.flavour.casefold_parts(self.flavour.parse_parts((self.__path,))[-1]))
-            return self._cached_cparts
+            self._parts_normcase_cached = pathlib.Path(os.path.normcase(self.__path)).parts
+            # self._parts_normcase_cached = tuple(self.flavour.casefold_parts(self.flavour.parse_parts((self.__path,))[-1]))
+            # self._parsed_parts = tuple(self.flavour.parse_parts((self.path,))[-1])
+            # self._parsed_parts = pathlib.Path(self.path).parts
+            return self._parts_normcase_cached
 
     def __hash__(self: TGoudaPath):
         try:
@@ -562,29 +567,38 @@ class GoudaPath(os.PathLike):
         Compares case-folded paths if both are GoudaPaths, otherwise compares the string paths
         """
         if isinstance(other, (GoudaPath, pathlib.Path)):
-            return self._cparts == other._cparts
+            return self._cparts == _get_path_parts_normcase(other)
         return self.__path == str(other)
 
     def __lt__(self: TGoudaPath, other: GPathLike) -> bool:
         if isinstance(other, (GoudaPath, pathlib.Path)):
-            return self._cparts < other._cparts
+            return self._cparts < _get_path_parts_normcase(other)
         else:
             return self.__path < str(other)
 
     def __le__(self: TGoudaPath, other: GPathLike) -> bool:
         if isinstance(other, (GoudaPath, pathlib.Path)):
-            return self._cparts <= other._cparts
+            return self._cparts <= _get_path_parts_normcase(other)
         else:
             return self.__path <= str(other)
 
     def __gt__(self: TGoudaPath, other: GPathLike) -> bool:
         if isinstance(other, (GoudaPath, pathlib.Path)):
-            return self._cparts > other._cparts
+            return self._cparts > _get_path_parts_normcase(other)
         else:
             return self.__path > str(other)
 
     def __ge__(self: TGoudaPath, other: GPathLike) -> bool:
         if isinstance(other, (GoudaPath, pathlib.Path)):
-            return self._cparts >= other._cparts
+            return self._cparts >= _get_path_parts_normcase(other)
         else:
             return self.__path >= str(other)
+
+
+def _get_path_parts_normcase(other: pathlib.Path) -> tuple[str]:
+    if hasattr(other, '_cparts'):  # Python 3.9
+        return other._cparts
+    elif hasattr(other, '_parts_normcase'):  # Python 3.12
+        return other._parts_normcase
+    else:
+        raise NotImplementedError("Cannot get casefolded/normed parts from Path object")

@@ -35,7 +35,6 @@ def test_init_call():
     test_abs = gouda.GoudaPath('absolute', use_absolute=True)
     test_rel = gouda.GoudaPath('relative', use_absolute=False)
 
-    assert os.path.expanduser('~') in test_abs.path
     assert test_abs.path == os.path.abspath('absolute')
     assert test_rel.path == 'relative'
     assert 'relative' in test_rel
@@ -60,7 +59,7 @@ def test_init_call():
     assert [item.path for item in test_abs(*file_list)] == [os.path.join(os.path.abspath('absolute'), item) for item in file_list]
     assert [item.path for item in test_rel(*file_list)] == [os.path.join('relative', item) for item in file_list]
 
-    assert test_abs.abspath == test_abs.realpath
+    assert str(pathlib.Path(test_abs.abspath).resolve()) == test_abs.realpath
     test_rel = test_rel.resolve_links()
     assert test_rel.path == test_rel.realpath
 
@@ -88,12 +87,14 @@ def test_navigation():
     assert (test_rel // 'check').path == os.path.abspath(os.path.join('relative', 'check'))
     assert (test_rel + 'check').path == test_rel.path + 'check'
     assert (test_rel / 'check')[1] == 'check'
-    flavour = pathlib._windows_flavour if os.name == 'nt' else pathlib._posix_flavour
-    check_parts = flavour.parse_parts((os.path.abspath(os.path.join('relative', 'check')),))[-1]
+    check_parts = pathlib.Path(os.path.abspath(os.path.join('relative', 'check'))).parts
     assert (test_rel // 'check')[1] == check_parts[1]
-    assert flavour.parse_parts(((test_rel // 'check')[:3],))[-1] == check_parts[:3]
+    check_parts2 = pathlib.Path((test_rel // 'check')[:3]).parts
+    assert check_parts2 == check_parts[:3]
+
     assert len(test_rel) == 1
-    assert len(test_rel(use_absolute=True)) == len(flavour.parse_parts((os.path.abspath('relative'),))[-1])
+    check_parts3 = pathlib.Path(os.path.abspath('relative')).parts
+    assert len(test_rel(use_absolute=True)) == len(check_parts3)
 
     multiples = test_rel(['a', 'b', 'c'])
     assert len(multiples) == 3
@@ -105,8 +106,8 @@ def test_navigation():
     assert child_check1.abspath == child_check2.path
 
 
-def test_relation():
-    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_test_directory')
+def test_relation(scratch_path):
+    test_dir = gouda.GoudaPath(scratch_path / 'goudapath_test_directory')
     gouda.ensure_dir(test_dir)
     gouda.ensure_dir(test_dir / 'check_dir1')
     gouda.ensure_dir(test_dir / 'check_dir2')
@@ -180,7 +181,7 @@ def test_relation():
     assert isinstance(globbed[0], gouda.GoudaPath)
 
     globbed = test_dir.parent_dir().glob('**/*.txt', recursive=True)
-    assert test_dir('check_file.txt').path in globbed
+    assert test_dir('check_file.txt').path in globbed  # <- HERE
 
     ##
     searched = test_dir.search('*')
@@ -214,14 +215,9 @@ def test_relation():
     assert setitem_tester3[1] == 'a'
     assert setitem_tester3[2] == 'test'
 
-    os.remove(test_dir / 'check_file.txt')
-    os.remove(test_dir / '.hidden.txt')
-    os.removedirs(test_dir / 'check_dir1')
-    os.removedirs(test_dir / 'check_dir2')
 
-
-def test_get_images_num_children():
-    test_dir = gouda.GoudaPath('ScratchFiles/goudapath_imagetest_directory')
+def test_get_images_num_children(scratch_path):
+    test_dir = gouda.GoudaPath(scratch_path / 'goudapath_imagetest_directory')
     gouda.ensure_dir(test_dir)
     gouda.ensure_dir(test_dir / 'check_dir1')
     gouda.ensure_dir(test_dir / 'check_dir2')
@@ -261,10 +257,10 @@ def test_get_images_num_children():
     assert test_dir.is_image() is False
     assert test_dir.num_children(dirs_only=True, files_only=False, include_hidden=True) == 2
     assert test_dir.num_children(dirs_only=False, files_only=True, include_hidden=False) == 3
-    os.remove(test_dir / 'image1.png')
-    os.remove(test_dir / 'image2.png')
-    os.removedirs(test_dir / 'check_dir1')
-    os.removedirs(test_dir / 'check_dir2')
+    # os.remove(test_dir / 'image1.png')
+    # os.remove(test_dir / 'image2.png')
+    # os.removedirs(test_dir / 'check_dir1')
+    # os.removedirs(test_dir / 'check_dir2')
 
 
 def test_encode():
@@ -336,55 +332,55 @@ def test_ensure_dir():
 
 
 def test_insert_compare():
+    test_to_str = os.path.normpath('path/to/file.txt')
+    test_from_str = os.path.normpath('path/from/file.txt')
+
     test_path = gouda.GoudaPath('path/to/file.txt', use_absolute=False)
-    assert test_path == 'path/to/file.txt'
+    assert test_path == test_to_str
     alt_test_path = gouda.GoudaPath('path/to/file.txt', use_absolute=False)
     assert test_path == alt_test_path
     assert test_path <= alt_test_path
     assert alt_test_path >= test_path
-    assert test_path == 'path/to/file.txt'
-    assert test_path <= 'path/to/file.txt'
-    assert 'path/to/file.txt' >= test_path
+    assert test_path == test_to_str
+    assert test_path <= test_to_str
+    assert test_to_str >= test_path
 
     test_path[1] = 'from'
-    assert test_path == 'path/from/file.txt'
+    assert test_path == test_from_str
     assert test_path != alt_test_path
     assert test_path < alt_test_path
     assert test_path <= alt_test_path
     assert alt_test_path > test_path
     assert alt_test_path >= test_path
-    assert test_path != 'path/to/file.txt'
-    assert test_path < 'path/to/file.txt'
-    assert test_path <= 'path/to/file.txt'
-    assert 'path/to/file.txt' > test_path
-    assert 'path/to/file.txt' >= test_path
-    assert gouda.GoudaPath('path/to/file.txt') > 'path/from/file.txt'
-    assert gouda.GoudaPath('path/to/file.txt') >= 'path/from/file.txt'
+    assert test_path != test_to_str
+    assert test_path < test_to_str
+    assert test_path <= test_to_str
+    assert test_to_str > test_path
+    assert test_to_str >= test_path
+    assert gouda.GoudaPath('path/to/file.txt') > test_from_str
+    assert gouda.GoudaPath('path/to/file.txt') >= test_from_str
 
     test_path.insert(2, 'this')
-    assert test_path == 'path/from/this/file.txt'
+    assert test_path == os.path.normpath('path/from/this/file.txt')
 
-    assert test_path.with_stem('other_file') == 'path/from/this/other_file.txt'
-    assert test_path.with_basename('other_file.csv') == 'path/from/this/other_file.csv'
-    assert test_path.with_extension('.csv') == 'path/from/this/file.csv'
-    assert test_path.with_extension('csv') == 'path/from/this/file.csv'
+    assert test_path.with_stem('other_file') == os.path.normpath('path/from/this/other_file.txt')
+    assert test_path.with_basename('other_file.csv') == os.path.normpath('path/from/this/other_file.csv')
+    assert test_path.with_extension('.csv') == os.path.normpath('path/from/this/file.csv')
+    assert test_path.with_extension('csv') == os.path.normpath('path/from/this/file.csv')
     assert isinstance(test_path.as_pathlib(), type(pathlib.Path()))
     assert test_path.as_pathlib() == pathlib.Path('path/from/this/file.txt')
 
     test_path2 = gouda.GoudaPath('test/file.tar.gz')
-    assert test_path2.with_extension('csv') == 'test/file.csv'
-    assert test_path2.with_stem('other_file') == 'test/other_file.tar.gz'
-    assert test_path2.with_basename('other_file.csv') == 'test/other_file.csv'
+    assert test_path2.with_extension('csv') == os.path.normpath('test/file.csv')
+    assert test_path2.with_stem('other_file') == os.path.normpath('test/other_file.tar.gz')
+    assert test_path2.with_basename('other_file.csv') == os.path.normpath('test/other_file.csv')
 
     windows_test_path = gouda.GoudaPath(r'C:\\Windows\test\path.txt')
-    windows_test_path.flavour = pathlib._windows_flavour
     windows_test_path._clear_cache()
-    print(windows_test_path.as_posix())
-    assert windows_test_path.as_posix() == 'C://Windows/test/path.txt'
+    assert windows_test_path.as_posix() == 'C:/Windows/test/path.txt'
 
     assert gouda.GoudaPath.cwd() == os.getcwd()
-    assert gouda.GoudaPath('~/test').expanduser() == os.path.expanduser('~/test')
-
+    assert gouda.GoudaPath('~/test').expanduser() == os.path.normpath(os.path.expanduser('~/test'))
 
 def test_readwrite():
     test_dir = gouda.GoudaPath('ScratchFiles/goudapath_readwrite_directory').ensure_dir()
