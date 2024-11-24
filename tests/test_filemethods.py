@@ -37,7 +37,11 @@ def test_next_filename(scratch_path):
     assert gouda.next_filename(scratch_path / "test.txt") == str(scratch_path / "test_2.txt")
     open(scratch_path / "test_2.txt", 'w').close()
     assert gouda.next_filename(scratch_path / "test.txt") == str(scratch_path / "test_3.txt")
-    assert gouda.next_filename(scratch_path / "test_2.txt") == str(scratch_path / "test_2_2.txt")
+    assert gouda.next_filename(scratch_path / "test_2.txt") == str(scratch_path / "test_3.txt")
+
+    assert gouda.next_filename(scratch_path / 'test.txt', path_fmt='{idx}{sep}{base_name}{ext}') == str(scratch_path / '2_test.txt')
+    assert gouda.next_filename(scratch_path / 'test.txt', path_fmt='{idx:03}{sep}{base_name}{ext}') == str(scratch_path / '002_test.txt')
+    assert gouda.next_filename(scratch_path / 'test.txt', path_fmt='{base_name}{idx:03}{ext}') == str(scratch_path / 'test002.txt')
 
 
 def test_basicname():

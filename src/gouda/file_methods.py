@@ -46,36 +46,81 @@ def ensure_dir(*paths):
     return full_path
 
 
-# ! TODO - Update tests for new formatting
-def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name}_{idx:01d}{ext}'):
-    """Check if a given file exists, and return a new filename for a numbered copy if it does.
+def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name}{sep}{idx}{ext}', default_sep: str = '_') -> str:
+    """Check if a given file exists, and return the next numbered filename in the order if it does.
 
     Parameters
     ----------
     filename : str
-        The base filename to iterate on
+        The filename to check and iterate on
     first_idx : int, optional
-        Index of the first numbered copy to check, by default 2
+        The first index to check if `filename` exists, by default 2
     path_fmt : str, optional
-        Format for subsequent filepaths, by default '{base_name}_{idx:01d}{ext}'
+        The format of the basename of the numbered filenames, by default '{base_name}{sep}{idx}{ext}'
+    default_sep : str, optional
+        The default separator, by default '_'
 
-    NOTE
-    ----
-    For path_fmt, base_name is the basename of the file (i.e. the filename without the extension), idx is the index of the numbered copy, and ext is the extension of the file including the period(s) (see :func:`~gouda.file_methods.fullsplit` for path/basename/extension split).
-    The default path_fmt assumes a maximum of 9 numbered copies. If you need more, change the 01d to 02d, 03d, etc. with the center digit indicating the number of digits in the maximum expected index.
+    Returns
+    -------
+    str
+        The next available filename in the sequence
+
+    Notes
+    -----
+    The `path_fmt` parameter should be a format string with the following named fields:
+        - "{base_name}": The base name of the file
+        - "{sep}": The separator between the base name and the index, this is optional
+        - "{idx}": The index of the file, this can be "{idx:03d}" for zero-padded indices
+        - "{ext}": The file extension, this should include the period
+    `path_fmt` does not take into account the path of the file, only the base name and extension.
+
+    Examples
+    --------
+    >>> next_filename('test.txt')
+    'test_2.txt'
+    >>> next_filename('test.txt')
+    'test.txt'  # 'test.txt' does not exist
+    >>> next_filename('/path/to/test.txt')
+    '/path/to/test_2.txt'
+    >>> next_filename('test.txt', path_fmt='{idx:03}{sep}{base_name}{ext}')
+    '002_test.txt'
+    >>> next_filename('1_test-2.txt', path_fmt='{idx}{sep}{base_name}{ext}')
+    '2_test-2.txt'
     """
     filename = str(filename)
-    if os.path.isfile(filename):
-        path, base, extension = fullsplit(filename)
-        i = first_idx
-        while True:
-            next_check = os.path.join(path, path_fmt.format(base_name=base, idx=i, ext=extension))
-            if os.path.isfile(next_check):
-                i += 1
-            else:
-                return next_check
-    else:
+    if not os.path.exists(filename):
         return filename
+    path, base_name, extension = fullsplit(filename)
+    sep = default_sep
+
+    # Convert format to regex pattern
+    pattern = re.escape(path_fmt)
+    pattern = pattern.replace(r'\{idx\}', r'(?P<idx>\d+)')
+    pattern = pattern.replace(r'\{sep\}', r'(?P<sep>[_\-]+)')
+    pattern = pattern.replace(r'\{base_name\}', r'(?P<base_name>.+)')
+    pattern = pattern.replace(r'\{ext\}', r'(?P<ext>\.[^.]+)')
+    pattern = re.compile(f"^{pattern}$")
+
+    # Identify current index, base name, and separator
+    match = pattern.match(f"{base_name}{extension}")
+    if match:
+        current_idx = int(match.group("idx")) if match.group("idx") else None
+        if 'sep' in match.groupdict():
+            sep = match.group("sep") or "_"
+        base_name = match.group("base_name")
+    else:
+        current_idx = None
+    idx = 1 + current_idx if current_idx is not None else first_idx
+
+    while True:
+        next_check = os.path.join(
+            path,
+            path_fmt.format(base_name=base_name, sep=sep, idx=idx, ext=extension)
+        )
+        if os.path.isfile(next_check):
+            idx += 1
+        else:
+            return next_check
 
 
 # JSON methods
