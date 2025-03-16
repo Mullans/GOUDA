@@ -94,9 +94,15 @@ select = [
     "ANN", "A", "C4", "FA", "PIE", "PT", "Q", "RET", "SIM", "I", "NPY", "N", "PERF", "D", "UP",
     "PLC", "PLE", "FURB", "RUF",
     ]
-ignore = ["E501"]
+ignore = ["E501", "D203"]
 fixable = ["ALL"]
 unfixable = []
+exclude = [
+    "binaryconfusionmatrix.py"
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.ruff.format]
 quote-style = "double"
@@ -106,5 +112,5 @@ line-ending = "auto"
 docstring-code-format = false
 docstring-code-line-length = "dynamic"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "F403"]
