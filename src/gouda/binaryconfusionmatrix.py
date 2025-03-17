@@ -6,15 +6,11 @@ import colorama
 import numpy as np
 
 from gouda.data_methods import num_digits
+from gouda.symbols import underline
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
-
-
-def underline(string):
-    """Shortcut to underline ANSI text"""
-    return "\033[4m" + string + "\033[0m"
 
 
 class BinaryConfusionMatrix:

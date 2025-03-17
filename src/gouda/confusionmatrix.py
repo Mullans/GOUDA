@@ -1,5 +1,7 @@
 """Confusion matrix class."""
 
+from __future__ import annotations
+
 import warnings
 from collections.abc import Sequence
 from typing import Any
@@ -8,14 +10,11 @@ import colorama
 import numpy as np
 import numpy.typing as npt
 
+from gouda.symbols import underline
+
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
-
-
-def underline(string: str) -> str:
-    """Shortcut to underline ANSI text."""
-    return "\033[4m" + string + "\033[0m"
 
 
 class ConfusionMatrix:
@@ -44,7 +43,14 @@ class ConfusionMatrix:
 
     """
 
-    def __init__(self, predictions: np.ndarray | None = None, labels: np.ndarray | None = None, threshold: float | None = None, num_classes: int | None = None, dtype: type = int) -> None:
+    def __init__(
+        self,
+        predictions: np.ndarray | None = None,
+        labels: np.ndarray | None = None,
+        threshold: float | None = None,
+        num_classes: int | None = None,
+        dtype: type = int,
+    ) -> None:
         self.matrix = None
         self._num_classes = 0
         self.threshold = threshold
@@ -106,12 +112,14 @@ class ConfusionMatrix:
         self._num_classes = num_classes
         self.matrix = np.zeros((self._num_classes, self._num_classes), dtype=dtype)
 
-    def __iadd__(self, data: tuple[bool | float | int | npt.ArrayLike, bool | float | int | npt.ArrayLike]) -> "ConfusionMatrix":
+    def __iadd__(
+        self, data: tuple[bool | float | int | npt.ArrayLike, bool | float | int | npt.ArrayLike]
+    ) -> ConfusionMatrix:
         """Add single datapoint (predicted, expected)."""
         self.add(data[0], data[1])
         return self
 
-    def __add__(self, matrix: "ConfusionMatrix") -> "ConfusionMatrix":
+    def __add__(self, matrix: ConfusionMatrix) -> ConfusionMatrix:
         """Add two matrices together.
 
         NOTE: Output dtype defaults to first matrix type.
@@ -135,11 +143,11 @@ class ConfusionMatrix:
         """Return a string representation of the confusion matrix."""
         return str(self.matrix)
 
-    def __getitem__(self, key: Any) -> Any:   # noqa: ANN401
+    def __getitem__(self, key: Any) -> Any:  # noqa: ANN401
         """Access values of the confusion matrix (similar to np.ndarray.__getitem__)."""
         return self.matrix[key]
 
-    def __setitem__(self, key: Any, value: Any) -> None:   # noqa: ANN401
+    def __setitem__(self, key: Any, value: Any) -> None:  # noqa: ANN401
         """Manually set values of the confusion matrix. (NOT RECOMMENDED - USE ADDING/RESET METHODS)."""
         self.matrix[key] = value
 
@@ -266,7 +274,9 @@ class ConfusionMatrix:
         return np.max(self.matrix.sum(axis=1) / self.matrix.sum())
 
     @classmethod
-    def from_array(cls, predicted: npt.ArrayLike, expected: npt.ArrayLike, threshold: float | None = None) -> "ConfusionMatrix":
+    def from_array(
+        cls, predicted: npt.ArrayLike, expected: npt.ArrayLike, threshold: float | None = None
+    ) -> ConfusionMatrix:
         """Create a confusion matrix from numpy arrays.
 
         Parameters
@@ -335,10 +345,12 @@ class ConfusionMatrix:
         for i in range(points.shape[1]):
             self.matrix[points[0, i], points[1, i]] += counts[i]
 
-    def add(self,
-            predicted: bool | float | int | npt.ArrayLike,
-            expected: bool | float | int | np.number | npt.ArrayLike,
-            threshold: float | None = None) -> None:
+    def add(
+        self,
+        predicted: bool | float | int | npt.ArrayLike,
+        expected: bool | float | int | np.number | npt.ArrayLike,
+        threshold: float | None = None,
+    ) -> None:
         """Add data to the Confusion Matrix.
 
         Parameters
@@ -377,7 +389,11 @@ class ConfusionMatrix:
         elif isinstance(expected, float | int | bool | np.number) and isinstance(predicted, Sequence | np.ndarray):
             # Class probabilities with single expected label
             predicted_class = np.argmax(predicted).astype(int)
-        elif isinstance(predicted, Sequence | np.ndarray) and isinstance(expected, Sequence | np.ndarray) and len(predicted) == len(expected):
+        elif (
+            isinstance(predicted, Sequence | np.ndarray)
+            and isinstance(expected, Sequence | np.ndarray)
+            and len(predicted) == len(expected)
+        ):
             # Paired lists
             for x, y in zip(predicted, expected):
                 self.add(x, y, threshold=threshold)
@@ -404,11 +420,13 @@ class ConfusionMatrix:
             self._num_classes = max_in
         self.matrix[expected_class, predicted_class] += 1
 
-    def print(self,
-              show_specificities: bool = True,
-              show_sensitivities: bool = True,
-              show_accuracy: bool = True,
-              return_string: bool = False) -> str | None:
+    def print(
+        self,
+        show_specificities: bool = True,
+        show_sensitivities: bool = True,
+        show_accuracy: bool = True,
+        return_string: bool = False,
+    ) -> str | None:
         """Format and print the confusion matrix.
 
         Parameters
