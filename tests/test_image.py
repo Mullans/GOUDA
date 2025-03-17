@@ -1,8 +1,8 @@
-import pytest
+import os
 
 import cv2
 import numpy as np
-import os
+import pytest
 
 import gouda
 from gouda import GRAYSCALE, RGB, UNCHANGED, GoudaPath
@@ -12,7 +12,7 @@ from gouda.plotting import parse_color
 
 def test_imwrite_imread():
     with pytest.raises(ValueError):
-        gimage.imread('alskdfjalsdjf/asdf.png')
+        gimage.imread("alskdfjalsdjf/asdf.png")
 
     image_test = np.ones([100, 100, 3], dtype=np.uint8)
     image_test[:50] *= 0
@@ -20,45 +20,45 @@ def test_imwrite_imread():
     image_test *= 255
 
     assert image_test[:, :, 2].sum() == 0
-    gimage.imwrite(GoudaPath('ScratchFiles/test_RGB.png'), image_test)
-    gimage.imwrite('ScratchFiles/test_BGR.png', image_test, as_RGB=False)
-    gimage.imwrite('ScratchFiles/test_singleChannel.png', image_test[:, :, :1])
-    gimage.imwrite('ScratchFiles/test_2D.png', image_test[:, :, 0])
-    gimage.imwrite('ScratchFiles/test_uint16.png', image_test.astype(np.uint16))
+    gimage.imwrite(GoudaPath("ScratchFiles/test_RGB.png"), image_test)
+    gimage.imwrite("ScratchFiles/test_BGR.png", image_test, as_rgb=False)
+    gimage.imwrite("ScratchFiles/test_singleChannel.png", image_test[:, :, :1])
+    gimage.imwrite("ScratchFiles/test_2D.png", image_test[:, :, 0])
+    gimage.imwrite("ScratchFiles/test_uint16.png", image_test.astype(np.uint16))
     with pytest.raises(ValueError):
-        assert gimage.imwrite('ScratchFiles/failure.png', image_test[:, :, :2])
+        assert gimage.imwrite("ScratchFiles/failure.png", image_test[:, :, :2])
 
-    assert os.path.isfile('ScratchFiles/test_RGB.png')
-    assert os.path.isfile('ScratchFiles/test_BGR.png')
-    assert os.path.isfile('ScratchFiles/test_singleChannel.png')
-    assert os.path.isfile('ScratchFiles/test_2D.png')
-    assert os.path.isfile('ScratchFiles/test_uint16.png')
-    assert not os.path.isfile('ScratchFiles/failure.png')
+    assert os.path.isfile("ScratchFiles/test_RGB.png")
+    assert os.path.isfile("ScratchFiles/test_BGR.png")
+    assert os.path.isfile("ScratchFiles/test_singleChannel.png")
+    assert os.path.isfile("ScratchFiles/test_2D.png")
+    assert os.path.isfile("ScratchFiles/test_uint16.png")
+    assert not os.path.isfile("ScratchFiles/failure.png")
 
-    image_test_in_1 = gimage.imread(GoudaPath('ScratchFiles/test_RGB.png'), flag=RGB)
-    image_test_in_2 = gimage.imread('ScratchFiles/test_RGB.png', flag=None)
-    image_test_in_3 = gimage.imread('ScratchFiles/test_BGR.png', flag=RGB)
-    image_test_in_4 = gimage.imread('ScratchFiles/test_BGR.png', flag=None)
+    image_test_in_1 = gimage.imread(GoudaPath("ScratchFiles/test_RGB.png"), flag=RGB)
+    image_test_in_2 = gimage.imread("ScratchFiles/test_RGB.png", flag=None)
+    image_test_in_3 = gimage.imread("ScratchFiles/test_BGR.png", flag=RGB)
+    image_test_in_4 = gimage.imread("ScratchFiles/test_BGR.png", flag=None)
     np.testing.assert_array_equal(image_test_in_1, image_test_in_4)
     np.testing.assert_array_equal(image_test_in_2, image_test_in_3)
 
-    image_test_in_5 = gimage.imread('ScratchFiles/test_singleChannel.png')
-    image_test_in_6 = gimage.imread('ScratchFiles/test_singleChannel.png')
+    image_test_in_5 = gimage.imread("ScratchFiles/test_singleChannel.png")
+    image_test_in_6 = gimage.imread("ScratchFiles/test_singleChannel.png")
 
     np.testing.assert_array_equal(image_test_in_5, image_test_in_6)
 
-    image_test_in_7 = gimage.imread('ScratchFiles/test_uint16.png', flag=UNCHANGED)
+    image_test_in_7 = gimage.imread("ScratchFiles/test_uint16.png", flag=UNCHANGED)
     assert image_test_in_7.dtype == np.uint16
 
-    image_test_in_8 = gimage.imread('ScratchFiles/test_RGB.png', flag=GRAYSCALE)
+    image_test_in_8 = gimage.imread("ScratchFiles/test_RGB.png", flag=GRAYSCALE)
     assert image_test_in_8.shape == (100, 100)
     np.testing.assert_allclose(image_test_in_8, cv2.cvtColor(image_test, cv2.COLOR_RGB2GRAY), rtol=0, atol=1)
 
-    os.remove('ScratchFiles/test_RGB.png')
-    os.remove('ScratchFiles/test_BGR.png')
-    os.remove('ScratchFiles/test_singleChannel.png')
-    os.remove('ScratchFiles/test_2D.png')
-    os.remove('ScratchFiles/test_uint16.png')
+    os.remove("ScratchFiles/test_RGB.png")
+    os.remove("ScratchFiles/test_BGR.png")
+    os.remove("ScratchFiles/test_singleChannel.png")
+    os.remove("ScratchFiles/test_2D.png")
+    os.remove("ScratchFiles/test_uint16.png")
 
 
 def test_stack_label():
@@ -271,7 +271,7 @@ def test_padded_resize():
     assert pad_test.shape == (50, 50, 3)
     np.testing.assert_array_equal(image_test, pad_test)
     np.testing.assert_array_equal(pad_test_file, pad_test)
-    os.remove('ScratchFiles/test.png')
+    os.remove("ScratchFiles/test.png")
 
     pad_test_2 = gimage.padded_resize(image_test, size=[50, 75])
     assert pad_test_2.shape == (50, 75, 3)
@@ -308,25 +308,11 @@ def test_padded_resize():
     assert pad_test_7[-12:].sum() == 0
 
 
-def test_flips():
-    image_test = np.ones([50, 50, 3], dtype=np.uint8)
-    image_test[:25] = 0
-    flip_1 = gimage.horizontal_flip(image_test)
-    np.testing.assert_array_equal(image_test, flip_1)
-    flip_2 = gimage.vertical_flip(image_test)
-    assert flip_2[:25].sum() == flip_2[:25].size
-
-    image_test_2 = np.ones([50, 50, 3], dtype=np.uint8)
-    image_test_2[:, :25] = 0
-    flip_3 = gimage.horizontal_flip(image_test_2)
-    assert flip_3[:, :25].sum() == flip_3[:, :25].size
-    flip_4 = gimage.vertical_flip(image_test_2)
-    np.testing.assert_array_equal(flip_4, image_test_2)
-
-
 def test_adjust_gamma():
-    image_test = np.ones([50, 50, 3], dtype=np.uint8) * np.linspace(0, 255, num=50, endpoint=True, dtype=np.uint8).reshape([50, 1, 1])
-    assert image_test.dtype == 'uint8'
+    image_test = np.ones([50, 50, 3], dtype=np.uint8) * np.linspace(
+        0, 255, num=50, endpoint=True, dtype=np.uint8
+    ).reshape([50, 1, 1])
+    assert image_test.dtype == "uint8"
     gamma_test_1 = gimage.adjust_gamma(image_test, gamma=2)
     gamma_test_2 = gimage.adjust_gamma(image_test, gamma=0.5)
     assert gamma_test_1.sum() > image_test.sum()
@@ -397,14 +383,14 @@ def test_add_mask():
     label = np.zeros([100, 100], dtype=np.uint8)
     label[:50] = 255
 
-    overlay = gimage.add_mask(image, label, color='g', opacity=1)
+    overlay = gimage.add_mask(image, label, color="g", opacity=1)
     assert overlay[:, :, [0, 2]].sum() == 0
     expected = np.zeros([100, 100, 3], dtype=np.float32)
     expected[:50, :, 1] = 0.5
     np.testing.assert_array_equal(overlay, expected)
 
     image = image.astype(np.uint8)
-    overlay = gimage.add_mask(image, label, color='red', opacity=1)
+    overlay = gimage.add_mask(image, label, color="red", opacity=1)
     assert overlay[:, :, 1:].sum() == 0
     np.testing.assert_array_equal(overlay[:, :, 0], label)
 
@@ -412,28 +398,28 @@ def test_add_mask():
     label_2[:50] = 255
 
     image = np.dstack([image] * 3)
-    overlay_2 = gimage.add_mask(image, label_2, color='red', opacity=1)
+    overlay_2 = gimage.add_mask(image, label_2, color="red", opacity=1)
 
     np.testing.assert_array_equal(overlay, overlay_2)
-    overlays = gimage.add_mask([image, image], label_2, color='red', opacity=1)
+    overlays = gimage.add_mask([image, image], label_2, color="red", opacity=1)
     np.testing.assert_array_equal(overlays[0], overlays[1])
     np.testing.assert_array_equal(overlays[0], overlay_2)
 
     label = label > 0.5
-    overlay_2 = gimage.add_mask(image, label, color='red', opacity=1)
+    overlay_2 = gimage.add_mask(image, label, color="red", opacity=1)
     np.testing.assert_array_equal(overlay_2, overlay)
-    overlay_2b = gimage.add_mask(image.astype(bool), label, color='red', opacity=1)
+    overlay_2b = gimage.add_mask(image.astype(bool), label, color="red", opacity=1)
     np.testing.assert_array_equal(overlay_2b, overlay / 255.0)
 
     label_3 = np.zeros([100, 100, 3], dtype=np.uint8)
     label_3[:50] = 255
     with pytest.raises(ValueError):
-        gimage.add_mask(image, label_3, color='red', opacity=1)
+        gimage.add_mask(image, label_3, color="red", opacity=1)
     with pytest.raises(ValueError):
-        gimage.add_mask(image, label, color='red', opacity=1.5)
+        gimage.add_mask(image, label, color="red", opacity=1.5)
     label = np.zeros([103, 100, 1], dtype=np.float32)
     with pytest.raises(ValueError):
-        gimage.add_mask(image, label, color='red', opacity=1)
+        gimage.add_mask(image, label, color="red", opacity=1)
 
     label = np.zeros([100, 100], dtype=np.float32)
     label[:50] = 255
@@ -454,9 +440,12 @@ def test_split_signs():
     np.testing.assert_array_equal(check[0, 0], (0, 1, 0))
     np.testing.assert_array_equal(check[99, 99], (1, 0, 0))
 
-    check = gimage.split_signs(mask, positive_color='orange', negative_color='purple')
-    np.testing.assert_array_almost_equal(check[0, 0], parse_color('orange'), )
-    np.testing.assert_array_almost_equal(check[99, 99], parse_color('purple'))
+    check = gimage.split_signs(mask, positive_color="orange", negative_color="purple")
+    np.testing.assert_array_almost_equal(
+        check[0, 0],
+        parse_color("orange"),
+    )
+    np.testing.assert_array_almost_equal(check[99, 99], parse_color("purple"))
 
 
 def test_fast_label():

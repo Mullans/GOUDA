@@ -2,13 +2,15 @@
 
 import os
 import warnings
+from collections.abc import Sequence
 
 import matplotlib
 import numpy as np
 import numpy.typing as npt
 
 from gouda import constants, data_methods, plotting
-from gouda.goudapath import GoudaPath, GPathLike
+from gouda.color_lists import find_color
+from gouda.goudapath import GPathLike
 from gouda.typing import ColorType, ImageArrayType
 
 __author__ = "Sean Mullan"
@@ -36,10 +38,7 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
     * Valid flags are :data:`gouda.constants.UNCHANGED`, :data:`gouda.constants.RGB`, and :data:`gouda.constants.GRAYSCALE`. Any other flags will perform the default opencv.imread without additional arguments
     * Grayscale transforms input image based on perceived color. See [https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor]
     """
-    if isinstance(path, GoudaPath):
-        path = path.path
-    else:
-        path = str(path)
+    path = str(path)
     if not os.path.exists(path):
         raise ValueError(f"No file found at path '{path}'")
     if flag == constants.GRAYSCALE:
@@ -52,7 +51,7 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
         return cv2.imread(path, 1)
 
 
-def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
+def imwrite(path: GPathLike, image: ImageArrayType, as_rgb: bool = True) -> npt.NDArray[np.uint8 | np.uint16]:
     """Shortcut method: Write an image to a path using OpenCV modified for RGB.
 
     Parameters
@@ -64,20 +63,17 @@ def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
     as_RGB: bool
         If true, flips the channels before saving (OpenCV assumes BGR image by default)
     """
-    if isinstance(path, GoudaPath):
-        path = path.path
-    else:
-        path = str(path)
+    path = str(path)
     if image.ndim == 2:
         image = image[:, :, np.newaxis]
-        as_RGB = False
+        as_rgb = False
     elif image.ndim == 3 and image.shape[2] == 1:
-        as_RGB = False
+        as_rgb = False
     elif image.ndim == 3 and image.shape[2] == 3:
         pass
     else:
         raise ValueError(f"Image must be of shape [x, y, 1], [x, y, 3], or [x, y], not {image.shape}")
-    if as_RGB:
+    if as_rgb:
         cv2.imwrite(path, image[:, :, ::-1])
     else:
         cv2.imwrite(path, image)
@@ -112,7 +108,7 @@ def stack_label(label: npt.NDArray, label_channel: int = 0, as_uint8: bool = Tru
 
 
 def laplacian_var(image: npt.NDArray) -> npt.NDArray:
-    """Return the laplacian variance of an image"""
+    """Return the laplacian variance of an image."""
     # Laplacian is the rate of change of pixel intensity (2nd order derivative)
     blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
     grey = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
@@ -120,7 +116,7 @@ def laplacian_var(image: npt.NDArray) -> npt.NDArray:
 
 
 def sobel_var(image: npt.NDArray) -> npt.NDArray:
-    """Return the sobal variance of an image"""
+    """Return the sobal variance of an image."""
     # Sobel is the gradient of pixel intensity (1st order derivative)
     blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
     grey = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
@@ -132,9 +128,11 @@ def sobel_var(image: npt.NDArray) -> npt.NDArray:
 
 
 def split_signs(
-    mask: npt.NDArray, positive_color: ColorType = (0.0, 1.0, 0.0), negative_color: ColorType = (1.0, 0.0, 0.0)
+    mask: npt.NDArray,
+    positive_color: ColorType = (0.0, 1.0, 0.0),
+    negative_color: ColorType = (1.0, 0.0, 0.0),
 ) -> npt.NDArray:
-    """Split a single channel image mask with +/- values into color channels
+    """Split a single channel image mask with +/- values into color channels.
 
     Parameters
     ----------
@@ -160,7 +158,7 @@ def split_signs(
     return new_mask
 
 
-def masked_lineup(image, label):
+def masked_lineup(image: npt.NDArray, label: npt.NDArray) -> list[npt.NDArray]:
     """Return a list of image, masked_image, mask.
 
     Note
@@ -184,7 +182,13 @@ def masked_lineup(image, label):
     ]
 
 
-def grabCut(image, labels, use_tresholds=True, thresholds=(0.2, 0.6, 0.8), iterations=2, clean=False):
+def grabCut(
+    image: ImageArrayType,
+    labels: npt.NDArray[np.integer],
+    thresholds: tuple[float, float, float] = (0.2, 0.6, 0.8),
+    iterations: int = 2,
+    clean: bool = False,
+) -> tuple[npt.NDArray, npt.NDArray]:
     """Use the predicted mask and OpenCV's GrabCut algorithm to mask an image.
 
     Parameters
@@ -193,8 +197,6 @@ def grabCut(image, labels, use_tresholds=True, thresholds=(0.2, 0.6, 0.8), itera
         input image to mask
     labels : numpy.ndarray
         labels for background/foreground.
-    use_thresholds: bool
-        If true, thresholds the labels to find FG/BG components. Otherwise assumes that the values are [0, 2, 3, 1] defined by OpenCV for [BG, PR_BG, PR_FG, FG]
     thresholds : (int, int, int)
         Thesholds to divide [BG, PR_BG, PR_FG, FG] in the input labels
     iterations : int
@@ -231,8 +233,11 @@ def grabCut(image, labels, use_tresholds=True, thresholds=(0.2, 0.6, 0.8), itera
     return masked_img, mask_out
 
 
-def clean_grabCut_mask(mask):
-    """Apply light smoothing to grabCut labels"""
+def clean_grabCut_mask(mask: npt.NDArray) -> npt.NDArray:
+    """Apply light smoothing to grabCut labels.
+
+    #TODO - Make this generic for any mask values
+    """
     temp = np.copy(mask)
     change = np.where((temp == 2) + (temp == 3), 1, 0)
     remapped = np.zeros_like(temp)
@@ -241,7 +246,7 @@ def clean_grabCut_mask(mask):
     remapped[temp == 2] = 1
     remapped[temp == 3] = 2
     up = cv2.pyrUp(remapped)
-    for i in range(15):
+    for _ in range(15):
         up = cv2.medianBlur(up, 7)
     down = cv2.pyrDown(up)
     down = np.round(down)
@@ -256,7 +261,9 @@ def clean_grabCut_mask(mask):
     return output.reshape(mask.shape).astype(mask.dtype)
 
 
-def crop_to_mask(image, mask, with_label=False, smoothing=True):
+def crop_to_mask(
+    image: ImageArrayType, mask: npt.NDArray, with_label: bool = False, smoothing: bool = True
+) -> npt.NDArray[np.uint8]:
     """Crop input image to only be size of input mask.
 
     Parameters
@@ -295,7 +302,7 @@ def crop_to_mask(image, mask, with_label=False, smoothing=True):
 
 
 def get_bounds(mask: np.ndarray, bg_val: float = 0, as_slice: bool = False) -> list[tuple[int, int]]:
-    """Get the corners of the bounding box/cube for the given binary label
+    """Get the corners of the bounding box/cube for the given binary label.
 
     Returns
     -------
@@ -314,7 +321,7 @@ def get_bounds(mask: np.ndarray, bg_val: float = 0, as_slice: bool = False) -> l
     return bounds
 
 
-def crop_to_content(image, return_bounds=False):
+def crop_to_content(image: npt.NDArray, return_bounds: bool = False) -> npt.NDArray:
     """Crop image to only be as large as the contained image excluding black space."""
     if return_bounds:
         bounds = get_bounds(image, bg_val=0, as_slice=False)
@@ -324,7 +331,7 @@ def crop_to_content(image, return_bounds=False):
         return image[get_bounds(image, bg_val=0, as_slice=True)]
 
 
-def rotate(img, degrees=90, allow_resize=True):
+def rotate(img: ImageArrayType, degrees: int = 90, allow_resize: bool = True) -> ImageArrayType:
     """Rotate image clock-wise using OpenCV.
 
     Parameters
@@ -337,24 +344,29 @@ def rotate(img, degrees=90, allow_resize=True):
         If yes, the image boundaries will change to fit the rotated image. Otherwise the output rotated image is cropped to fit the original boundaries.
     """
     (h, w) = img.shape[:2]
-    (cX, cY) = (w / 2, h / 2)
-    M = cv2.getRotationMatrix2D((cX, cY), -degrees, 1.0)
-    cos = np.abs(M[0, 0])
-    sin = np.abs(M[0, 1])
+    (center_x, center_y) = (w / 2, h / 2)
+    mat = cv2.getRotationMatrix2D((center_x, center_y), -degrees, 1.0)
+    cos = np.abs(mat[0, 0])
+    sin = np.abs(mat[0, 1])
     if allow_resize:
-        nW = int((h * sin) + (w * cos))
-        nH = int((h * cos) + (w * sin))
+        new_width = int((h * sin) + (w * cos))
+        new_height = int((h * cos) + (w * sin))
     else:
-        nW, nH = w, h
-    M[0, 2] += (nW / 2) - cX
-    M[1, 2] += (nH / 2) - cY
+        new_width, new_height = w, h
+    mat[0, 2] += (new_width / 2) - center_x
+    mat[1, 2] += (new_height / 2) - center_y
     # Fixes a 1-pixel offset courtesy of: https://github.com/opencv/opencv/issues/4585#issuecomment-397895187
-    M[0, 2] += (M[0, 0] + M[0, 1] - 1) / 2
-    M[1, 2] += (M[1, 0] + M[1, 1] - 1) / 2
-    return cv2.warpAffine(img, M, (nW, nH)).astype(img.dtype)
+    mat[0, 2] += (mat[0, 0] + mat[0, 1] - 1) / 2
+    mat[1, 2] += (mat[1, 0] + mat[1, 1] - 1) / 2
+    return cv2.warpAffine(img, mat, (new_width, new_height)).astype(img.dtype)
 
 
-def padded_resize(image, size=[960, 540], allow_rotate=True, interpolation=cv2.INTER_LINEAR):
+def padded_resize(
+    image: ImageArrayType,
+    size: tuple[int, int] = (960, 540),
+    allow_rotate: bool = True,
+    interpolation: int = cv2.INTER_LINEAR,
+) -> ImageArrayType:
     """Resize input image to given size, only padding as needed for aspect ratio.
 
     Parameters
@@ -373,7 +385,7 @@ def padded_resize(image, size=[960, 540], allow_rotate=True, interpolation=cv2.I
     Input image number of channels does not matter as long as the first two dimensions are x and y.
 
     """
-    if isinstance(image, (str, GoudaPath)):
+    if isinstance(image, GPathLike):
         image = imread(image, flag=constants.RGB)
     data_type = image.dtype
     if image.ndim == 2:
@@ -407,24 +419,13 @@ def padded_resize(image, size=[960, 540], allow_rotate=True, interpolation=cv2.I
     return padded_image
 
 
-def horizontal_flip(image):
-    """This is for convenience, but it is ~2e-7s faster to just copy the source and do this in-line"""
-    return image[:, ::-1, :]
-
-
-def vertical_flip(image):
-    """This is for convenience, but it is ~1e-7s faster to just copy the source and do this in-line"""
-    return image[::-1, ...]
-
-
-def adjust_gamma(image, gamma=1.0):
+def adjust_gamma(image: ImageArrayType, gamma: float = 1.0) -> ImageArrayType:
     """Adjust the gamma of the image."""
-    invGamma = 1.0 / gamma
-    table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype(np.uint8)
+    table = np.array([((i / 255.0) ** (1.0 / gamma)) * 255 for i in np.arange(0, 256)]).astype(np.uint8)
     return cv2.LUT(image, table)
 
 
-def polar_to_cartesian(image, output_shape=None):
+def polar_to_cartesian(image: ImageArrayType, output_shape: Sequence[int] | None = None) -> ImageArrayType:
     """Convert a square image with a polar object (circle/tube) to cartesian (unroll it).
 
     NOTE: output_shape uses numpy shape: [rows, columns]
@@ -444,7 +445,9 @@ def polar_to_cartesian(image, output_shape=None):
     return output
 
 
-def get_mask_border(mask, inside_border=True, border_thickness=2, kernel="ellipse"):
+def get_mask_border(
+    mask: npt.NDArray, inside_border: bool = True, border_thickness: int = 2, kernel: str | int = "ellipse"
+) -> npt.NDArray:
     """Get the border of a boolean mask.
 
     mask: np.ndarray
@@ -472,7 +475,9 @@ def get_mask_border(mask, inside_border=True, border_thickness=2, kernel="ellips
     return border
 
 
-def add_mask(image, mask, color="red", opacity=0.5, mask_threshold=0.5):
+def add_mask(
+    image: npt.NDArray, mask: npt.NDArray, color: ColorType = "red", opacity: float = 0.5, mask_threshold: float = 0.5
+) -> npt.NDArray:
     """Add a binary outline/mask over a given image.
 
     Parameters
@@ -510,65 +515,28 @@ def add_mask(image, mask, color="red", opacity=0.5, mask_threshold=0.5):
         scaler = np.iinfo(image.dtype).max
     elif isinstance(image.flat[0], np.floating):
         scaler = 1
-    elif isinstance(image.flat[0], (np.bool_, bool)):
+    elif isinstance(image.flat[0], bool):
         image = image.astype(np.float32)
         scaler = 1
     else:
         scaler = np.max(image)  # pragma: no cover
-    color = matplotlib.colors.to_rgb(color)
+    mask_color: str | None = None
+    if isinstance(color, str):
+        mask_color = find_color(color)
+    if mask_color is None:
+        mask_color = matplotlib.colors.to_rgb(color)
     if mask.dtype != bool:
         mask = mask > mask_threshold
     scaler = scaler * opacity
     bias = image[mask] * (1 - opacity)
-    image[:, :, 0][mask] = color[0] * scaler + bias[:, 0]
-    image[:, :, 1][mask] = color[1] * scaler + bias[:, 1]
-    image[:, :, 2][mask] = color[2] * scaler + bias[:, 2]
+    image[:, :, 0][mask] = mask_color[0] * scaler + bias[:, 0]
+    image[:, :, 1][mask] = mask_color[1] * scaler + bias[:, 1]
+    image[:, :, 2][mask] = mask_color[2] * scaler + bias[:, 2]
     return image
 
 
-# def add_overlay(image, mask, label_channel=0, separate_signs=False, opacity=0.5):
-#     """Return image with a mask overlay. DEPRECATED - use add_mask instead.
-
-#     Parameters
-#     ----------
-#         image: numpy.ndarray
-#             Image array with shape (x, y, channels)
-#         mask: numpy.ndarray
-#             np array with shape (x, y) and range [0, 1]
-#         label_channel : int
-#             The color channel to use for the overlay if separate_signs is False (the default is 0)
-#         separate_signs : bool
-#             Whether to separate +/- values of the mask into green/red channels
-#     """
-#     warnings.warn('add_overlay has been deprecated, use add_mask instead', DeprecationWarning)
-#     output = np.squeeze(image)
-#     mask = np.squeeze(mask)
-#     if mask.dtype == 'bool':
-#         mask = mask.astype(np.float32)
-#     if mask.shape[:2] != image.shape[:2]:
-#         raise ValueError('Mask width/height does not match image width/height: {} != {}'.format(mask.shape[:2], image.shape[:2]))
-#     if mask.ndim == 2:
-#         if separate_signs:
-#             mask = split_signs(mask)
-#         else:
-#             mask = stack_label(mask, label_channel, as_uint8=False)
-#     elif mask.ndim == 3 and mask.shape[2] == 3:
-#         pass
-#     else:
-#         raise ValueError("Mask must have shape [x, y] or [x, y, z], not {}".format(mask.shape))
-#     if image.dtype == np.uint8:
-#         mask = data_methods.to_uint8(mask)
-
-#     if output.ndim == 2:
-#         output = np.dstack([output, output, output])
-
-#     overlay = cv2.addWeighted(output, 1 - opacity, mask, opacity, 0)
-#     output = np.where(mask.sum(axis=2, keepdims=True) != 0, overlay, output)
-#     return output
-
-
-def fast_label(item):
-    """A stripped-down, faster version of skimage.measure.label
+def fast_label(item: npt.NDArray) -> npt.NDArray:
+    """Run a stripped-down, faster version of skimage.measure.label .
 
     Note
     ----
@@ -582,8 +550,14 @@ def fast_label(item):
     return label_dest
 
 
-def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000, fast=True):
-    """Convert a probability mask into a binary mask using multiple thresholds
+def mask_by_triplet(
+    pred: npt.NDArray[np.floating],
+    lower_thresh: float = 0.3,
+    upper_thresh: float = 0.75,
+    area_thresh: int | float = 2000,
+    fast: bool = True,
+) -> npt.NDArray[np.bool_]:
+    """Convert a probability mask into a binary mask using multiple thresholds.
 
     Parameters
     ----------
@@ -612,6 +586,9 @@ def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000,
     """
     # TODO - Add tests
     import skimage.measure
+
+    if 0.0 >= area_thresh > 1.0:
+        area_thresh = pred.size * area_thresh
 
     flat_pred = np.squeeze(pred)
     mask_shape = np.shape(flat_pred)

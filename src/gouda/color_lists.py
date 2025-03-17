@@ -3,7 +3,7 @@
 COLOR_NOTE = """Aquamarine, Black, Blue, Brown, Fuchsia, Gold, Green, Indigo, Lavender, Magenta, Maroon, Orange, Orchid, Plum, Red, Salmon, Silver, Tan, White, Yellow are found in both html and crayon colors"""
 
 
-def find_color(color_name: str) -> str:
+def find_color(color_name: str, on_err: str = "raise") -> str | None:
     """Return the hexcode string for a given color."""
     # Basic check
     if color_name in html:
@@ -20,7 +20,10 @@ def find_color(color_name: str) -> str:
         return crayons[color_name.title()]
     if color_name.lower() in xkcd_rgb:
         return xkcd_rgb[color_name.lower()]
-    raise ValueError(f"Color {color_name} not found in any color dictionary")
+    if on_err == "raise":
+        raise ValueError(f"Color {color_name} not found in any color dictionary")
+    else:
+        return None
 
 
 html = {

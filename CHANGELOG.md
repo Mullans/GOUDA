@@ -9,6 +9,9 @@
 * `gouda.display.print_image`, `gouda.display.show_video`, and `gouda.display.print_grid` now use `file_name` instead of `toFile` to specify the optional output file name. The `toFile` argument has been removed.
 * `gouda.file_methods.fast_glob` and `gouda.file_methods.find_images` now use `as_iterator` instead of `iter`.
 * `gouda.gouda_path.GoudaPath.get_images` and `gouda.gouda_path.GoudaPath.search` now use `as_iterator` instead of `iter`.
+
 ### Deprecated
 
 ### Removed
+
+* `gouda.image.horizontal_flip` and `gouda.image.vertical_flip` - These were just wrappers for `x[:, ::-1]` and `x[::-1]` respectively.
