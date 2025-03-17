@@ -6,12 +6,11 @@ import os
 import warnings
 from collections.abc import Sequence
 
-import matplotlib
 import numpy as np
 import numpy.typing as npt
 
 from gouda import constants, data_methods, plotting
-from gouda.color_lists import find_color
+from gouda.color_lists import find_color_rgb
 from gouda.goudapath import GPathLike
 from gouda.typing import ColorType, ImageArrayType
 
@@ -53,7 +52,7 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
         return cv2.imread(path, 1)
 
 
-def imwrite(path: GPathLike, image: ImageArrayType, as_rgb: bool = True) -> npt.NDArray[np.uint8 | np.uint16]:
+def imwrite(path: GPathLike, image: ImageArrayType, as_rgb: bool = True) -> None:
     """Shortcut method: Write an image to a path using OpenCV modified for RGB.
 
     Parameters
@@ -112,21 +111,23 @@ def stack_label(label: npt.NDArray, label_channel: int = 0, as_uint8: bool = Tru
 def laplacian_var(image: npt.NDArray) -> npt.NDArray:
     """Return the laplacian variance of an image."""
     # Laplacian is the rate of change of pixel intensity (2nd order derivative)
-    blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
+    blur = cv2.GaussianBlur(image, ksize=(3, 3), sigmaX=0.0, sigmaY=0.0)
     grey = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
-    return cv2.Laplacian(grey, cv2.CV_16S).var()
+    result: npt.NDArray = cv2.Laplacian(grey, cv2.CV_16S).var()
+    return result
 
 
 def sobel_var(image: npt.NDArray) -> npt.NDArray:
     """Return the sobal variance of an image."""
     # Sobel is the gradient of pixel intensity (1st order derivative)
-    blur = cv2.GaussianBlur(image, (3, 3), 0, 0)
+    blur = cv2.GaussianBlur(image, ksize=(3, 3), sigmaX=0.0, sigmaY=0.0)
     grey = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
-    grad_x = cv2.Sobel(grey, cv2.CV_16S, 1, 0, 3)
+    grad_x = cv2.Sobel(grey, ddepth=cv2.CV_16S, dx=1, dy=0, ksize=3)
     grad_x = cv2.convertScaleAbs(grad_x)
-    grad_y = cv2.Sobel(grey, cv2.CV_16S, 0, 1, 3)
+    grad_y = cv2.Sobel(grey, ddepth=cv2.CV_16S, dx=0, dy=1, ksize=3)
     grad_y = cv2.convertScaleAbs(grad_y)
-    return cv2.addWeighted(grad_x, 0.5, grad_y, 0.5, 0).var()
+    result: npt.NDArray = cv2.addWeighted(grad_x, 0.5, grad_y, 0.5, 0).var()
+    return result
 
 
 def split_signs(
@@ -226,7 +227,9 @@ def grabCut(
         raise ValueError("Labels cannot all be foreground")
 
     bg, fg = np.zeros((1, 65), np.float64), np.zeros((1, 65), np.float64)
-    cv2.grabCut(image, mask, None, bg, fg, iterations, cv2.GC_INIT_WITH_MASK)
+    cv2.grabCut(
+        image, mask=mask, rect=[0, 0, 0, 0], bgdModel=bg, fgdModel=fg, iterCount=iterations, mode=cv2.GC_INIT_WITH_MASK
+    )
 
     if clean:
         mask = clean_grabCut_mask(mask)
@@ -265,7 +268,7 @@ def clean_grabCut_mask(mask: npt.NDArray) -> npt.NDArray:
 
 def crop_to_mask(
     image: ImageArrayType, mask: npt.NDArray, with_label: bool = False, smoothing: bool = True
-) -> npt.NDArray[np.uint8]:
+) -> npt.NDArray[np.uint8] | tuple[npt.NDArray[np.uint8], npt.NDArray[np.uint8]]:
     """Crop input image to only be size of input mask.
 
     Parameters
@@ -297,13 +300,17 @@ def crop_to_mask(
         # mask[mask>=0.8] = 1
     else:
         smooth_mask = mask.astype(np.uint8) * 255.0
-    masked_image = cv2.bitwise_and(image, image, mask=smooth_mask.astype(np.uint8))
+    masked_image: npt.NDArray[np.uint8] = cv2.bitwise_and(image, image, mask=smooth_mask.astype(np.uint8)).astype(
+        np.uint8
+    )
     if with_label:
         return masked_image[x0:x1, y0:y1], mask[x0:x1, y0:y1]
     return masked_image[x0:x1, y0:y1]
 
 
-def get_bounds(mask: np.ndarray, bg_val: float = 0, as_slice: bool = False) -> list[tuple[int, int]]:
+def get_bounds(
+    mask: np.ndarray, bg_val: float = 0, as_slice: bool = False
+) -> list[tuple[int, int]] | tuple[slice, ...]:
     """Get the corners of the bounding box/cube for the given binary label.
 
     Returns
@@ -316,24 +323,28 @@ def get_bounds(mask: np.ndarray, bg_val: float = 0, as_slice: bool = False) -> l
         mask = mask != bg_val
     for i in range(mask.ndim):
         axis_check = np.any(mask, axis=tuple([j for j in range(mask.ndim) if j != i]))
-        axis_range = np.where(axis_check == True)  # noqa
-        bounds.append([axis_range[0][0], axis_range[0][-1] + 1])
+        axis_range: npt.NDArray[np.integer] = np.where(axis_check == True)[0]  # noqa
+        bounds.append((int(axis_range[0]), int(axis_range[-1]) + 1))
     if as_slice:
-        bounds = tuple([slice(b[0], b[1]) for b in bounds])
+        return tuple([slice(b[0], b[1]) for b in bounds])
     return bounds
 
 
-def crop_to_content(image: npt.NDArray, return_bounds: bool = False) -> npt.NDArray:
+def crop_to_content(
+    image: npt.NDArray, return_bounds: bool = False
+) -> npt.NDArray | tuple[npt.NDArray, list[tuple[int, int]]]:
     """Crop image to only be as large as the contained image excluding black space."""
     if return_bounds:
         bounds = get_bounds(image, bg_val=0, as_slice=False)
-        bounds_slice = tuple([slice(*b) for b in bounds])
+        if isinstance(bounds, tuple):
+            raise ValueError("Incorrect bounds format returned by `get_bounds`")
+        bounds_slice = tuple([slice(b[0], b[1]) for b in bounds])
         return image[bounds_slice], bounds
     else:
         return image[get_bounds(image, bg_val=0, as_slice=True)]
 
 
-def rotate(img: ImageArrayType, degrees: int = 90, allow_resize: bool = True) -> ImageArrayType:
+def rotate(img: ImageArrayType, degrees: int = 90, allow_resize: bool = True) -> npt.NDArray:
     """Rotate image clock-wise using OpenCV.
 
     Parameters
@@ -414,20 +425,22 @@ def padded_resize(
             padded_image[:, int(pady // 2) : -int(pady - pady // 2)] = image
     else:
         padded_image = image
-    padded_image = cv2.resize(padded_image, (size[1], size[0]), interpolation).astype(data_type)
+    padded_image = cv2.resize(padded_image, dsize=(size[1], size[0]), interpolation=interpolation).astype(data_type)
     if c == 1:
         # cv2.resize auto-squeezes images
         return padded_image[:, :, np.newaxis]
     return padded_image
 
 
-def adjust_gamma(image: ImageArrayType, gamma: float = 1.0) -> ImageArrayType:
+def adjust_gamma(image: ImageArrayType, gamma: float = 1.0) -> npt.NDArray[np.floating | np.integer]:
     """Adjust the gamma of the image."""
     table = np.array([((i / 255.0) ** (1.0 / gamma)) * 255 for i in np.arange(0, 256)]).astype(np.uint8)
     return cv2.LUT(image, table)
 
 
-def polar_to_cartesian(image: ImageArrayType, output_shape: Sequence[int] | None = None) -> ImageArrayType:
+def polar_to_cartesian(
+    image: ImageArrayType, output_shape: Sequence[int] | None = None
+) -> npt.NDArray[np.floating | np.integer]:
     """Convert a square image with a polar object (circle/tube) to cartesian (unroll it).
 
     NOTE: output_shape uses numpy shape: [rows, columns]
@@ -478,7 +491,11 @@ def get_mask_border(
 
 
 def add_mask(
-    image: npt.NDArray, mask: npt.NDArray, color: ColorType = "red", opacity: float = 0.5, mask_threshold: float = 0.5
+    image: npt.NDArray,
+    mask: npt.NDArray,
+    color: str | ColorType = "red",
+    opacity: float = 0.5,
+    mask_threshold: float = 0.5,
 ) -> npt.NDArray:
     """Add a binary outline/mask over a given image.
 
@@ -513,20 +530,17 @@ def add_mask(
         raise ValueError("image and outline must have the same height and width")
     if image.ndim == 2:
         image = np.dstack([image] * 3)
+    scaler: float
     if isinstance(image.flat[0], np.integer):
         scaler = np.iinfo(image.dtype).max
     elif isinstance(image.flat[0], np.floating):
-        scaler = 1
+        scaler = 1.0
     elif isinstance(image.flat[0], bool | np.bool_):
         image = image.astype(np.float32)
-        scaler = 1
+        scaler = 1.0
     else:
         scaler = np.max(image)  # pragma: no cover
-    if isinstance(color, str):
-        check = find_color(color, on_err="none")
-        if check is not None:
-            color = check
-    color = matplotlib.colors.to_rgb(color)
+    color = find_color_rgb(color)
     if mask.dtype != bool:
         mask = mask > mask_threshold
     scaler = scaler * opacity
@@ -544,7 +558,8 @@ def fast_label(item: npt.NDArray) -> npt.NDArray:
     ----
     requires scipy, which is not a main requirement of the rest of GOUDA
     """
-    from scipy.ndimage import _ni_label
+    # mypy can't find this for some reason
+    from scipy.ndimage._measurements import _ni_label  # type: ignore[attr-defined]
 
     label_dest = np.empty(item.shape, dtype=np.uint16)
     structure = np.ones([3] * len(item.shape), dtype=bool)

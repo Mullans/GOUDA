@@ -15,7 +15,7 @@ finally:
 
 
 from gouda.binaryconfusionmatrix import BinaryConfusionMatrix
-from gouda.color_lists import find_color
+from gouda.color_lists import find_color_hex
 from gouda.confusionmatrix import ConfusionMatrix
 from gouda.constants import *
 from gouda.data_methods import *

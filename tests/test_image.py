@@ -235,7 +235,7 @@ def test_crop_to_content():
     assert crop_test.sum() == crop_test.size
 
     image, bounds = gimage.crop_to_content(image_test, return_bounds=True)
-    assert bounds == [[25, 75], [25, 75], [0, 3]]
+    assert bounds == [(25, 75), (25, 75), (0, 3)]
 
 
 def test_rotate():

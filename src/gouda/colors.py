@@ -9,7 +9,7 @@ from enum import Enum
 import numpy as np
 import numpy.typing as npt
 
-from gouda.typing import FullColorType
+from gouda.typing import ColorType
 
 # NOTE - Color distance and color palette generation functions in this file are adapted from media lab's javascript iwanthue library - https://medialab.github.io/iwanthue/js/libs/chroma.palette-gen.js
 # NOTE - Color distance conversion functions are adapted from the chroma.js library - https://github.com/gka/chroma.js
@@ -106,12 +106,12 @@ def linearRGB2sRGB(arr: npt.NDArray[np.integer | np.floating]) -> npt.NDArray[np
     return out
 
 
-def lab2rgb(lab: FullColorType) -> npt.NDArray[np.uint8]:
+def lab2rgb(lab: ColorType) -> npt.NDArray[np.uint8]:
     """Convert a CIE L*a*b* color to RGB.
 
     Parameters
     ----------
-    lab : FullColorType
+    lab : ColorType
         CIE L*a*b* color to convert to RGB, should have shape [3,]
     """
     lightness, a_star, b_star = lab
@@ -129,7 +129,7 @@ def lab2rgb(lab: FullColorType) -> npt.NDArray[np.uint8]:
     return np.round([r, g, b_]).astype(np.uint8)
 
 
-def rgb2lab(rgb: FullColorType) -> tuple[float, float, float]:
+def rgb2lab(rgb: ColorType) -> tuple[float, float, float]:
     """Convert an RGB color to CIE L*a*b*.
 
     Parameters
@@ -177,7 +177,7 @@ def _xyz_lab(t: float) -> float:
     return t
 
 
-def validate_lab(lab: FullColorType) -> bool:
+def validate_lab(lab: ColorType) -> bool:
     """Validate that a CIE L*a*b* color is within the valid range for both L*a*b* and RGB colors.
 
     Parameters
@@ -211,7 +211,7 @@ def validate_lab(lab: FullColorType) -> bool:
 # COLORBLIND SIMULATION #############
 
 
-def _plane_projection_matrix(normal: FullColorType, deficiency: Deficiency) -> npt.NDArray[np.floating]:
+def _plane_projection_matrix(normal: ColorType, deficiency: Deficiency) -> npt.NDArray[np.floating]:
     if deficiency == Deficiency.PROTAN:
         return np.array([[0.0, -normal[1] / normal[0], -normal[2] / normal[0]], [0, 1, 0], [0, 0, 1]])
     elif deficiency == Deficiency.DEUTAN:
@@ -244,7 +244,7 @@ class CVDSimulator:
         self._precomputed: dict[Deficiency, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
 
     def simulate_cvd_color(
-        self, base_color: FullColorType, deficiency: Deficiency, severity: float = 1.0
+        self, base_color: ColorType, deficiency: Deficiency, severity: float = 1.0
     ) -> npt.NDArray[np.uint8]:
         """Simulate the appearance of a color for the given color vision deficiency.
 
@@ -354,8 +354,8 @@ class CVDSimulator:
 
 
 def get_color_distance(
-    color1: FullColorType,
-    color2: FullColorType,
+    color1: ColorType,
+    color2: ColorType,
     dist_type: str | Deficiency = "euclidean",
     colorblind_simulator: CVDSimulator | None = None,
     from_rgb: bool = False,
@@ -406,14 +406,14 @@ def get_color_distance(
     return result
 
 
-def euclidean_distance(color1: FullColorType, color2: FullColorType) -> float:
+def euclidean_distance(color1: ColorType, color2: ColorType) -> float:
     """Return the euclidean distance between two colors.
 
     Parameters
     ----------
-    color1 : FullColorType
+    color1 : ColorType
         The first color to compare
-    color2 : FullColorType
+    color2 : ColorType
         The second color to compare
 
     Returns
@@ -427,14 +427,14 @@ def euclidean_distance(color1: FullColorType, color2: FullColorType) -> float:
     return result
 
 
-def cmc_distance(lab_color1: FullColorType, lab_color2: FullColorType, lightness: int = 2, chroma: int = 1) -> float:
+def cmc_distance(lab_color1: ColorType, lab_color2: ColorType, lightness: int = 2, chroma: int = 1) -> float:
     """Return the CIE Delta E distance between two CIE L*a*b* colors, often referred to as the Color Measurement Committee (CMC).
 
     Parameters
     ----------
-    color1 : FullColorType
+    color1 : ColorType
         The first color to compare
-    color2 : FullColorType
+    color2 : ColorType
         The second color to compare
     lightness : int
         The lightness parameter for the CMC calculation, by default 2
@@ -474,14 +474,14 @@ def cmc_distance(lab_color1: FullColorType, lab_color2: FullColorType, lightness
     return result
 
 
-def compromise_distance(color1: FullColorType, color2: FullColorType, colorblind_simulator: CVDSimulator) -> float:
+def compromise_distance(color1: ColorType, color2: ColorType, colorblind_simulator: CVDSimulator) -> float:
     """Return the CMC distance between two CIE L*a*b* colors weighted across their colorblind representations.
 
     Parameters
     ----------
-    color1 : FullColorType
+    color1 : ColorType
         The first color to compare
-    color2 : FullColorType
+    color2 : ColorType
         The second color to compare
 
     Returns
@@ -520,15 +520,15 @@ def compromise_distance(color1: FullColorType, color2: FullColorType, colorblind
 
 
 def colorblind_distance(
-    color1: FullColorType, color2: FullColorType, deficiency: Deficiency, colorblind_simulator: CVDSimulator
+    color1: ColorType, color2: ColorType, deficiency: Deficiency, colorblind_simulator: CVDSimulator
 ) -> float:
     """Return the CMC distance between two CIE L*a*b* colors when converted to a completely colorblind representation.
 
     Parameters
     ----------
-    color1 : FullColorType
+    color1 : ColorType
         The first color to compare
-    color2 : FullColorType
+    color2 : ColorType
         The second color to compare
     type : str
         The tpye of color blindness to consider (protanope, deuteranope, tritanope)
@@ -552,14 +552,14 @@ def colorblind_distance(
 
 def generate_palette(
     num_colors: int,
-    check_color: Callable[[FullColorType], bool] | None = None,
+    check_color: Callable[[ColorType], bool] | None = None,
     force_mode: bool = True,
     quality: int = 50,
     ultra_precision: bool = False,
     distance_type: str | Deficiency = "compromise",
     as_rgb: bool = True,
     seed: None | int | np.random.Generator = None,
-) -> list[FullColorType]:
+) -> list[ColorType]:
     """Generate a perceptually differentiable color palette.
 
     Parameters
@@ -583,7 +583,7 @@ def generate_palette(
 
     Returns
     -------
-    list[FullColorType]
+    list[ColorType]
         A list of generated colors
 
     Note
@@ -592,20 +592,20 @@ def generate_palette(
     """
     if check_color is None:
 
-        def check_color(x: FullColorType) -> bool:
+        def check_color(x: ColorType) -> bool:
             return True
 
     random = np.random.default_rng(seed)
     colorblind_simulator = CVDSimulator()
 
-    def check_lab(x: FullColorType) -> bool:
+    def check_lab(x: ColorType) -> bool:
         return validate_lab(x) and check_color(x)
 
     if force_mode:  # force vector mode
-        colors: list[FullColorType] = []
+        colors: list[ColorType] = []
         vectors: dict[int, dict[str, float]] = {}
         for _ in range(num_colors):
-            color: FullColorType = [
+            color: ColorType = [
                 100 * random.random(),
                 100 * (2 * random.random() - 1),
                 100 * (2 * random.random() - 1),
@@ -662,7 +662,7 @@ def generate_palette(
                     if check_lab(candidate_lab):
                         colors[i] = candidate_lab
     else:
-        k_means: list[FullColorType] = []
+        k_means: list[ColorType] = []
         for _ in range(num_colors):
             lab = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
             failsafe = 10
@@ -671,7 +671,7 @@ def generate_palette(
                 lab = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
             k_means.append(lab)
 
-        color_samples: list[FullColorType] = []
+        color_samples: list[ColorType] = []
         samples_closest = []
         if ultra_precision:
             for light in range(101):

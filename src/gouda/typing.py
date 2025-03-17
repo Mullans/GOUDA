@@ -24,7 +24,5 @@ ImageArrayType = npt.NDArray[np.uint8] | npt.NDArray[np.uint16]
 """Type for numpy image arrays (e.g. uint8 or uint16)"""
 ImageLikeType = npt.ArrayLike | dict[str, str | int | float | npt.ArrayLike] | None
 """Typing for image-like objects used in :func:`gouda.display.print_grid`"""
-FullColorType = Sequence[float | int] | npt.NDArray[np.integer] | npt.NDArray[np.floating]
-"""Type for full color values (e.g. RGB, RGBA, etc.)"""
-ColorType = str | float | int | FullColorType
-"""Type for color values (e.g. str, float, int, or full color values)"""
+ColorType = Sequence[float | int] | npt.NDArray[np.integer] | npt.NDArray[np.floating]
+"""Type for full color values (e.g. str, RGB, RGBA, etc.)"""

@@ -12,7 +12,7 @@ import numpy.typing as npt
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 
-from gouda.color_lists import find_color
+from gouda.color_lists import find_color_hex
 from gouda.data_methods import line_dist, rescale, segment_line
 from gouda.general import is_iter
 from gouda.typing import ColorType, Unpack
@@ -29,7 +29,7 @@ def parse_color(color: ColorType, float_cmap: str = "viridis", int_cmap: str = "
     TODO - add lookup to get hexcodes from colors.py
     """
     if isinstance(color, str):  # If the color is a string, try to find the named color as a hexcode
-        check = find_color(color)
+        check = find_color_hex(color)
         if check is not None:
             color = check
     try:

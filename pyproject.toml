@@ -38,6 +38,7 @@ dependencies = [
     "matplotlib",
     "colorama",
     "types-colorama",  # for mypy
+    "scipy-stubs", # for mypy
     "typing-extensions; python_version < '3.10'",
 ]
 
