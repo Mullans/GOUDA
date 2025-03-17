@@ -48,9 +48,9 @@ class ConfusionMatrix:
         labels: np.ndarray | None = None,
         threshold: float | None = None,
         num_classes: int | None = None,
-        dtype: type = int,
+        dtype: npt.DTypeLike = int,
     ) -> None:
-        self.matrix = None
+        self.matrix: npt.NDArray[np.integer]
         self._num_classes = 0
         self.threshold = threshold
         self.add_warned = False
@@ -64,9 +64,10 @@ class ConfusionMatrix:
                 self.matrix = self.matrix.astype(dtype)
 
     @property
-    def shape(self) -> tuple[int, int]:
+    def shape(self) -> tuple[int, ...]:
         """The shape of the confusion matrix."""
-        return self.matrix.shape
+        shape: tuple[int, ...] = self.matrix.shape
+        return shape
 
     @property
     def size(self) -> int:
@@ -111,7 +112,8 @@ class ConfusionMatrix:
         self._num_classes = num_classes
         self.matrix = np.zeros((self._num_classes, self._num_classes), dtype=dtype)
 
-    def __iadd__(
+    # ignore - mypy bug if __iadd__ and __add__ have different signatures
+    def __iadd__(  # type: ignore[misc]
         self, data: tuple[bool | float | int | npt.ArrayLike, bool | float | int | npt.ArrayLike]
     ) -> ConfusionMatrix:
         """Add single datapoint (predicted, expected)."""
@@ -156,7 +158,8 @@ class ConfusionMatrix:
 
     def count(self) -> int:
         """Count the number of items in the matrix."""
-        return self.matrix.sum()
+        result: int = self.matrix.sum()
+        return result
 
     def accuracy(self) -> float:
         """Get the total accuracy in the matrix."""
@@ -173,6 +176,7 @@ class ConfusionMatrix:
         ----
         specificity = (true negative) / (true negative + false positive) for each class.
         """
+        result: npt.NDArray[np.floating]
         if class_index is None:
             tn = np.array(
                 [
@@ -187,7 +191,8 @@ class ConfusionMatrix:
                 ]
             )
             fp = np.array([self.matrix[i, :].sum() - self.matrix[i, i].sum() for i in range(self._num_classes)])
-            return np.divide(tn, tn + fp, where=(tn + fp) > 0)
+            result = np.divide(tn, tn + fp, where=(tn + fp) > 0)
+            return result
 
         else:
             tn = sum(
@@ -198,9 +203,10 @@ class ConfusionMatrix:
                 ]
             )
             fp = self.matrix[class_index, :].sum() - self.matrix[class_index, class_index].sum()
-            return np.divide(tn, tn + fp, where=(tn + fp) > 0)
+            result = np.divide(tn, tn + fp, where=(tn + fp) > 0)
+            return result
 
-    def sensitivity(self, class_index: int | None = None) -> npt.NDArray[np.floating]:
+    def sensitivity(self, class_index: int | None = None) -> list[float] | float:
         """Return the sensitivity of all classes or a single class. AKA recall.
 
         Notes
@@ -216,16 +222,18 @@ class ConfusionMatrix:
             return (
                 self.matrix[class_index, class_index] / self.matrix[class_index, :].sum()
                 if self.matrix[class_index, :].sum() > 0
-                else 0
+                else 0.0
             )
 
-    def precision(self, class_index: int | None = None) -> npt.NDArray[np.floating]:
+    def precision(self, class_index: int | None = None) -> list[float] | float:
         """Return the precision of all classes or a single class.
 
         Notes
         -----
         precision = (true positive) / (true positive + false positive)
         """
+        if self.matrix is None:
+            raise RuntimeError("Matrix has not been initialized")
         if class_index is None:
             return [
                 self.matrix[i, i] / self.matrix[:, i].sum() if self.matrix[:, i].sum() > 0 else 0
@@ -245,6 +253,8 @@ class ConfusionMatrix:
         -----
         mcc = ((tp * tn) - (fp * fn)) / sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
         """
+        if self.matrix is None:
+            raise RuntimeError("Matrix has not been initialized")
         if self._num_classes != 2:
             raise ValueError("Matthews correlation coefficient only applies to binary classifications")
         tp = self.matrix[1, 1]
@@ -254,7 +264,8 @@ class ConfusionMatrix:
         # tn = sum([self.matrix[j, j] for j in range(self._num_classes) if j != 1])
         # fp = sum([self.matrix[j, 1] for j in range(self._num_classes) if j != 1])
         # fn = sum([self.matrix[:, j].sum() - self.matrix[j, j] for j in range(self._num_classes) if j != 1])
-        with warnings.catch_warnings(record=False):
+        result: float
+        with warnings.catch_warnings(record=False):  # TODO - reevaluate the need of this catch
             warnings.filterwarnings("error")
             try:
                 result = ((tp * tn) - (fp * fn)) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
@@ -270,21 +281,25 @@ class ConfusionMatrix:
 
     def zero_rule(self) -> float:
         """Return the accuracy as if only the most common class is predicted."""
-        return np.max(self.matrix.sum(axis=1) / self.matrix.sum())
+        result: float = float(np.max(self.matrix.sum(axis=1) / self.matrix.sum()))
+        return result
 
     @classmethod
     def from_array(
-        cls, predicted: npt.ArrayLike, expected: npt.ArrayLike, threshold: float | None = None
+        cls,
+        predicted: npt.NDArray[np.integer | np.floating],
+        expected: npt.NDArray[np.integer | np.floating],
+        threshold: float | None = None,
     ) -> ConfusionMatrix:
         """Create a confusion matrix from numpy arrays.
 
         Parameters
         ----------
-        predicted : numpy.ndarray
+        predicted : npt.NDArray[np.integer | np.floating]
             Predicted values to add to the matrix either in same shape as expected or with shape [samples, classes] for probabilities
-        expected : numpy.ndarray
+        expected : npt.NDArray[np.integer | np.floating]
             Expected values to add to the matrix
-        threshold : type
+        threshold : float | None
             Threshold to use for predicted probabilities of binary classes. Defaults to self.threshold
 
 
@@ -297,16 +312,21 @@ class ConfusionMatrix:
         mat.add_array(predicted, expected, threshold=threshold)
         return mat
 
-    def add_array(self, predicted: npt.ArrayLike, expected: npt.ArrayLike, threshold: float | None = None) -> None:
+    def add_array(
+        self,
+        predicted: npt.NDArray[np.integer | np.floating],
+        expected: npt.NDArray[np.integer | np.floating],
+        threshold: float | None = None,
+    ) -> None:
         """Add data to the confusion matrix as numpy arrays.
 
         Parameters
         ----------
-        predicted : numpy.ndarray
+        predicted : npt.NDArray[np.integer | np.floating]
             Predicted values to add to the matrix either in same shape as expected or with shape [samples, classes] for probabilities
-        expected : numpy.ndarray
+        expected : npt.NDArray[np.integer | np.floating]
             Expected values to add to the matrix
-        threshold : type
+        threshold : float | None
             Threshold to use for predicted probabilities of binary classes. Defaults to self.threshold
 
         """
@@ -319,15 +339,19 @@ class ConfusionMatrix:
         if "float" in predicted.dtype.name:
             if predicted.ndim == 2 and predicted.shape[1] > 1:
                 # Assumes predicted samples as [samples, classes]
-                predicted = np.argmax(predicted, axis=1)
+                predicted = np.argmax(predicted, axis=1).astype(self.dtype)
             else:
-                predicted = np.round(predicted) if threshold is None else predicted > threshold
+                predicted = (
+                    np.round(predicted, decimals=0).astype(self.dtype)
+                    if threshold is None
+                    else (predicted > threshold).astype(self.dtype)
+                )
         if "float" in expected.dtype.name:
             warnings.warn("Float type labels will be automatically rounded to the nearest integer", UserWarning)
             expected = np.round(expected).astype(int)
         if not ("int" in expected.dtype.name or "bool" in expected.dtype.name):
             raise ValueError(f"Expected must be either an int or a bool, not {expected.dtype}")
-        max_in = max(expected.max(), predicted.max()) + 1
+        max_in: int = max(expected.max(), predicted.max()) + 1
         if self.matrix is None:
             self.reset(max_in, dtype=expected.dtype)
         if self._num_classes < max_in:
@@ -371,23 +395,27 @@ class ConfusionMatrix:
         """
         if threshold is None:
             threshold = self.threshold
+        predicted_class: int
+        expected_class: int
         if isinstance(predicted, float | np.floating):
             # Single value: prediction of True (class 1)
-            if self.threshold is not None:
+            if threshold is not None:
                 predicted_class = 1 if predicted > threshold else 0
             else:
                 if not self.add_warned:
                     self.add_warned = True
                     print("Warning: Float predicted classes without a threshold are rounded to the nearest integer.")
-                predicted_class = np.round(predicted).astype(int)
+                predicted_class = int(np.round(predicted))
         elif isinstance(predicted, bool):
             predicted_class = 1 if predicted else 0
         elif isinstance(predicted, int | np.integer):
             # Single value: class label
-            predicted_class = predicted
-        elif isinstance(expected, float | int | bool | np.number) and isinstance(predicted, list | tuple | np.ndarray):
+            predicted_class = int(predicted)
+        elif isinstance(expected, float | int | bool | np.integer | np.floating) and isinstance(
+            predicted, list | tuple | np.ndarray
+        ):
             # Class probabilities with single expected label
-            predicted_class = np.argmax(predicted).astype(int)
+            predicted_class = int(np.argmax(predicted))
         elif (
             isinstance(predicted, list | tuple | np.ndarray)
             and isinstance(expected, list | tuple | np.ndarray)
@@ -404,8 +432,8 @@ class ConfusionMatrix:
             raise ValueError("Only 1 expected value per prediction is supported")
         if isinstance(expected, bool):
             expected_class = 1 if expected else 0
-        elif expected % 1 == 0:
-            expected_class = np.round(expected).astype(int)
+        elif float(expected) % 1 == 0:
+            expected_class = int(np.round(expected))
         else:
             raise ValueError("Expected values must be class label integers or boolean")
 
@@ -445,6 +473,8 @@ class ConfusionMatrix:
         """
         specificities = self.specificity()
         sensitivities = self.sensitivity()
+        if not isinstance(sensitivities, list):
+            raise ValueError("Sensitivity must be a list")
         expected_string = "\u2193" + " Expected"
         predicted_string = "\u2192" + "  Predicted"
         leading_space = "            "
@@ -486,3 +516,5 @@ class ConfusionMatrix:
             for item in [colorama.Fore.GREEN, colorama.Style.RESET_ALL, "\033[4m", "\033[0m"]:
                 confusion_string = confusion_string.replace(item, "")
             return confusion_string
+        else:
+            return None
