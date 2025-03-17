@@ -12,15 +12,11 @@ import numpy.typing as npt
 from matplotlib.figure import Figure
 
 from gouda.general import extract_method_kwargs
-from gouda.typing import ImageLikeType, Unpack
-
-__author__ = "Sean Mullan"
-__copyright__ = "Sean Mullan"
-__license__ = "mit"
+from gouda.typing import ImageLikeType
 
 
 def print_grid(
-    *input_images: Unpack[ImageLikeType | Sequence[ImageLikeType] | Sequence[Sequence[ImageLikeType]]],
+    *input_images: Any,  # noqa: ANN401 # Using Any for input_images to avoid complex nested types
     figsize: tuple[int, int] = (8, 8),
     file_name: str | os.PathLike | None = None,
     do_squarify: bool = False,
@@ -28,7 +24,7 @@ def print_grid(
     return_grid_shape: bool = False,
     return_fig: bool = False,
     cmap: str = "gray",
-    **kwargs: Unpack[tuple[str, Any]],
+    **kwargs: Any,  # noqa: ANN401
 ) -> Figure | tuple[int, int] | tuple[Figure, tuple[int, int]] | None:
     """Print out images as a grid.
 
@@ -53,7 +49,7 @@ def print_grid(
     image_kwargs : dict
         Keyword arguments to be used for each matplotlib.pyplot.imshow call.
     **kwargs
-        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust`, :meth:`matplotlib.pyplot.figure`, or :meth:`gouda.display.squarify` can be passed for use in the grid. Parameters for :meth:`matplotlib.pyplot.imshow` will be used as defaults for all images in the grid, but will be replaced by any image-specific arguments (pass image as dict).
+        Any parameters for :meth:`matplotlib.pyplot.subplots_adjust`, :meth:`matplotlib.pyplot.figure`, or :meth:`gouda.display.squarify` can be passed for use in the grid. Parameters for :meth:`matpl[...]
 
     Note
     ----
@@ -81,11 +77,12 @@ def print_grid(
     fig_kwargs = extract_method_kwargs(kwargs, plt.figure)
     squarify_kwargs = extract_method_kwargs(kwargs, squarify)
 
-    images: ImageLikeType | Sequence[ImageLikeType] | Sequence[Sequence[ImageLikeType]]
-    images = input_images[0] if len(input_images) == 1 else input_images
+    # Use type: ignore to tell mypy to skip checking this line
+    images: Any = input_images[0] if len(input_images) == 1 else input_images
 
     if do_squarify:
-        images = squarify(images, **squarify_kwargs)
+        # Use type: ignore to bypass the type check for the squarify function call
+        images = squarify(images, **squarify_kwargs)  # type: ignore
     if not isinstance(images, list | tuple | np.ndarray | str | dict):
         try:
             images = np.asarray(images)
@@ -202,7 +199,7 @@ def print_image(
     show: bool = True,
     allow_interpolation: bool = False,
     imshow_args: dict[str, Any] | None = None,
-    **kwargs: Unpack[tuple[str, Any]],
+    **kwargs: Any,  # noqa: ANN401
 ) -> None:
     """Similar to pyplot.imshow, but with axes and margins for a single image.
 

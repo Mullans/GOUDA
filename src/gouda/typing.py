@@ -7,12 +7,7 @@ from collections.abc import Sequence
 import numpy as np
 import numpy.typing as npt
 
-try:
-    from typing import Unpack
-except ImportError:
-    from typing_extensions import Unpack  # noqa: F401
-
-ShapeType = int | tuple[int]
+ShapeType = int | tuple[int, ...]
 """Type for numpy shape/axis values (e.g. int or tuple of ints)"""
 FloatArrayType = float | np.floating | npt.NDArray[np.floating]
 """Type for bare floats or numpy floating point arrays"""

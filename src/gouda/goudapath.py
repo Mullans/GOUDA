@@ -12,7 +12,6 @@ from collections.abc import Generator
 from typing import IO, Any, TypeAlias
 
 from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
-from gouda.typing import Unpack
 
 __all__ = [
     "GPathLike",
@@ -35,7 +34,7 @@ class GoudaPath(os.PathLike):
     __slots__ = ("__path", "_hash", "_parsed_parts", "_parts_normcase_cached", "use_absolute")
 
     def __init__(
-        self, *path: Unpack[str | GoudaPath | os.PathLike], use_absolute: bool = False, ensure_dir: bool = False
+        self, *path: str | GoudaPath | os.PathLike, use_absolute: bool = False, ensure_dir: bool = False
     ) -> None:
         if len(path) == 1 and isinstance(path[0], GoudaPath):
             full_path = path[0].path
@@ -55,7 +54,7 @@ class GoudaPath(os.PathLike):
             self.ensure_dir()
 
     def __call__(
-        self, *path_args: Unpack[str | GoudaPath | os.PathLike], use_absolute: bool | None = None
+        self, *path_args: str | GoudaPath | os.PathLike, use_absolute: bool | None = None
     ) -> GoudaPath | list[GoudaPath]:
         """Add to the current path.
 
@@ -97,13 +96,13 @@ class GoudaPath(os.PathLike):
         """Return the path as a bytes object."""
         return self.abspath.encode()
 
-    def __truediv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
+    def __truediv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath | list[GoudaPath]:
         """Shortcut method for __call__ with a single child path and use_absolute set to False."""
-        return GoudaPath(self(path), use_absolute=False)
+        return self(path, use_absolute=False)
 
-    def __floordiv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
+    def __floordiv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath | list[GoudaPath]:
         """Shortcut method for __call__ with a single child path and use_absolute set to True."""
-        return GoudaPath(self(path), use_absolute=True)
+        return self(path, use_absolute=True)
 
     def __add__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
         """Append a path to the end of the current path.
@@ -158,7 +157,7 @@ class GoudaPath(os.PathLike):
     def ensure_dir(self) -> GoudaPath:
         """Ensure that the directory exists. If the path is a file, ensure the parent directory exists."""
         if "." in os.path.basename(self.path):
-            ensure_dir(self.parent_dir())
+            ensure_dir(self.parent_dir().path)
         else:
             ensure_dir(self.path)
         return self
@@ -353,7 +352,7 @@ class GoudaPath(os.PathLike):
         recursive: bool = False,
         fast_check: bool = True,
         is_iterator: bool = False,
-    ) -> list[str]:
+    ) -> list[str] | Generator[str, None, None]:
         """Return all images contained in the directory of the path.
 
         Parameters
@@ -389,7 +388,7 @@ class GoudaPath(os.PathLike):
         """Returns the relative path if use_absolute is False, otherwise returns the absolute path."""
         return self.__path
 
-    def __update_path(self, *args: Unpack[str | GoudaPath | os.PathLike]) -> None:
+    def __update_path(self, *args: str | GoudaPath | os.PathLike) -> None:
         self.__path = os.path.join(*args)
         self._clear_cache()
 

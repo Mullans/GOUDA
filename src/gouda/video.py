@@ -14,7 +14,6 @@ import numpy.typing as npt
 
 from gouda import data_methods
 from gouda.general import extract_method_kwargs
-from gouda.typing import Unpack
 
 
 class VideoWriter:
@@ -87,7 +86,7 @@ def show_video(
     frame_width: int | None = None,
     file_name: str | os.PathLike = "temp.mp4",
     show: str | None = "ipython",
-    **kwargs: Unpack[tuple[str, Any]],
+    **kwargs: Any,  # noqa: ANN401
 ) -> None | IPython.display.Video:
     """Convert a series of frames to a video and display it.
 

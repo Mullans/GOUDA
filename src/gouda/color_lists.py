@@ -27,7 +27,7 @@ def find_color_rgb(color: str | ColorType) -> tuple[float, float, float]:
         cleaned_color = tuple(color)
     else:
         raise ValueError(f"Color must be a string, list, tuple, or numpy array - found {type(color)}")
-    result_color = matplotlib.colors.to_rgb(cleaned_color)
+    result_color: tuple[float, float, float] = matplotlib.colors.to_rgb(cleaned_color)
     return result_color
 
 

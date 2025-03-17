@@ -245,7 +245,7 @@ class MMeanArray:
     @property
     def shape(self) -> ShapeType:
         """The shape of the array."""
-        shape: tuple[int] = self._mean.shape
+        shape: tuple[int, ...] = self._mean.shape
         return shape
 
     @property
@@ -306,7 +306,7 @@ class MStddevArray:
     @property
     def shape(self) -> ShapeType:
         """The shape of the array."""
-        shape: tuple[int] = self._variance.shape
+        shape: tuple[int, ...] = self._variance.shape
         return shape
 
     @property

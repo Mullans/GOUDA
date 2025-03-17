@@ -6,7 +6,7 @@ import copy
 import fnmatch
 import glob
 import gzip
-import importlib
+import importlib.util
 import json
 import os
 import re
@@ -20,14 +20,13 @@ import numpy as np
 import numpy.typing as npt
 
 from gouda.data_methods import num_digits
-from gouda.typing import Unpack
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
-def ensure_dir(*paths: Unpack[str]) -> str:
+def ensure_dir(*paths: str) -> str:
     """Check if a given directory exists, and create it if it doesn't. Multiple directories can be passed as a top-to-bottom path structure.
 
     Parameters

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Literal
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ from matplotlib.path import Path
 from gouda.color_lists import find_color_hex
 from gouda.data_methods import line_dist, rescale, segment_line
 from gouda.general import is_iter
-from gouda.typing import ColorType, Unpack
+from gouda.typing import ColorType
 
 
 def parse_color(color: ColorType, float_cmap: str = "viridis", int_cmap: str = "Set1") -> tuple[float, float, float]:
@@ -195,7 +195,7 @@ def colorplot(
     step_as_percent: bool = True,
     start_val: float = 0.0,
     end_val: float = 1.0,
-    **kwargs: Unpack[tuple[str, Any]],
+    **kwargs: str | int | float,
 ) -> mpl.axes.Axes:
     """Plot a line with a color gradient.
 
