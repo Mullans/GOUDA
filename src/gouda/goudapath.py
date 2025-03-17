@@ -1,12 +1,15 @@
-"""Path-like class for easier file navigation"""
+"""Path-like class for easier file navigation."""
+
+from __future__ import annotations
 
 import glob
+import io
 import os
 import pathlib
 import re
 import warnings
 from collections.abc import Generator
-from typing import TypeVar, Union
+from typing import IO, Any, TypeVar, Unpack
 
 from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
 
@@ -15,24 +18,24 @@ __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
-TGoudaPath = TypeVar("TGoudaPath", bound="GoudaPath")
-GPathLike = Union[str, TGoudaPath, os.PathLike]
+GPathLike = TypeVar("GPathLike", str, "GoudaPath", os.PathLike)
 
 
 class GoudaPath(os.PathLike):
+    """PathLike class for easier file traversal.
+
+    Parameters
+    ----------
+    path : str
+        One or more strings to join as a filepath
+    use_absolute : bool
+        Whether to convert the path to the absolute path (the default is False)
+    """
+
     # Eventually, subclass pathlib.Path (available in 3.12+)
     __slots__ = ("__path", "_hash", "_parsed_parts", "_parts_normcase_cached", "use_absolute")
 
-    def __init__(self: TGoudaPath, *path: GPathLike, use_absolute: bool = False, ensure_dir: bool = False) -> None:
-        """PathLike class for easier file traversal
-
-        Parameters
-        ----------
-        path : str
-            One or more strings to join as a filepath
-        use_absolute : bool
-            Whether to convert the path to the absolute path (the default is False)
-        """
+    def __init__(self, *path: Unpack[GPathLike], use_absolute: bool = False, ensure_dir: bool = False) -> None:
         if len(path) == 1 and isinstance(path[0], GoudaPath):
             path = path[0].path
         elif len(path) == 0:
@@ -50,9 +53,7 @@ class GoudaPath(os.PathLike):
         if ensure_dir:
             self.ensure_dir()
 
-    def __call__(
-        self: TGoudaPath, *path_args: GPathLike, use_absolute: bool | None = None
-    ) -> TGoudaPath | list[TGoudaPath]:
+    def __call__(self, *path_args: Unpack[GPathLike], use_absolute: bool | None = None) -> GoudaPath | list[GoudaPath]:
         """Add to the current path.
 
         Parameters
@@ -82,25 +83,28 @@ class GoudaPath(os.PathLike):
                 for i in range(len(path_args))
             ]
 
-    def __str__(self: TGoudaPath) -> str:
+    def __str__(self) -> str:
+        """Return the path as a string."""
         return self.path
 
-    def __repr__(self: TGoudaPath) -> str:
+    def __repr__(self) -> str:
+        """Return the path as a string."""
         return f"GoudaPath('{self.path}')"
 
-    def __bytes__(self: TGoudaPath) -> bytes:
+    def __bytes__(self) -> bytes:
+        """Return the path as a bytes object."""
         return self.abspath.encode()
 
-    def __truediv__(self: TGoudaPath, path: GPathLike) -> TGoudaPath:
-        """Shortcut method for __call__ with a single child path and use_absolute set to False"""
+    def __truediv__(self, path: GPathLike) -> GoudaPath:
+        """Shortcut method for __call__ with a single child path and use_absolute set to False."""
         return GoudaPath(self(path), use_absolute=False)
 
-    def __floordiv__(self: TGoudaPath, path: GPathLike) -> TGoudaPath:
-        """Shortcut method for __call__ with a single child path and use_absolute set to True"""
+    def __floordiv__(self, path: GPathLike) -> GoudaPath:
+        """Shortcut method for __call__ with a single child path and use_absolute set to True."""
         return GoudaPath(self(path), use_absolute=True)
 
-    def __add__(self: TGoudaPath, path: GPathLike) -> TGoudaPath:
-        """Appends a path to the end of the current path.
+    def __add__(self, path: GPathLike) -> GoudaPath:
+        """Append a path to the end of the current path.
 
         Note
         ----
@@ -109,46 +113,48 @@ class GoudaPath(os.PathLike):
         return GoudaPath(self.path + path, use_absolute=self.use_absolute)
 
     @property
-    def parts(self: TGoudaPath) -> list[str]:
+    def parts(self) -> list[str]:
+        """The parts of the path as a list of strings."""
         try:
             return self._parsed_parts
         except AttributeError:
             self._parsed_parts = pathlib.Path(self.path).parts
             return self._parsed_parts
 
-    def __getitem__(self: TGoudaPath, index: int) -> str:
+    def __getitem__(self, index: int) -> str:
         """Get part of the current path hierarchy."""
         split_path = self.parts
         if isinstance(index, slice):
             return os.path.join(*split_path[index])
         return split_path[index]
 
-    def __setitem__(self: TGoudaPath, index: int, value: str) -> None:
+    def __setitem__(self, index: int, value: str) -> None:
         """Change part of the current path hierarchy."""
         split_path = list(self.parts)
         split_path[index] = value
         self.__update_path(*split_path)
 
-    def insert(self: TGoudaPath, index: int, value: str) -> None:
+    def insert(self, index: int, value: str) -> None:
         """Insert a part into the current path hierarchy."""
         split_path = list(self.parts)
         split_path.insert(index, value)
         self.__update_path(*split_path)
 
-    def __len__(self: TGoudaPath) -> int:
+    def __len__(self) -> int:
         """Get the length of the current path hierarchy."""
         return len(self.parts)
 
-    def __contains__(self: TGoudaPath, value: str) -> bool:
+    def __contains__(self, value: str) -> bool:
+        """Check if the current path contains a value in its hierarchy."""
         return value in self.__path
 
-    def __fspath__(self: TGoudaPath) -> str | bytes:
-        """Note: fspath is always absolute path
-        Should it be?
-        """
+    def __fspath__(self) -> str | bytes:
+        """Return the path as a string or bytes object."""
+        # Note: fspath is always absolute path - is that the best behavior?
         return os.fspath(self.__path)
 
-    def ensure_dir(self: TGoudaPath) -> TGoudaPath:
+    def ensure_dir(self) -> GoudaPath:
+        """Ensure that the directory exists. If the path is a file, ensure the parent directory exists."""
         if "." in os.path.basename(self.path):
             ensure_dir(self.parent_dir())
         else:
@@ -156,13 +162,13 @@ class GoudaPath(os.PathLike):
         return self
 
     def glob(
-        self: TGoudaPath,
+        self,
         pattern: GPathLike,
         as_gouda: bool = True,
         basenames: bool = False,
         recursive: bool = False,
         sort: bool = False,
-    ) -> list[str | TGoudaPath]:
+    ) -> list[str | GoudaPath]:
         """Make a glob call starting from the current path.
 
         Parameters
@@ -188,14 +194,14 @@ class GoudaPath(os.PathLike):
         return results
 
     def search(
-        self: TGoudaPath,
+        self,
         pattern: GPathLike | re.Pattern,
         as_gouda: bool = True,
         basenames: bool = False,
         recursive: bool = False,
         sort: bool = False,
-        iter: bool = False,
-    ) -> list[str | TGoudaPath]:
+        as_iterator: bool = False,
+    ) -> list[str | GoudaPath]:
         """Make a fast_glob call starting from the current path (matches basenames against pattern).
 
         Parameters
@@ -214,20 +220,20 @@ class GoudaPath(os.PathLike):
             If True, return a generator instead of a list (the default is False)
         """
 
-        def search_gen():
+        def _search_gen() -> Generator[str | GoudaPath, None, None]:
             for item in fast_glob(self.__path, pattern, basenames=basenames, sort=sort, recursive=recursive):
                 if as_gouda:
                     item = GoudaPath(item, use_absolute=self.use_absolute)
                 yield item
 
-        if iter:
-            return search_gen()
+        if as_iterator:
+            return _search_gen()
         else:
-            return list(search_gen())
+            return list(_search_gen())
 
     def globfirst(
-        self: TGoudaPath, pattern: GPathLike, as_gouda: bool = True, basename: bool = False, recursive: bool = False
-    ) -> str | TGoudaPath:
+        self, pattern: GPathLike, as_gouda: bool = True, basename: bool = False, recursive: bool = False
+    ) -> str | GoudaPath:
         """Make a glob call starting from the current path and return only the first result in glob order.
 
         Parameters
@@ -248,21 +254,19 @@ class GoudaPath(os.PathLike):
                 item = GoudaPath(item, use_absolute=self.use_absolute)
             return item
 
-    def parent_dir(self: TGoudaPath) -> TGoudaPath:
+    def parent_dir(self) -> GoudaPath:
         """Return the parent directory of the current path."""
         parent_dir = os.path.dirname(self.__path)
         if len(parent_dir) == 0:
             parent_dir = os.path.join(os.pardir, os.path.basename(os.path.abspath(parent_dir)))
         return GoudaPath(parent_dir, use_absolute=self.use_absolute)
 
-    def num_children(
-        self: TGoudaPath, dirs_only: bool = True, files_only: bool = False, include_hidden: bool = False
-    ) -> int:
-        """If the path is a directory, return a count of the child paths"""
+    def num_children(self, dirs_only: bool = True, files_only: bool = False, include_hidden: bool = False) -> int:
+        """If the path is a directory, return a count of the child paths."""
         return len(self.children(dirs_only=dirs_only, files_only=files_only, include_hidden=include_hidden))
 
     def children(
-        self: TGoudaPath,
+        self,
         dirs_only: bool = True,
         files_only: bool = False,
         basenames: bool = False,
@@ -294,7 +298,7 @@ class GoudaPath(os.PathLike):
         )
 
     def iterdir(
-        self: TGoudaPath,
+        self,
         dirs_only: bool = True,
         files_only: bool = False,
         basenames: bool = False,
@@ -330,14 +334,14 @@ class GoudaPath(os.PathLike):
                 yield GoudaPath(child.path)
 
     def get_images(
-        self: TGoudaPath,
+        self,
         sort: bool = False,
         basenames: bool = False,
         recursive: bool = False,
         fast_check: bool = True,
-        iter: bool = False,
+        is_iterator: bool = False,
     ) -> list[str]:
-        """Return all images contained in the directory of the path
+        """Return all images contained in the directory of the path.
 
         Parameters
         ----------
@@ -355,73 +359,78 @@ class GoudaPath(os.PathLike):
         if not self.is_dir():
             raise NotADirectoryError(f"Not a directory: {self.__path}")
         return find_images(
-            self.__path, sort=sort, basenames=basenames, recursive=recursive, fast_check=fast_check, iter=iter
+            self.__path,
+            sort=sort,
+            basenames=basenames,
+            recursive=recursive,
+            fast_check=fast_check,
+            as_iterator=is_iterator,
         )
 
-    def resolve_links(self: TGoudaPath) -> TGoudaPath:
-        """Resolve any symbolic links in the path using realpath"""
+    def resolve_links(self) -> GoudaPath:
+        """Resolve any symbolic links in the path using realpath."""
         return GoudaPath(os.path.realpath(self.__path))
 
     @property
-    def path(self: TGoudaPath) -> str:
-        """Returns the relative path if use_absolute is False, otherwise returns the absolute path"""
+    def path(self) -> str:
+        """Returns the relative path if use_absolute is False, otherwise returns the absolute path."""
         return self.__path
 
-    def __update_path(self: TGoudaPath, *args) -> str:
+    def __update_path(self, *args: Unpack[GPathLike]) -> str:
         self.__path = os.path.join(*args)
         self._clear_cache()
 
     @property
-    def abspath(self: TGoudaPath) -> str:
-        """Equivalent to os.path.abspath"""
+    def abspath(self) -> str:
+        """Equivalent to os.path.abspath ."""
         return os.path.abspath(self.__path)
 
     @property
-    def realpath(self: TGoudaPath) -> str:
-        """Equivalent to os.path.realpath"""
+    def realpath(self) -> str:
+        """Equivalent to os.path.realpath ."""
         return os.path.realpath(self.__path)
 
-    def basename(self: TGoudaPath) -> str:
-        """Equivalent to os.path.basename"""
+    def basename(self) -> str:
+        """Equivalent to os.path.basename ."""
         return os.path.basename(self.__path)
 
-    def basicname(self: TGoudaPath) -> str:
-        """Return the base name of the file without the extension"""
+    def basicname(self) -> str:
+        """Return the base name of the file without the extension."""
         warnings.warn("`.basicname()` is deprecated and will be removed, use `.stem()` instead", DeprecationWarning)
         return self.stem()
 
-    def is_dir(self: TGoudaPath) -> bool:
-        """Check if the path is a directory"""
+    def is_dir(self) -> bool:
+        """Check if the path is a directory."""
         return os.path.isdir(self.__path)
 
-    def is_image(self: TGoudaPath) -> bool:
-        """Check if the path is an image (see imghdr.what for image types)"""
+    def is_image(self) -> bool:
+        """Check if the path is an image (see imghdr.what for image types)."""
         return is_image(self.__path)
 
-    def is_hidden(self: TGoudaPath) -> bool:
-        """Check if the file is hidden in the filesystem (starts with .)"""
+    def is_hidden(self) -> bool:
+        """Check if the file is hidden in the filesystem (starts with .)."""
         if not self.exists():
             raise FileNotFoundError(f"File not found: {self.__path}")
         return self.basename().startswith(".")
 
-    def extension(self: TGoudaPath) -> str:
-        """Return just the extension of the file"""
+    def extension(self) -> str:
+        """Return just the extension of the file."""
         return self.fullsplit()[2]
 
-    def exists(self: TGoudaPath) -> bool:
-        """Check if the file indicated by the GoudaPath exists"""
+    def exists(self) -> bool:
+        """Check if the file indicated by the GoudaPath exists."""
         return os.path.exists(self)
 
-    def endswith(self: TGoudaPath, suffix: str) -> bool:
-        """Check if the the path ends with the given suffix"""
+    def endswith(self, suffix: str) -> bool:
+        """Check if the the path ends with the given suffix."""
         return self.__path.endswith(suffix)
 
-    def replace(self: TGoudaPath, old: str, new: str) -> TGoudaPath:
-        """Replace part of the path with a new string"""
+    def replace(self, old: str, new: str) -> GoudaPath:
+        """Replace part of the path with a new string."""
         return GoudaPath(self.__path.replace(old, new), use_absolute=self.use_absolute)
 
-    def rstrip(self: TGoudaPath, chars: str | None = None) -> TGoudaPath:
-        """Remove leading and trailing characters from the path
+    def rstrip(self, chars: str | None = None) -> GoudaPath:
+        """Remove leading and trailing characters from the path.
 
         Parameters
         ----------
@@ -430,11 +439,11 @@ class GoudaPath(os.PathLike):
         """
         return GoudaPath(self.__path.rstrip(chars), use_absolute=self.use_absolute)
 
-    def fullsplit(self: TGoudaPath) -> tuple[str, str]:
-        """Split the path into basename and extension
+    def fullsplit(self) -> tuple[str, str]:
+        """Split the path into basename and extension.
 
-        NOTE
-        ----
+        Notes
+        -----
         * This splits at the first non-leading period of the basename, compared to os.path.splitext which splits the whole path at the last period.
         * Leading periods are considered to be part of the basename
         """
@@ -452,68 +461,82 @@ class GoudaPath(os.PathLike):
         else:
             return head, splitpath[0], "." + splitpath[1]
 
-    def startswith(self: TGoudaPath, prefix: str) -> bool:
-        """Check if the path starts with the given suffix"""
+    def startswith(self, prefix: str) -> bool:
+        """Check if the path starts with the given suffix."""
         return self.__path.startswith(prefix)
 
-    def add_basename(self: TGoudaPath, path: str) -> bool:
-        """Add the basename of the given path to the end of the GoudaPath"""
+    def add_basename(self, path: str) -> bool:
+        """Add the basename of the given path to the end of the GoudaPath."""
         return self(os.path.basename(path))
 
-    def stem(self: TGoudaPath) -> str:
+    def stem(self) -> str:
+        """Return the stem of the path's basename (the name of the file without the extension)."""
         return self.fullsplit()[1]
 
-    def with_stem(self: TGoudaPath, stem: str) -> TGoudaPath:
-        """Return a new GoudaPath with the same path but a new stem"""
+    def with_stem(self, stem: str) -> GoudaPath:
+        """Return a new GoudaPath with the same path but a new stem."""
         return GoudaPath(self.fullsplit()[0], stem + self.fullsplit()[2], use_absolute=self.use_absolute)
 
-    def with_basename(self: TGoudaPath, basename: str) -> TGoudaPath:
-        """Return a new GoudaPath with the same path but a new basename"""
+    def with_basename(self, basename: str) -> GoudaPath:
+        """Return a new GoudaPath with the same path but a new basename."""
         return GoudaPath(self.fullsplit()[0], basename, use_absolute=self.use_absolute)
 
-    def with_extension(self: TGoudaPath, ext: str) -> TGoudaPath:
-        """Return a new GoudaPath with the same path but a new extension"""
+    def with_extension(self, ext: str) -> GoudaPath:
+        """Return a new GoudaPath with the same path but a new extension."""
         if not ext.startswith("."):
             ext = "." + ext
         return GoudaPath(self.fullsplit()[0], self.fullsplit()[1] + ext, use_absolute=self.use_absolute)
 
-    def as_posix(self: TGoudaPath) -> str:
+    def as_posix(self) -> str:
         """Return the string path with forward slashes."""
         return (self.__path).replace(os.path.sep, "/")
 
-    def as_pathlib(self: TGoudaPath) -> pathlib.Path:
-        """Return the path as a pathlib.Path object"""
+    def as_pathlib(self) -> pathlib.Path:
+        """Return the path as a pathlib.Path object."""
         return pathlib.Path(self.__path)
 
-    def _opener(self, name, flags, mode=0o666):
+    def _opener(self, name: GPathLike, flags: int, mode: int = 0o666) -> int:
         return os.open(self, flags, mode)
 
-    def open(self, mode="r", buffering=-1, encoding=None, errors=None, newline=None):
-        return open(self, mode, buffering, encoding, errors, newline, opener=self._opener)
+    def open(
+        self,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> IO:
+        """Open the file using the given mode and buffering. See io.open for details."""
+        return io.open(self, mode, buffering, encoding, errors, newline, opener=self._opener)  # noqa: UP020
 
-    def read_bytes(self):
+    def read_bytes(self) -> bytes:
+        """Read the file as bytes."""
         with self.open(mode="rb") as f:
             return f.read()
 
-    def read_text(self, encoding=None, errors=None):
+    def read_text(self, encoding: str | None = None, errors: str | None = None) -> str:
+        """Read the file as text."""
         with self.open(mode="r", encoding=encoding, errors=errors) as f:
             return f.read()
 
-    def write_bytes(self, data):
+    def write_bytes(self, data: bytes) -> int:
+        """Write bytes to the file."""
         view = memoryview(data)
         with self.open(mode="wb") as f:
             return f.write(view)
 
-    def write_text(self, data, encoding=None, errors=None):
+    def write_text(self, data: str, encoding: str | None = None, errors: str | None = None) -> int:
+        """Write text to the file."""
         if not isinstance(data, str):
             raise TypeError(f"data must be str, not {type(data).__name__}")
         with self.open(mode="w", encoding=encoding, errors=errors) as f:
             return f.write(data)
 
-    def _raw_open(self, flags, mode=0o777):
+    def _raw_open(self, flags: Any, mode: int = 0o777) -> int:  # noqa: ANN401
         return os.open(self, flags, mode)
 
-    def touch(self, mode=0o666, exist_ok=True):
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        """Create a new file at the path if it does not exist."""
         if exist_ok:
             try:
                 os.utime(self, None)
@@ -528,22 +551,24 @@ class GoudaPath(os.PathLike):
         os.close(fd)
 
     @classmethod
-    def cwd(cls):
+    def cwd(cls) -> GoudaPath:
         """Return a new GoudaPath pointing to the current working directory using :func:`os.getcwd`."""
         return cls(os.getcwd(), use_absolute=False)
 
     @classmethod
-    def home(cls) -> "GoudaPath":
+    def home(cls) -> GoudaPath:
         """Return a new GoudaPath pointing to the user's home directory using :func:`os.path.expanduser`."""
         return cls(os.path.expanduser("~"))
 
-    def normpath(self: TGoudaPath) -> "GoudaPath":
+    def normpath(self) -> GoudaPath:
+        """Return a new GoudaPath with the path normalized using :func:`os.path.normpath`."""
         return GoudaPath(os.path.normpath(self))
 
-    def expanduser(self: TGoudaPath) -> "GoudaPath":
+    def expanduser(self) -> GoudaPath:
+        """Return a new GoudaPath with the path expanded using :func:`os.path.expanduser`."""
         return GoudaPath(os.path.expanduser(self.path))
 
-    def _clear_cache(self: TGoudaPath) -> None:
+    def _clear_cache(self) -> None:
         if hasattr(self, "_parts_normcase_cached"):
             del self._parts_normcase_cached
         if hasattr(self, "_hash"):
@@ -552,51 +577,56 @@ class GoudaPath(os.PathLike):
             del self._parsed_parts
 
     @property
-    def _cparts(self: TGoudaPath):
+    def _cparts(self) -> tuple[str, ...]:
         try:
             return self._parts_normcase_cached
         except AttributeError:
             self._parts_normcase_cached = pathlib.Path(os.path.normcase(self.__path)).parts
             return self._parts_normcase_cached
 
-    def __hash__(self: TGoudaPath):
+    def __hash__(self: GoudaPath) -> int:
+        """Return the hash of the path."""
         try:
             return self._hash
         except AttributeError:
             self._hash = hash(tuple(self._cparts))
             return self._hash
 
-    def __eq__(self: TGoudaPath, other: GPathLike) -> bool:
+    def __eq__(self, other: GPathLike) -> bool:
         """Check if the paths are equal.
 
         Note
         ----
         Compares case-folded paths if both are GoudaPaths, otherwise compares the string paths
         """
-        if isinstance(other, (GoudaPath, pathlib.Path)):
+        if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts == _get_path_parts_normcase(other)
         return self.__path == str(other)
 
-    def __lt__(self: TGoudaPath, other: GPathLike) -> bool:
-        if isinstance(other, (GoudaPath, pathlib.Path)):
+    def __lt__(self, other: GPathLike) -> bool:
+        """Check if the path is less than the other path."""
+        if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts < _get_path_parts_normcase(other)
         else:
             return self.__path < str(other)
 
-    def __le__(self: TGoudaPath, other: GPathLike) -> bool:
-        if isinstance(other, (GoudaPath, pathlib.Path)):
+    def __le__(self, other: GPathLike) -> bool:
+        """Check if the path is less than or equal to the other path."""
+        if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts <= _get_path_parts_normcase(other)
         else:
             return self.__path <= str(other)
 
-    def __gt__(self: TGoudaPath, other: GPathLike) -> bool:
-        if isinstance(other, (GoudaPath, pathlib.Path)):
+    def __gt__(self, other: GPathLike) -> bool:
+        """Check if the path is greater than the other path."""
+        if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts > _get_path_parts_normcase(other)
         else:
             return self.__path > str(other)
 
-    def __ge__(self: TGoudaPath, other: GPathLike) -> bool:
-        if isinstance(other, (GoudaPath, pathlib.Path)):
+    def __ge__(self, other: GPathLike) -> bool:
+        """Check if the path is greater than or equal to the other path."""
+        if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts >= _get_path_parts_normcase(other)
         else:
             return self.__path >= str(other)
