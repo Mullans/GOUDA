@@ -134,3 +134,6 @@ warn_return_any = true
 warn_unused_configs = true
 exclude = [    # regex
 ]
+plugins = [
+    "numpy.typing.mypy_plugin",
+]

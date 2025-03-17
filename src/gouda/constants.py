@@ -1,4 +1,4 @@
-"""General constants used in other parts of the module"""
+"""General constants used in other parts of the module."""
 
 UNCHANGED = -1
 """

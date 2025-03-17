@@ -1,9 +1,9 @@
-"""Methods for working with data and numpy arrays"""
+"""Methods for working with data and numpy arrays."""
 
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 import numpy as np
@@ -13,12 +13,12 @@ from gouda.general import is_iter
 from gouda.typing import FloatArrayType, LabelArrayType, ShapeType
 
 
-def to_uint8(x: npt.NDArray, allow_rescale: bool = False) -> npt.NDArray[np.uint8]:
+def to_uint8(x: npt.ArrayLike, allow_rescale: bool = False) -> npt.NDArray[np.uint8]:
     """Convert an image/array to a uint8 type with range [0, 255] based on inferred normalization type.
 
     Parameters
     ----------
-    x : npt.NDArray
+    x : npt.ArrayLike
         Input array to convert
     allow_rescale : bool, optional
         Whether to allow rescaling values (see NOTES), by default False
@@ -35,6 +35,7 @@ def to_uint8(x: npt.NDArray, allow_rescale: bool = False) -> npt.NDArray[np.uint
     input range [0, 1] -> x * 255 -> cast to uint8
     input range OTHER -> (x - x_min) / (x_max - x_min) -> cast to uint8
     """
+    x = np.asarray(x)
     if allow_rescale:
         x = rescale(x, 0, 255)  # rescale to [0, 255] for any input range
     elif x.dtype == np.uint8:
@@ -51,7 +52,7 @@ def to_uint8(x: npt.NDArray, allow_rescale: bool = False) -> npt.NDArray[np.uint
     return x.astype(np.uint8)
 
 
-def arr_sample(arr: np.ndarray, rate: float) -> np.ndarray:
+def arr_sample(arr: npt.NDArray, rate: float) -> npt.NDArray:
     """Return an array linearly sampled from the input array at the given rate.
 
     Parameters
@@ -87,7 +88,7 @@ def arr_sample(arr: np.ndarray, rate: float) -> np.ndarray:
 
 
 def factors(x: int) -> set[int]:
-    """Returns the factors of x
+    """Return the factors of x.
 
     Parameters
     ----------
@@ -112,7 +113,7 @@ def factors(x: int) -> set[int]:
             "Only positive factors will be returned, but negative numbers have a positive and negative factor for each.",
             UserWarning,
         )
-    factors = set([1, int(x)])
+    factors = {1, int(x)}
     for i in range(2, int(np.sqrt(x) + 1)):
         if (x / float(i)) == int(x / i):
             factors.add(int(i))
@@ -120,12 +121,12 @@ def factors(x: int) -> set[int]:
     return factors
 
 
-def flip_dict(dict: dict, unique_items: bool = False, force_list_values: bool = False) -> dict:
-    """Swap keys and values in a dictionary
+def flip_dict(input_dict: dict, unique_items: bool = False, force_list_values: bool = False) -> dict:
+    """Swap keys and values in a dictionary.
 
     Parameters
     ----------
-    dict : dict
+    input_dict : dict
         dictionary object to flip
     unique_items : bool, optional
         whether to assume that all items in dict are unique and hashable - potential speedup but repeated items will be lost, by default False
@@ -138,15 +139,15 @@ def flip_dict(dict: dict, unique_items: bool = False, force_list_values: bool = 
         The flipped dictionary
     """
     if unique_items:
-        return {v: k for k, v in dict.items()}
+        return {v: k for k, v in input_dict.items()}
     elif force_list_values:
         new_dict = {}
-        for k, v in dict.items():
+        for k, v in input_dict.items():
             new_dict.setdefault(v, []).append(k)
         return new_dict
     else:
         new_dict = {}
-        for k, v in dict.items():
+        for k, v in input_dict.items():
             if v in new_dict:
                 if isinstance(new_dict[v], list):
                     new_dict[v].append(k)
@@ -158,7 +159,7 @@ def flip_dict(dict: dict, unique_items: bool = False, force_list_values: bool = 
 
 
 def num_digits(x: int | float) -> int:
-    """Return the number of integer digits"""
+    """Return the number of integer digits."""
     if x == 0:
         return 1
     return int(np.ceil(np.log10(np.abs(x) + 1)))
@@ -223,7 +224,7 @@ def prime_overlap(x: int, y: int) -> list[int]:
     fact_x = prime_factors(x)
     fact_y = prime_factors(y)
     overlap = []
-    for i in range(len(fact_x)):  # pragma: no branch
+    for _ in range(len(fact_x)):  # pragma: no branch
         item = fact_x.pop()
         if item in fact_y:
             overlap.append(item)
@@ -241,7 +242,7 @@ def rescale(
     input_max: float | None = None,
     axis: ShapeType | None = None,
 ) -> npt.NDArray[np.floating]:
-    """Rescales data to have range [new_min, new_max] along axis or axes indicated
+    """Rescale data to have range [new_min, new_max] along axis or axes indicated.
 
     Parameters
     ----------
@@ -279,7 +280,7 @@ def rescale(
 
 
 def order_normalization(data: npt.ArrayLike, order: int = 2, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
-    """Normalize data by its matrix or vector norm
+    """Normalize data by its matrix or vector norm.
 
     Parameters
     ----------
@@ -343,7 +344,7 @@ def percentile_rescale(
     output_min: float = 0,
     output_max: float = 1,
 ) -> FloatArrayType:
-    """Clip an array to given percentiles, then rescale it to an output range
+    """Clip an array to given percentiles, then rescale it to an output range.
 
     Parameters
     ----------
@@ -374,7 +375,7 @@ def percentile_rescale(
 def percentile_normalize(
     x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: float | None = None
 ) -> FloatArrayType:
-    """Normalize data after clipping to a percentile value
+    """Normalize data after clipping to a percentile value.
 
     Parameters
     ----------
@@ -404,17 +405,17 @@ def percentile_normalize(
     return np.divide(x - np.mean(x), std_vals, where=std_vals > 0, out=np.zeros_like(x))
 
 
-def relu(data: npt.ArrayLike) -> Any:
-    """Return the rectified linear - max(data, 0)"""
+def relu(data: npt.ArrayLike) -> np.number:
+    """Return the rectified linear - max(data, 0)."""
     return np.maximum(data, 0)
 
 
-def sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> Any:
+def sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> np.number:
     """Return the sigmoid of the given value/array."""
     return (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)
 
 
-def inv_sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> Any:
+def inv_sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> np.number:
     """Return the inverse of the sigmoid function for the given value/array."""
     if x > 1 or x < 0:
         raise ValueError("Inverse sigmoid input must be in range [0, 1]")
@@ -426,7 +427,7 @@ def inv_sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> Any:
 
 
 def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayType:
-    """Return the softmax of the array
+    """Return the softmax of the array.
 
     Parameters
     ----------
@@ -523,7 +524,7 @@ def roc_curve(
 def mcc_curve(
     label: npt.ArrayLike, pred: npt.ArrayLike, optimal_only: bool = False
 ) -> tuple[FloatArrayType, FloatArrayType]:
-    """Get the Matthew's Correlation Coefficient for different thresholds
+    """Get the Matthew's Correlation Coefficient for different thresholds.
 
     Parameters
     ----------
@@ -547,9 +548,9 @@ def optimal_mcc_from_roc(
     fps: npt.NDArray[np.floating],
     tps: npt.NDArray[np.floating],
     thresholds: npt.NDArray[np.floating],
-    optimal_only=True,
+    optimal_only: bool = True,
 ) -> tuple[FloatArrayType, FloatArrayType]:
-    """Get the Matthew's Correlation Coefficient for different thresholds
+    """Get the Matthew's Correlation Coefficient for different thresholds.
 
     Parameters
     ----------
@@ -567,11 +568,11 @@ def optimal_mcc_from_roc(
     Tuple[FloatArrayType, FloatArrayType]
         Either the optimal MCC and threshold or arrays of all MCCs and thresholds
     """
-    N = tps[-1] + fps[-1]
-    S = tps[-1] / N
-    P = (fps + tps) / N
-    top = (tps / N) - (S * P)
-    bottom = np.sqrt(P * S * (1 - S) * (1 - P))
+    n = tps[-1] + fps[-1]
+    s = tps[-1] / n
+    p = (fps + tps) / n
+    top = (tps / n) - (s * p)
+    bottom = np.sqrt(p * s * (1 - s) * (1 - p))
     mcc = np.divide(top, bottom, out=np.zeros_like(top), where=bottom != 0)
     if optimal_only:
         best = np.argmax(mcc)
@@ -620,7 +621,7 @@ def accuracy_curve(
 
 
 def spec_at_sens(
-    label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: list[float] | FloatArrayType = [0.95]
+    label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: Sequence[float] | FloatArrayType = (0.95,)
 ) -> list[float]:
     """Get the peak specificity for each sensitivity.
 
@@ -648,7 +649,7 @@ def spec_at_sens(
 def get_confusion_stats(
     label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 0.5
 ) -> tuple[int, int, int, int]:
-    """Get the true positive, false positive, true negative, and false negative values for the given data
+    """Get the true positive, false positive, true negative, and false negative values for the given data.
 
     Parameters
     ----------
@@ -677,7 +678,7 @@ def get_confusion_stats(
 
 
 def dice_coef(label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 0.5) -> float:
-    """Get the Sorenson Dice Coefficient for the given data
+    """Get the Sorenson Dice Coefficient for the given data.
 
     Parameters
     ----------
@@ -700,8 +701,8 @@ def dice_coef(label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 0.5
     return (tp * 2) / denom
 
 
-def jaccard_coef(label: LabelArrayType, pred: npt.ArrayLike, threshold=0.5) -> float:
-    """Get the Jaccard Coefficient for the given data
+def jaccard_coef(label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 0.5) -> float:
+    """Get the Jaccard Coefficient for the given data.
 
     Parameters
     ----------
@@ -775,7 +776,7 @@ def value_crossing(
 
 
 def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.float64]:
-    """Find the continuous index of the center of mass for the input n-dimensional array"""
+    """Find the continuous index of the center of mass for the input n-dimensional array."""
     input_arr = np.asarray(input_arr)
     flat_mass = np.reshape(input_arr, [-1, 1])
     total_mass = np.sum(flat_mass)
@@ -788,8 +789,8 @@ def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.float64]:
     return center_of_mass
 
 
-def max_signal(data: npt.ArrayLike, axis: ShapeType | None = None) -> Any:
-    """Return the signed value with the largest absolute value along the given axis
+def max_signal(data: npt.ArrayLike, axis: ShapeType | None = None) -> np.number | npt.NDArray:
+    """Return the signed value with the largest absolute value along the given axis.
 
     Parameters
     ----------
@@ -812,8 +813,8 @@ def max_signal(data: npt.ArrayLike, axis: ShapeType | None = None) -> Any:
         return np.where(np.abs(mins) > maxes, mins, maxes)
 
 
-def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.int_, ...] | npt.NDArray[np.int_]:
-    """Return the index of the signed value with the largest absolute value along an axis
+def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.integer, ...] | npt.NDArray[np.integer]:
+    """Return the index of the signed value with the largest absolute value along an axis.
 
     Parameters
     ----------
@@ -837,7 +838,7 @@ def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.int_
 
 
 def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
-    """Performs the Benjamini-Hochberg procedure for multiple hypothesis testing.
+    """Perform the Benjamini-Hochberg procedure for multiple hypothesis testing.
 
     Parameters
     ----------
@@ -872,8 +873,8 @@ def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
 
 def segment_line(
     x1: float, x2: float, y1: float, y2: float, segment_size: float = 0.01, num_segments: int | None = None
-):
-    """Divide a line into smaller segments
+) -> npt.NDArray[np.floating]:
+    """Divide a line into smaller segments.
 
     Parameters
     ----------
@@ -913,7 +914,7 @@ def segment_line(
 
 
 def line_dist(x: Iterable, y: Iterable) -> float:
-    """Find the total distance along a line of points
+    """Find the total distance along a line of points.
 
     Parameters
     ----------
