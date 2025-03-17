@@ -1,17 +1,20 @@
-"""Confusion matrix class"""
+"""Confusion matrix class."""
 
 import warnings
+from collections.abc import Sequence
+from typing import Any
 
 import colorama
 import numpy as np
+import numpy.typing as npt
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
-def underline(string):
-    """Shortcut to underline ANSI text"""
+def underline(string: str) -> str:
+    """Shortcut to underline ANSI text."""
     return "\033[4m" + string + "\033[0m"
 
 
@@ -41,7 +44,7 @@ class ConfusionMatrix:
 
     """
 
-    def __init__(self, predictions=None, labels=None, threshold=None, num_classes=None, dtype=int):
+    def __init__(self, predictions: np.ndarray | None = None, labels: np.ndarray | None = None, threshold: float | None = None, num_classes: int | None = None, dtype: type = int) -> None:
         self.matrix = None
         self._num_classes = 0
         self.threshold = threshold
@@ -56,18 +59,18 @@ class ConfusionMatrix:
                 self.matrix = self.matrix.astype(dtype)
 
     @property
-    def shape(self):
-        """The shape of the confusion matrix"""
+    def shape(self) -> tuple[int, int]:
+        """The shape of the confusion matrix."""
         return self.matrix.shape
 
     @property
-    def size(self):
-        """The size of the confusion matrix"""
+    def size(self) -> int:
+        """The size of the confusion matrix."""
         return self.matrix.size
 
     @property
-    def dtype(self):
-        """The datatype of the values stored in the confusion matrix
+    def dtype(self) -> npt.DTypeLike:
+        """The datatype of the values stored in the confusion matrix.
 
         :getter: Return the datatype
         :setter: Re-cast the data in the matrix to a new type
@@ -76,16 +79,16 @@ class ConfusionMatrix:
         return self.matrix.dtype
 
     @dtype.setter
-    def dtype(self, dtype):
+    def dtype(self, dtype: npt.DTypeLike) -> None:
         self.matrix = self.matrix.astype(dtype)
 
     @property
-    def num_classes(self):
-        """Number of classes represented in the confusion matrix"""
+    def num_classes(self) -> int:
+        """Number of classes represented in the confusion matrix."""
         return self._num_classes
 
-    def reset(self, num_classes=None, dtype=None):
-        """Reset all matrix entries
+    def reset(self, num_classes: int | None = None, dtype: npt.DTypeLike | None = None) -> None:
+        """Reset all matrix entries.
 
         Parameters
         ----------
@@ -103,12 +106,12 @@ class ConfusionMatrix:
         self._num_classes = num_classes
         self.matrix = np.zeros((self._num_classes, self._num_classes), dtype=dtype)
 
-    def __iadd__(self, data):
-        """Add single datapoint (predicted, expected)"""
+    def __iadd__(self, data: tuple[bool | float | int | npt.ArrayLike, bool | float | int | npt.ArrayLike]) -> "ConfusionMatrix":
+        """Add single datapoint (predicted, expected)."""
         self.add(data[0], data[1])
         return self
 
-    def __add__(self, matrix):
+    def __add__(self, matrix: "ConfusionMatrix") -> "ConfusionMatrix":
         """Add two matrices together.
 
         NOTE: Output dtype defaults to first matrix type.
@@ -128,34 +131,35 @@ class ConfusionMatrix:
         output_mat.matrix = output
         return output_mat
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return a string representation of the confusion matrix."""
         return str(self.matrix)
 
-    def __getitem__(self, key):
-        """Access values of the confusion matrix"""
+    def __getitem__(self, key: Any) -> Any:   # noqa: ANN401
+        """Access values of the confusion matrix (similar to np.ndarray.__getitem__)."""
         return self.matrix[key]
 
-    def __setitem__(self, key, value):
-        """Manually set values of the confusion matrix -- NOT RECOMMENDED - USE ADDING/RESET METHODS"""
+    def __setitem__(self, key: Any, value: Any) -> None:   # noqa: ANN401
+        """Manually set values of the confusion matrix. (NOT RECOMMENDED - USE ADDING/RESET METHODS)."""
         self.matrix[key] = value
 
-    def __len__(self):
-        """Get length of confusion matrix (number of classes)"""
+    def __len__(self) -> int:
+        """Get length of confusion matrix (number of classes)."""
         return self._num_classes
 
-    def count(self):
-        """Count the number of items in the matrix"""
+    def count(self) -> int:
+        """Count the number of items in the matrix."""
         return self.matrix.sum()
 
-    def accuracy(self):
-        """Get the total accuracy in the matrix"""
+    def accuracy(self) -> float:
+        """Get the total accuracy in the matrix."""
         return (
             np.sum([self.matrix[i, i] for i in range(self._num_classes)]) / np.sum(self.matrix)
             if np.sum(self.matrix) > 0
             else 0
         )
 
-    def specificity(self, class_index=None):
+    def specificity(self, class_index: int | None = None) -> npt.NDArray[np.floating]:
         """Return the specificity of all classes or a single class.
 
         NOTE
@@ -189,11 +193,11 @@ class ConfusionMatrix:
             fp = self.matrix[class_index, :].sum() - self.matrix[class_index, class_index].sum()
             return np.divide(tn, tn + fp, where=(tn + fp) > 0)
 
-    def sensitivity(self, class_index=None):
-        """Return the sensitivity of all classes or a single class. AKA recall
+    def sensitivity(self, class_index: int | None = None) -> npt.NDArray[np.floating]:
+        """Return the sensitivity of all classes or a single class. AKA recall.
 
-        NOTE
-        ----
+        Notes
+        -----
         sensitivity = (true positive) / (true positive + false negative) for each class.
         """
         if class_index is None:
@@ -208,11 +212,11 @@ class ConfusionMatrix:
                 else 0
             )
 
-    def precision(self, class_index=None):
+    def precision(self, class_index: int | None = None) -> npt.NDArray[np.floating]:
         """Return the precision of all classes or a single class.
 
-        NOTE
-        ----
+        Notes
+        -----
         precision = (true positive) / (true positive + false positive)
         """
         if class_index is None:
@@ -227,11 +231,11 @@ class ConfusionMatrix:
                 else 0
             )
 
-    def mcc(self):
+    def mcc(self) -> float:
         """Return the Matthews correlation coefficient of a binary confusion matrix.
 
-        NOTE
-        ----
+        Notes
+        -----
         mcc = ((tp * tn) - (fp * fn)) / sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
         """
         if self._num_classes != 2:
@@ -257,18 +261,35 @@ class ConfusionMatrix:
                 result = top / np.sqrt(bottom)
         return result
 
-    def zero_rule(self):
-        """Returns the accuracy as if only the most common class is predicted"""
+    def zero_rule(self) -> float:
+        """Return the accuracy as if only the most common class is predicted."""
         return np.max(self.matrix.sum(axis=1) / self.matrix.sum())
 
-    @staticmethod
-    def from_array(predicted, expected, threshold=None):
-        mat = ConfusionMatrix()
+    @classmethod
+    def from_array(cls, predicted: npt.ArrayLike, expected: npt.ArrayLike, threshold: float | None = None) -> "ConfusionMatrix":
+        """Create a confusion matrix from numpy arrays.
+
+        Parameters
+        ----------
+        predicted : numpy.ndarray
+            Predicted values to add to the matrix either in same shape as expected or with shape [samples, classes] for probabilities
+        expected : numpy.ndarray
+            Expected values to add to the matrix
+        threshold : type
+            Threshold to use for predicted probabilities of binary classes. Defaults to self.threshold
+
+
+        Returns
+        -------
+        ConfusionMatrix
+            The generated confusion matrix
+        """
+        mat = cls()
         mat.add_array(predicted, expected, threshold=threshold)
         return mat
 
-    def add_array(self, predicted, expected, threshold=None):
-        """Add data to the confusion matrix as numpy arrays
+    def add_array(self, predicted: npt.ArrayLike, expected: npt.ArrayLike, threshold: float | None = None) -> None:
+        """Add data to the confusion matrix as numpy arrays.
 
         Parameters
         ----------
@@ -291,10 +312,7 @@ class ConfusionMatrix:
                 # Assumes predicted samples as [samples, classes]
                 predicted = np.argmax(predicted, axis=1)
             else:
-                if threshold is None:
-                    predicted = np.round(predicted)
-                else:
-                    predicted = predicted > threshold
+                predicted = np.round(predicted) if threshold is None else predicted > threshold
         if "float" in expected.dtype.name:
             warnings.warn("Float type labels will be automatically rounded to the nearest integer", UserWarning)
             expected = np.round(expected).astype(int)
@@ -317,16 +335,19 @@ class ConfusionMatrix:
         for i in range(points.shape[1]):
             self.matrix[points[0, i], points[1, i]] += counts[i]
 
-    def add(self, predicted, expected, threshold=None):
-        """Add data to the confusion Matrix
+    def add(self,
+            predicted: bool | float | int | npt.ArrayLike,
+            expected: bool | float | int | np.number | npt.ArrayLike,
+            threshold: float | None = None) -> None:
+        """Add data to the Confusion Matrix.
 
         Parameters
         ----------
-        predicted : [bool, float, int, list]
+        predicted : bool | float | int | npt.ArrayLike
             Predicted value(s) to add to the matrix
-        expected : [bool, float, int, list]
+        expected : bool | float | int | npt.ArrayLike
             Expected value(s) to add to matrix
-        threshold : type
+        threshold : float | None
             Threshold used for predicted probabilities of binary classes. Defaults to self.threshold
 
         NOTE
@@ -339,7 +360,7 @@ class ConfusionMatrix:
         """
         if threshold is None:
             threshold = self.threshold
-        if isinstance(predicted, (float, np.floating)):
+        if isinstance(predicted, float | np.floating):
             # Single value: prediction of True (class 1)
             if self.threshold is not None:
                 predicted_class = 1 if predicted > threshold else 0
@@ -350,28 +371,23 @@ class ConfusionMatrix:
                 predicted_class = np.round(predicted).astype(int)
         elif isinstance(predicted, bool):
             predicted_class = 1 if predicted else 0
-        elif isinstance(predicted, (int, np.integer)):
+        elif isinstance(predicted, int | np.integer):
             # Single value: class label
             predicted_class = predicted
-        elif isinstance(expected, (float, int, bool)) and isinstance(predicted, (list, np.ndarray)):
+        elif isinstance(expected, float | int | bool | np.number) and isinstance(predicted, Sequence | np.ndarray):
             # Class probabilities with single expected label
             predicted_class = np.argmax(predicted).astype(int)
-        elif (
-            isinstance(predicted, (list, np.ndarray))
-            and isinstance(expected, (list, np.ndarray))
-            and len(predicted) == len(expected)
-        ):
+        elif isinstance(predicted, Sequence | np.ndarray) and isinstance(expected, Sequence | np.ndarray) and len(predicted) == len(expected):
             # Paired lists
             for x, y in zip(predicted, expected):
                 self.add(x, y, threshold=threshold)
             return
         else:
             raise ValueError("Unsupported input format")
-
-        if not isinstance(expected, (float, int, bool, np.floating, np.integer)):
+        if not isinstance(expected, float | int | bool | np.number):
             print(type(expected))
             raise ValueError("Only 1 expected value per prediction is supported")
-        if isinstance(expected, (bool, np.bool)):
+        if isinstance(expected, bool):
             expected_class = 1 if expected else 0
         elif expected % 1 == 0:
             expected_class = np.round(expected).astype(int)
@@ -388,8 +404,12 @@ class ConfusionMatrix:
             self._num_classes = max_in
         self.matrix[expected_class, predicted_class] += 1
 
-    def print(self, show_specificities=True, show_sensitivities=True, show_accuracy=True, return_string=False):
-        """Format and print the confusion matrix
+    def print(self,
+              show_specificities: bool = True,
+              show_sensitivities: bool = True,
+              show_accuracy: bool = True,
+              return_string: bool = False) -> str | None:
+        """Format and print the confusion matrix.
 
         Parameters
         ----------
