@@ -3,8 +3,9 @@ Testing
 2. tox
 
 1. Commit & Push (finalize code)
-2. Right click on commit in GitKraken and choose "Create tag here"
-3. Name tag vA.B.0 where A is the major version and B is the minor version
+2. Create a tag for the new version
+  1. Right click on commit in GitKraken and choose "Create tag here"
+  2. Name tag vA.B.0 where A is the major version and B is the minor version
 4. Push that too (Right click on tag and choose push tag)
 5. `python setup.py sdist bdist_wheel`
 6. `twine upload dist/GOUDA-A.B.0*` (again A major, B minor)
