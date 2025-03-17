@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 
 from gouda.general import is_iter
-from gouda.typing import FloatArrayType, LabelArrayType, ShapeType
+from gouda.typing import FloatArrayType, LabelArrayType, NumberType, ShapeType
 
 
 def to_uint8(x: npt.ArrayLike, allow_rescale: bool = False) -> npt.NDArray[np.uint8]:
@@ -79,7 +79,7 @@ def arr_sample(arr: npt.NDArray, rate: float) -> npt.NDArray:
     """
     if arr.ndim != 1:
         raise ValueError("Only 1d arrays can be sampled from.")
-    i = 0
+    i = 0.0
     out = []
     while i < arr.shape[0]:
         out.append(arr[np.floor(i).astype(int)])
@@ -141,7 +141,7 @@ def flip_dict(input_dict: dict, unique_items: bool = False, force_list_values: b
     if unique_items:
         return {v: k for k, v in input_dict.items()}
     elif force_list_values:
-        new_dict = {}
+        new_dict: dict = {}
         for k, v in input_dict.items():
             new_dict.setdefault(v, []).append(k)
         return new_dict
@@ -158,7 +158,7 @@ def flip_dict(input_dict: dict, unique_items: bool = False, force_list_values: b
         return new_dict
 
 
-def num_digits(x: int | float) -> int:
+def num_digits(x: NumberType) -> int:
     """Return the number of integer digits."""
     if x == 0:
         return 1
@@ -276,7 +276,8 @@ def rescale(
     data_range = max_val - min_val  # If max_val < min_val, the output will have flipped signs
     x = np.divide(data - min_val, data_range, where=data_range != 0, out=np.zeros_like(data))
     new_range = output_max - output_min
-    return (x * new_range) + output_min
+    result: npt.NDArray[np.floating] = (x * new_range) + output_min
+    return result
 
 
 def order_normalization(data: npt.ArrayLike, order: int = 2, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
@@ -296,17 +297,19 @@ def order_normalization(data: npt.ArrayLike, order: int = 2, axis: ShapeType | N
     numpy.typing.NDArray[np.floating]
         The normalized data
     """
-    norm = np.linalg.norm(data, order, axis)
+    norm = np.linalg.norm(data, ord=order, axis=axis)
     norm = np.atleast_1d(norm)
     norm[norm == 0] = 1
     if axis is None:
-        return np.divide(data, norm)
-    return np.divide(data, np.expand_dims(norm, axis))
+        result: npt.NDArray[np.floating] = np.divide(data, norm)
+    else:
+        result = np.divide(data, np.expand_dims(norm, axis=axis))
+    return result
 
 
 def clip(
     data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, input_min: float = 0, input_max: float = 255
-) -> FloatArrayType:
+) -> npt.NDArray[np.floating]:
     """Clip an array to a given range, then rescale the clipped array from the input range to the output range.
 
     Parameters
@@ -324,7 +327,7 @@ def clip(
 
     Returns
     -------
-    FloatArrayType
+    npt.NDArray[np.floating]
         The rescaled output array
     """
     data = np.clip(data, input_min, input_max)
@@ -334,7 +337,8 @@ def clip(
         return np.zeros_like(data) + output_min
     scaler = output_range / input_range
     bias = -input_min * scaler + output_min
-    return np.multiply(data, scaler) + bias
+    result: npt.NDArray[np.floating] = np.multiply(data, scaler) + bias
+    return result
 
 
 def percentile_rescale(
@@ -343,7 +347,7 @@ def percentile_rescale(
     high_percentile: float | None = None,
     output_min: float = 0,
     output_max: float = 1,
-) -> FloatArrayType:
+) -> npt.NDArray[np.floating]:
     """Clip an array to given percentiles, then rescale it to an output range.
 
     Parameters
@@ -361,7 +365,7 @@ def percentile_rescale(
 
     Returns
     -------
-    FloatArrayType
+    npt.NDArray[np.floating]
         The rescaled output array
     """
     x = np.asarray(x)
@@ -369,12 +373,13 @@ def percentile_rescale(
         high_percentile = 100 - low_percentile
     low_percentile, high_percentile = sorted([low_percentile, high_percentile])
     low_val, high_val = np.percentile(x, (low_percentile, high_percentile))
-    return clip(x, output_min, output_max, low_val, high_val)
+    result: npt.NDArray[np.floating] = clip(x, output_min, output_max, low_val, high_val)
+    return result
 
 
 def percentile_normalize(
     x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: float | None = None
-) -> FloatArrayType:
+) -> npt.NDArray[np.floating]:
     """Normalize data after clipping to a percentile value.
 
     Parameters
@@ -402,20 +407,22 @@ def percentile_normalize(
     low_val, high_val = np.percentile(x, (low_percentile, high_percentile))
     x = np.clip(x, low_val, high_val)
     std_vals = np.std(x)
-    return np.divide(x - np.mean(x), std_vals, where=std_vals > 0, out=np.zeros_like(x))
+    result: npt.NDArray = np.divide(x - np.mean(x), std_vals, where=std_vals > 0, out=np.zeros_like(x))
+    return result
 
 
-def relu(data: npt.ArrayLike) -> np.number:
+def relu(data: NumberType | npt.ArrayLike) -> NumberType | npt.NDArray[np.number]:
     """Return the rectified linear - max(data, 0)."""
     return np.maximum(data, 0)
 
 
-def sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> np.number:
+def sigmoid(x: NumberType | npt.NDArray[np.number], epsilon: float = 1e-7) -> NumberType | npt.NDArray[np.number]:
     """Return the sigmoid of the given value/array."""
-    return (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)
+    result: NumberType | npt.NDArray[np.number] = (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)
+    return result
 
 
-def inv_sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> np.number:
+def inv_sigmoid(x: NumberType | npt.NDArray[np.number], epsilon: float = 1e-7) -> NumberType | npt.NDArray[np.number]:
     """Return the inverse of the sigmoid function for the given value/array."""
     if x > 1 or x < 0:
         raise ValueError("Inverse sigmoid input must be in range [0, 1]")
@@ -426,7 +433,7 @@ def inv_sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> np.number:
     return np.log(x / ((1 + epsilon) - ((1 + epsilon) * x)))
 
 
-def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayType:
+def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
     """Return the softmax of the array.
 
     Parameters
@@ -438,7 +445,7 @@ def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayType:
 
     Returns
     -------
-    FloatArrayType
+    npt.NDArray[np.floating]
         The output array
     """
     x = np.asarray(x)
@@ -446,11 +453,12 @@ def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayType:
         x = x.astype(float)
     s = np.max(x, axis=axis, keepdims=True)
     e_x = np.exp(x - s)
-    div = np.sum(e_x, axis=axis, keepdims=True)  # type: ignore  - np.sum typing doesn't allow None types for some reason
-    return np.divide(e_x, div, where=div != 0, out=np.zeros_like(x))
+    div = np.sum(e_x, axis=axis, keepdims=True)
+    result: npt.NDArray[np.floating] = np.divide(e_x, div, where=div != 0, out=np.zeros_like(x))
+    return result
 
 
-def normalize(data: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayType:
+def normalize(data: npt.ArrayLike, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
     """Return data normalized to have zero mean and unit variance along axis or axes indicated.
 
     Parameters
@@ -470,7 +478,8 @@ def normalize(data: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayT
         data = data.astype(float)
     mean = np.mean(data, axis=axis, keepdims=True)
     stddev = np.std(data, axis=axis, keepdims=True)
-    return np.divide(data - mean, stddev, where=stddev != 0, out=np.zeros_like(data))
+    result: npt.NDArray[np.floating] = np.divide(data - mean, stddev, where=stddev != 0, out=np.zeros_like(data))
+    return result
 
 
 def roc_curve(
@@ -621,8 +630,8 @@ def accuracy_curve(
 
 
 def spec_at_sens(
-    label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: Sequence[float] | FloatArrayType = (0.95,)
-) -> list[float]:
+    label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: Sequence[float | np.floating] | FloatArrayType = (0.95,)
+) -> list[np.floating]:
     """Get the peak specificity for each sensitivity.
 
     Parameters
@@ -639,10 +648,10 @@ def spec_at_sens(
     List[float]
         The list of specificities for the given sensitivities
     """
-    if not hasattr(sensitivities, "__iter__"):
-        sensitivities = [sensitivities]  # type: ignore - we only reach here if type = float
+    if isinstance(sensitivities, float | np.floating):
+        sensitivities = [float(sensitivities)]
     fpr, tpr, thresholds = roc_curve(label, pred)
-    specs = [np.max((1 - fpr)[tpr >= min_sens]) for min_sens in sensitivities]  # type: ignore - type is iterable by this point
+    specs: list[np.floating] = [np.max((1 - fpr)[tpr >= min_sens]) for min_sens in sensitivities]
     return specs
 
 
@@ -731,7 +740,7 @@ def value_crossing(
     positive_crossing: bool = True,
     negative_crossing: bool = True,
     return_indices: bool = False,
-) -> int:
+) -> int | npt.NDArray[np.int64]:
     """Get the count of instances where a series crosses a value.
 
     Parameters
@@ -771,11 +780,14 @@ def value_crossing(
     else:
         raise ValueError("Either positive and/or negative crossings must be used")
     if return_indices:
-        return idxs[np.concatenate([crossing, np.array([False])])]
-    return crossing.sum()
+        result_indices: npt.NDArray[np.int64] = idxs[np.concatenate([crossing, np.array([False])])]
+        return result_indices
+    else:
+        result: int = crossing.sum()
+        return result
 
 
-def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.float64]:
+def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.floating]:
     """Find the continuous index of the center of mass for the input n-dimensional array."""
     input_arr = np.asarray(input_arr)
     flat_mass = np.reshape(input_arr, [-1, 1])
@@ -785,7 +797,7 @@ def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.float64]:
     grids = np.meshgrid(*[np.arange(axis_length) for axis_length in input_arr.shape], indexing="ij")
     coords = np.stack([np.reshape(grid, [-1]) for grid in grids], axis=-1)
 
-    center_of_mass = np.sum(flat_mass * coords, axis=0) / total_mass
+    center_of_mass: npt.NDArray[np.floating] = np.sum(flat_mass * coords, axis=0) / total_mass
     return center_of_mass
 
 
@@ -799,18 +811,20 @@ def max_signal(data: npt.ArrayLike, axis: ShapeType | None = None) -> np.number 
     axis : Optional[ShapeType], optional
         The axis to check across, otherwise the result uses the flattened array, by default None
 
-    NOTE
-    ----
+    Notes
+    -----
     If axis is None, the first item with the largest absolute value will be returned. Otherwise, the first value with the largest absolute value will returned, with positive values taking precedence over negative
     """
     data = np.asarray(data)
     if axis is None:
         data = data.ravel()
-        return data[np.argmax(np.abs(data), axis=None)]
+        single_result: np.number = data[np.argmax(np.abs(data), axis=None)]
+        return single_result
     else:
         maxes = np.max(data, axis=axis)
         mins = np.min(data, axis=axis)
-        return np.where(np.abs(mins) > maxes, mins, maxes)
+        result: npt.NDArray = np.where(np.abs(mins) > maxes, mins, maxes)
+        return result
 
 
 def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.integer, ...] | npt.NDArray[np.integer]:
@@ -823,8 +837,8 @@ def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.inte
     axis : Optional[int], optional
         The axis to check across, otherwise the result uses the flattened array
 
-    NOTE
-    ----
+    Notes
+    -----
     If axis is None, the index of the first item with the largest absolute value will be returned. Otherwise, the index of the first value with the largest absolute value will be returned, with positive values taking precedence over negative
     """
     data = np.asarray(data)
@@ -909,11 +923,11 @@ def segment_line(
     x = np.linspace(x1, x2, num_segments + 1)
     y = np.linspace(y1, y2, num_segments + 1)
     points = np.asarray([x, y]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    segments: npt.NDArray[np.floating] = np.concatenate([points[:-1], points[1:]], axis=1)
     return segments
 
 
-def line_dist(x: Iterable, y: Iterable) -> float:
+def line_dist(x: npt.ArrayLike, y: npt.ArrayLike) -> float:
     """Find the total distance along a line of points.
 
     Parameters
@@ -938,4 +952,5 @@ def line_dist(x: Iterable, y: Iterable) -> float:
         )
 
     dists = np.sqrt((x[1:] - x[:-1]) ** 2 + (y[1:] - y[:-1]) ** 2)
-    return np.sum(dists)
+    result: float = np.sum(dists)
+    return result

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import numpy as np
 import numpy.typing as npt
 
@@ -247,7 +245,7 @@ class MMeanArray:
     @property
     def shape(self) -> ShapeType:
         """The shape of the array."""
-        shape: Sequence[int] = self._mean.shape
+        shape: tuple[int] = self._mean.shape
         return shape
 
     @property
@@ -308,7 +306,7 @@ class MStddevArray:
     @property
     def shape(self) -> ShapeType:
         """The shape of the array."""
-        shape: Sequence[int] = self._variance.shape
+        shape: tuple[int] = self._variance.shape
         return shape
 
     @property
