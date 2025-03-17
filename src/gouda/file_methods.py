@@ -271,7 +271,7 @@ def save_json(data: Any, filename: str | os.PathLike, embed_arrays: bool = True,
             np.savez(np_filename + "_array.npz", **out_arrays)
 
 
-def create_image_checker() -> Callable:
+def create_image_checker() -> Callable[[str | os.PathLike], bool]:
     """Create the :meth:`gouda.is_image` method that can be used to check if a file is an image based on available libraries."""
     if importlib.util.find_spec("PIL.Image"):
         import PIL.Image
