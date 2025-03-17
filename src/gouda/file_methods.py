@@ -13,6 +13,7 @@ import re
 import warnings
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
+from io import BufferedReader
 from typing import Any
 
 import numpy as np
@@ -103,12 +104,12 @@ def next_filename(
     sep = default_sep
 
     # Convert format to regex pattern
-    pattern = re.escape(path_fmt)
-    pattern = pattern.replace(r"\{idx\}", r"(?P<idx>\d+)")
-    pattern = pattern.replace(r"\{sep\}", r"(?P<sep>[_\-]+)")
-    pattern = pattern.replace(r"\{base_name\}", r"(?P<base_name>.+)")
-    pattern = pattern.replace(r"\{ext\}", r"(?P<ext>\.[^.]+)")
-    pattern = re.compile(f"^{pattern}$")
+    pattern_str = re.escape(path_fmt)
+    pattern_str = pattern_str.replace(r"\{idx\}", r"(?P<idx>\d+)")
+    pattern_str = pattern_str.replace(r"\{sep\}", r"(?P<sep>[_\-]+)")
+    pattern_str = pattern_str.replace(r"\{base_name\}", r"(?P<base_name>.+)")
+    pattern_str = pattern_str.replace(r"\{ext\}", r"(?P<ext>\.[^.]+)")
+    pattern = re.compile(f"^{pattern_str}$")
 
     # Identify current index, base name, and separator
     match = pattern.match(f"{base_name}{extension}")
@@ -130,7 +131,7 @@ def next_filename(
 
 
 # JSON methods
-def load_json(filename: str | os.PathLike) -> dict | list:
+def load_json(filename: str | os.PathLike) -> Any:  # noqa: ANN401
     """Load a JSON file, and re-form any numpy arrays if :func:`~gouda.save_json` was used to write them."""
     filename = str(filename)
     with open(filename, "r") as f:
@@ -149,8 +150,9 @@ def load_json(filename: str | os.PathLike) -> dict | list:
             data = data[0]
         # else:
         #     return data
+    numpy_file: BufferedReader | None
     with open(np_filename, "rb") if np_filename is not None else nullcontext() as numpy_file:
-        if np_filename is not None:
+        if np_filename is not None and numpy_file is not nullcontext and numpy_file is not None:
             arrays = np.load(numpy_file)
 
         def _renumpy(_data: Any) -> Any:  # noqa: ANN401
@@ -213,13 +215,14 @@ def save_json(data: Any, filename: str | os.PathLike, embed_arrays: bool = True,
     JSON files saved this way can be read with any JSON reader, but will have an extra numpy tag at the end that is used to tell :func:`~gouda.load_json` how to read the arrays back in.
     """
     filename = str(filename)
-    out_arrays = {}
+    out_arrays: dict[str, npt.NDArray] = {}
     used_arrays = [False]
     if embed_arrays and compressed:
         warnings.warn("Cannot compress an array that is embedded in a JSON", UserWarning)
         compressed = False
 
     def _unnumpy(_data: Any) -> Any:  # noqa: ANN401
+        new_data: list | tuple | set | dict | slice | npt.NDArray | np.generic | Any
         if isinstance(_data, list | tuple):
             new_data = [_unnumpy(item) for item in _data]
         elif isinstance(_data, set):
@@ -266,9 +269,9 @@ def save_json(data: Any, filename: str | os.PathLike, embed_arrays: bool = True,
     if len(out_arrays) != 0:
         np_filename = filename.rsplit(".", 1)[0]
         if compressed:
-            np.savez_compressed(np_filename + "_arrayzip.npz", **out_arrays)
+            np.savez_compressed(np_filename + "_arrayzip.npz", allow_pickle=True, **out_arrays)
         else:
-            np.savez(np_filename + "_array.npz", **out_arrays)
+            np.savez(np_filename + "_array.npz", allow_pickle=True, **out_arrays)
 
 
 def create_image_checker() -> Callable[[str | os.PathLike], bool]:
@@ -294,7 +297,8 @@ def create_image_checker() -> Callable[[str | os.PathLike], bool]:
             path = str(path)
             if os.path.isdir(path):
                 return False
-            return puremagic.magic_file(path)[0].mime_type.startswith("image/")
+            result: bool = puremagic.magic_file(path)[0].mime_type.startswith("image/")
+            return result
     elif importlib.util.find_spec("imghdr"):
         import imghdr
 
@@ -354,7 +358,7 @@ def fast_glob(
     recursive: bool = False,
     follow_symlinks: bool = False,
     as_iterator: bool = False,
-) -> list[str]:
+) -> list[str] | Generator[str, None, None]:
     """Fast globbing method that uses scandir to find files and directories whose basename match a given pattern.
 
     Parameters
@@ -382,7 +386,7 @@ def fast_glob(
 
     Returns
     -------
-    list[str]
+    list[str] | Generator[str, None, None]
         The list of files and directories that match the glob pattern
     """
     if not isinstance(glob_pattern, re.Pattern):
@@ -422,7 +426,7 @@ def find_images(
     follow_symlinks: bool = False,
     fast_check: bool = False,
     as_iterator: bool = False,
-) -> list[str]:
+) -> list[str] | Generator[str, None, None]:
     """Find all images in a directory and optionally its sub-directories.
 
     Parameters
@@ -449,7 +453,7 @@ def find_images(
 
     Returns
     -------
-    list[str]
+    list[str] | Generator[str, None, None]
         The list of images
     """
 
@@ -517,9 +521,9 @@ def get_sorted_filenames(pattern: str, sep: str = "_", ending: bool = True, reve
         item = x.rsplit(sep, 1) if ending else x.split(sep, 1)
         if len(item) != 2:
             return -1
-        item = item[-1 if ending else 0]
-        if str.isdigit(item):
-            return int(item)
+        item_idx = item[-1 if ending else 0]
+        if str.isdigit(item_idx):
+            return int(item_idx)
         else:
             return -1
 
@@ -559,6 +563,7 @@ def save_arr(path: str | os.PathLike, arr: npt.NDArray[Any]) -> None:
 def read_arr(path: str | os.PathLike) -> npt.NDArray[Any]:
     """Read a numpy array from a file."""
     path = str(path)
+    data: npt.NDArray[Any]
     if path.endswith(".gz"):
         with gzip.open(path, "rb") as f:
             data = np.load(f)
