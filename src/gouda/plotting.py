@@ -1,21 +1,24 @@
-"""matplotlib plotting and helper methods"""
+"""matplotlib plotting and helper methods."""
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Sequence
+from typing import Any, Literal
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 
+from gouda.color_lists import find_color
 from gouda.data_methods import line_dist, rescale, segment_line
 from gouda.general import is_iter
-from gouda.typing import ColorType
+from gouda.typing import ColorType, Unpack
 
 
-def parse_color(color: ColorType, float_cmap="viridis", int_cmap="Set1") -> tuple[float, float, float]:
+def parse_color(color: ColorType, float_cmap: str = "viridis", int_cmap: str = "Set1") -> tuple[float, float, float]:
     """Convert the input to a rgb color.
 
     NOTE
@@ -25,6 +28,10 @@ def parse_color(color: ColorType, float_cmap="viridis", int_cmap="Set1") -> tupl
 
     TODO - add lookup to get hexcodes from colors.py
     """
+    if isinstance(color, str):  # If the color is a string, try to find the named color as a hexcode
+        check = find_color(color)
+        if check is not None:
+            color = check
     try:
         return mpl.colors.to_rgb(color)  # type: ignore  # NOTE - same as to_rgba[:3]
     except ValueError:
@@ -50,7 +57,13 @@ def parse_color(color: ColorType, float_cmap="viridis", int_cmap="Set1") -> tupl
             return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
 
 
-def plot_accuracy_curve(acc, thresh, label_height=0.5, line_args={}, thresh_args={}):
+def plot_accuracy_curve(
+    acc: npt.NDArray[np.floating],
+    thresh: npt.NDArray[np.floating],
+    label_height: float = 0.5,
+    line_args: dict | None = None,
+    thresh_args: dict | None = None,
+) -> None:
     """Plot the accuracy for the given accuracy and threshold values.
 
     Parameters
@@ -66,14 +79,16 @@ def plot_accuracy_curve(acc, thresh, label_height=0.5, line_args={}, thresh_args
     thresh_args : dict
         A dictionary of keyword arguments to pass when plotting the threshold vline
     """
+    line_args = {} if line_args is None else line_args
+    thresh_args = {} if thresh_args is None else thresh_args
     line_defaults = {"color": "black", "label": "accuracy"}
-    for key in line_defaults:
+    for key, val in line_defaults.items():
         if key not in line_args:
-            line_args[key] = line_defaults[key]
+            line_args[key] = val
     thresh_defaults = {"color": "r", "label": "best threshold"}
-    for key in thresh_defaults:
+    for key, val in thresh_defaults.items():
         if key not in thresh_args:
-            thresh_args[key] = thresh_defaults[key]
+            thresh_args[key] = val
 
     best_idx = np.argmax(acc)
     best_thresh = thresh[best_idx]
@@ -89,8 +104,8 @@ def plot_accuracy_curve(acc, thresh, label_height=0.5, line_args={}, thresh_args
     plt.ylabel("Accuracy")
 
 
-def quick_line(x1, x2, y1, ytop, y2, lw=1):
-    """Generate a path in matplotlib"""
+def quick_line(x1: float, x2: float, y1: float, ytop: float, y2: float, lw: int = 1) -> PathPatch:
+    """Generate a path in matplotlib."""
     verts = [(x1, y1), (x1, ytop), (x2, ytop), (x2, y2)]
     codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO]
     path = Path(verts, codes)
@@ -99,24 +114,24 @@ def quick_line(x1, x2, y1, ytop, y2, lw=1):
 
 
 def annotate_arrows(
-    ax,
-    text,
-    start_point,
-    end_points,
-    y_top=None,
-    line_width=1,
-    direction="left",
-    x_spacing=0.05,
-    y_spacing=0.07,
-    y_top_spacing=0.02,
-    repeat_text=True,
-    text_spacing=0.02,
-):
-    """Add arrows that start at a point, go upwards, go over, and then descend to another point - mostly useful for bar graphs
+    ax: mpl.axes.Axes,
+    text: str,
+    start_point: tuple[float, float],
+    end_points: list[tuple[float, float]],
+    y_top: float | None = None,
+    line_width: int = 1,
+    direction: Literal["left", "right"] = "left",
+    x_spacing: float = 0.05,
+    y_spacing: float = 0.07,
+    y_top_spacing: float = 0.02,
+    repeat_text: bool = True,
+    text_spacing: float = 0.02,
+) -> None:
+    """Add arrows that start at a point, go upwards, go over, and then descend to another point - mostly useful for bar graphs.
 
     Parameters
     ----------
-    ax : plt.Axis (?)
+    ax : mpl.axes.Axes
         Axis to plot on
     text : str
         text to annotate over lines
@@ -172,17 +187,17 @@ def annotate_arrows(
 
 
 def colorplot(
-    x: Iterable,
-    y: Iterable,
+    x: Sequence[float],
+    y: Sequence[float],
     ax: mpl.axes.Axes | None = None,
     cmap: mpl.colors.Colormap | str = "jet",
     step_size: float = 0.01,
-    step_as_percent=True,
+    step_as_percent: bool = True,
     start_val: float = 0.0,
     end_val: float = 1.0,
-    **kwargs,
-) -> plt.Axes:
-    """Plot a line with a color gradient
+    **kwargs: Unpack[tuple[str, Any]],
+) -> mpl.axes.Axes:
+    """Plot a line with a color gradient.
 
     Parameters
     ----------
@@ -250,16 +265,16 @@ def colorplot(
 
 
 def plot_joint_arrow(
-    x: Iterable,
-    y: Iterable,
+    x: Sequence[float],
+    y: Sequence[float],
     linewidth: float = 5.0,
     headwidth: float = 2.0,
     headlength: float | None = None,
     ax: mpl.axes.Axes | None = None,
     color: ColorType | None = None,
-    label: str = None,
-):
-    """Plot a jointed line ending in an arrowhead
+    label: str | None = None,
+) -> mpl.axes.Axes:
+    """Plot a jointed line ending in an arrowhead.
 
     Parameters
     ----------
@@ -295,8 +310,8 @@ def plot_joint_arrow(
 
     linewidth = mpl.rcParams["lines.linewidth"] if linewidth is None else linewidth
     mutation_scale = mpl.rcParams["font.size"]
-    line_kwargs = dict()
-    arrow_kwargs = dict(mutation_scale=mutation_scale)
+    line_kwargs = {}
+    arrow_kwargs = {"mutation_scale": mutation_scale}
     arrowstyle = "simple"
     style_scale = linewidth / mutation_scale
     arrowstyle = mpl.patches.ArrowStyle(

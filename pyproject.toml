@@ -1,5 +1,4 @@
 [build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
 requires = ["setuptools>=64", "setuptools_scm[toml]>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -53,8 +52,10 @@ dev = [
 Homepage = "https://github.com/mullans/GOUDA"
 Repository = "https://github.com/mullans/GOUDA"
 
-[tool.setuptools]
-packages = ["gouda"]
+# [tool.setuptools]
+# packages = ["src"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools_scm]
 write_to = "src/gouda/_version.py"

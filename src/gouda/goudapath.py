@@ -9,7 +9,7 @@ import pathlib
 import re
 import warnings
 from collections.abc import Generator
-from typing import IO, Any
+from typing import IO, Any, TypeAlias
 
 from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
 from gouda.typing import Unpack
@@ -648,4 +648,4 @@ def _get_path_parts_normcase(other: pathlib.Path) -> tuple[str]:
         raise NotImplementedError("Cannot get casefolded/normed parts from Path object")
 
 
-GPathLike: type = str | GoudaPath | os.PathLike
+GPathLike: TypeAlias = str | GoudaPath | os.PathLike
