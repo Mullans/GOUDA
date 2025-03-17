@@ -1,5 +1,7 @@
 """General purpose methods that don't fit other categories."""
 
+from __future__ import annotations
+
 from collections.abc import Generator, Iterable
 from typing import Any
 

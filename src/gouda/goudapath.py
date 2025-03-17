@@ -9,16 +9,15 @@ import pathlib
 import re
 import warnings
 from collections.abc import Generator
-from typing import IO, Any, TypeVar, Unpack
+from typing import IO, Any
 
 from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
+from gouda.typing import Unpack
 
-__author__ = "Sean Mullan"
-__copyright__ = "Sean Mullan"
-__license__ = "mit"
-
-
-GPathLike = TypeVar("GPathLike", str, "GoudaPath", os.PathLike)
+__all__ = [
+    "GPathLike",
+    "GoudaPath",
+]
 
 
 class GoudaPath(os.PathLike):
@@ -35,7 +34,9 @@ class GoudaPath(os.PathLike):
     # Eventually, subclass pathlib.Path (available in 3.12+)
     __slots__ = ("__path", "_hash", "_parsed_parts", "_parts_normcase_cached", "use_absolute")
 
-    def __init__(self, *path: Unpack[GPathLike], use_absolute: bool = False, ensure_dir: bool = False) -> None:
+    def __init__(
+        self, *path: Unpack[str | GoudaPath | os.PathLike], use_absolute: bool = False, ensure_dir: bool = False
+    ) -> None:
         if len(path) == 1 and isinstance(path[0], GoudaPath):
             path = path[0].path
         elif len(path) == 0:
@@ -53,7 +54,9 @@ class GoudaPath(os.PathLike):
         if ensure_dir:
             self.ensure_dir()
 
-    def __call__(self, *path_args: Unpack[GPathLike], use_absolute: bool | None = None) -> GoudaPath | list[GoudaPath]:
+    def __call__(
+        self, *path_args: Unpack[str | GoudaPath | os.PathLike], use_absolute: bool | None = None
+    ) -> GoudaPath | list[GoudaPath]:
         """Add to the current path.
 
         Parameters
@@ -95,15 +98,15 @@ class GoudaPath(os.PathLike):
         """Return the path as a bytes object."""
         return self.abspath.encode()
 
-    def __truediv__(self, path: GPathLike) -> GoudaPath:
+    def __truediv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
         """Shortcut method for __call__ with a single child path and use_absolute set to False."""
         return GoudaPath(self(path), use_absolute=False)
 
-    def __floordiv__(self, path: GPathLike) -> GoudaPath:
+    def __floordiv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
         """Shortcut method for __call__ with a single child path and use_absolute set to True."""
         return GoudaPath(self(path), use_absolute=True)
 
-    def __add__(self, path: GPathLike) -> GoudaPath:
+    def __add__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
         """Append a path to the end of the current path.
 
         Note
@@ -163,7 +166,7 @@ class GoudaPath(os.PathLike):
 
     def glob(
         self,
-        pattern: GPathLike,
+        pattern: str | GoudaPath | os.PathLike,
         as_gouda: bool = True,
         basenames: bool = False,
         recursive: bool = False,
@@ -195,7 +198,7 @@ class GoudaPath(os.PathLike):
 
     def search(
         self,
-        pattern: GPathLike | re.Pattern,
+        pattern: str | GoudaPath | os.PathLike | re.Pattern,
         as_gouda: bool = True,
         basenames: bool = False,
         recursive: bool = False,
@@ -232,7 +235,11 @@ class GoudaPath(os.PathLike):
             return list(_search_gen())
 
     def globfirst(
-        self, pattern: GPathLike, as_gouda: bool = True, basename: bool = False, recursive: bool = False
+        self,
+        pattern: str | GoudaPath | os.PathLike,
+        as_gouda: bool = True,
+        basename: bool = False,
+        recursive: bool = False,
     ) -> str | GoudaPath:
         """Make a glob call starting from the current path and return only the first result in glob order.
 
@@ -271,7 +278,7 @@ class GoudaPath(os.PathLike):
         files_only: bool = False,
         basenames: bool = False,
         include_hidden: bool = False,
-    ) -> list[GPathLike]:
+    ) -> list[str | GoudaPath | os.PathLike]:
         """If the path is a directory, get the child paths contained by it.
 
         Parameters
@@ -303,7 +310,7 @@ class GoudaPath(os.PathLike):
         files_only: bool = False,
         basenames: bool = False,
         include_hidden: bool = False,
-    ) -> Generator[GPathLike, None, None]:
+    ) -> Generator[str | GoudaPath | os.PathLike, None, None]:
         """If the path is a directory, iterate through the child paths contained by it.
 
         Parameters
@@ -376,7 +383,7 @@ class GoudaPath(os.PathLike):
         """Returns the relative path if use_absolute is False, otherwise returns the absolute path."""
         return self.__path
 
-    def __update_path(self, *args: Unpack[GPathLike]) -> str:
+    def __update_path(self, *args: Unpack[str | GoudaPath | os.PathLike]) -> str:
         self.__path = os.path.join(*args)
         self._clear_cache()
 
@@ -495,7 +502,7 @@ class GoudaPath(os.PathLike):
         """Return the path as a pathlib.Path object."""
         return pathlib.Path(self.__path)
 
-    def _opener(self, name: GPathLike, flags: int, mode: int = 0o666) -> int:
+    def _opener(self, name: str | GoudaPath | os.PathLike, flags: int, mode: int = 0o666) -> int:
         return os.open(self, flags, mode)
 
     def open(
@@ -592,7 +599,7 @@ class GoudaPath(os.PathLike):
             self._hash = hash(tuple(self._cparts))
             return self._hash
 
-    def __eq__(self, other: GPathLike) -> bool:
+    def __eq__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the paths are equal.
 
         Note
@@ -603,28 +610,28 @@ class GoudaPath(os.PathLike):
             return self._cparts == _get_path_parts_normcase(other)
         return self.__path == str(other)
 
-    def __lt__(self, other: GPathLike) -> bool:
+    def __lt__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is less than the other path."""
         if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts < _get_path_parts_normcase(other)
         else:
             return self.__path < str(other)
 
-    def __le__(self, other: GPathLike) -> bool:
+    def __le__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is less than or equal to the other path."""
         if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts <= _get_path_parts_normcase(other)
         else:
             return self.__path <= str(other)
 
-    def __gt__(self, other: GPathLike) -> bool:
+    def __gt__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is greater than the other path."""
         if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts > _get_path_parts_normcase(other)
         else:
             return self.__path > str(other)
 
-    def __ge__(self, other: GPathLike) -> bool:
+    def __ge__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is greater than or equal to the other path."""
         if isinstance(other, GoudaPath | pathlib.Path):
             return self._cparts >= _get_path_parts_normcase(other)
@@ -639,3 +646,6 @@ def _get_path_parts_normcase(other: pathlib.Path) -> tuple[str]:
         return other._parts_normcase
     else:
         raise NotImplementedError("Cannot get casefolded/normed parts from Path object")
+
+
+GPathLike: type = str | GoudaPath | os.PathLike

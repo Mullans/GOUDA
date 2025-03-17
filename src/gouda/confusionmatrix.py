@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Sequence
 from typing import Any
 
 import colorama
@@ -386,12 +385,12 @@ class ConfusionMatrix:
         elif isinstance(predicted, int | np.integer):
             # Single value: class label
             predicted_class = predicted
-        elif isinstance(expected, float | int | bool | np.number) and isinstance(predicted, Sequence | np.ndarray):
+        elif isinstance(expected, float | int | bool | np.number) and isinstance(predicted, list | tuple | np.ndarray):
             # Class probabilities with single expected label
             predicted_class = np.argmax(predicted).astype(int)
         elif (
-            isinstance(predicted, Sequence | np.ndarray)
-            and isinstance(expected, Sequence | np.ndarray)
+            isinstance(predicted, list | tuple | np.ndarray)
+            and isinstance(expected, list | tuple | np.ndarray)
             and len(predicted) == len(expected)
         ):
             # Paired lists

@@ -39,6 +39,7 @@ dependencies = [
     "scipy",
     "matplotlib",
     "colorama",
+    "typing-extensions; python_version < '3.10'",
 ]
 
 [project.optional-dependencies]
@@ -56,7 +57,7 @@ Repository = "https://github.com/mullans/GOUDA"
 packages = ["gouda"]
 
 [tool.setuptools_scm]
-write_to = "gouda/_version.py"
+write_to = "src/gouda/_version.py"
 # https://setuptools-scm.readthedocs.io/en/latest/extending/#available-implementations
 version_scheme = "no-guess-dev"
 

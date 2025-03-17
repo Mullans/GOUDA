@@ -1,5 +1,7 @@
 """matplotlib plotting and helper methods"""
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 
 import matplotlib as mpl
@@ -14,7 +16,7 @@ from gouda.typing import ColorType
 
 
 def parse_color(color: ColorType, float_cmap="viridis", int_cmap="Set1") -> tuple[float, float, float]:
-    """Convert the input to a rgb color
+    """Convert the input to a rgb color.
 
     NOTE
     ----

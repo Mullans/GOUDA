@@ -1,8 +1,8 @@
-import pytest
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+import pytest
 
 from gouda import display
 
@@ -73,53 +73,60 @@ def test_print_grid():
     # [rows, cols, x, y], [rows, cols, x, y, 1], [rows, cols, x, y, 3]
     assert display.print_grid(image_0c[np.newaxis, np.newaxis], show=False, return_grid_shape=True) == (1, 1)
     plt.close()
-    assert display.print_grid(np.stack([image_0c, image_0c], axis=0)[np.newaxis],
-                              show=False, return_grid_shape=True) == (1, 2)
+    assert display.print_grid(
+        np.stack([image_0c, image_0c], axis=0)[np.newaxis], show=False, return_grid_shape=True
+    ) == (1, 2)
     plt.close()
-    assert display.print_grid(np.stack([image_0c[np.newaxis], image_0c[np.newaxis]], axis=0),
-                              show=False, return_grid_shape=True) == (2, 1)
+    assert display.print_grid(
+        np.stack([image_0c[np.newaxis], image_0c[np.newaxis]], axis=0), show=False, return_grid_shape=True
+    ) == (2, 1)
     plt.close()
-    assert display.print_grid(np.stack([
-        np.stack([image_0c, image_0c], axis=0),
-        np.stack([image_0c, image_0c], axis=0)]),
-        show=False, return_grid_shape=True) == (2, 2)
-    plt.close()
-
-    assert display.print_grid(image_1c[np.newaxis, np.newaxis],
-                              show=False, return_grid_shape=True) == (1, 1)
-    plt.close()
-    assert display.print_grid(np.stack([image_1c, image_1c], axis=0)[np.newaxis],
-                              show=False, return_grid_shape=True) == (1, 2)
-    plt.close()
-    assert display.print_grid(np.stack([image_1c[np.newaxis], image_1c[np.newaxis]], axis=0),
-                              show=False, return_grid_shape=True) == (2, 1)
-    plt.close()
-    assert display.print_grid(np.stack([
-        np.stack([image_1c, image_1c], axis=0),
-        np.stack([image_1c, image_1c], axis=0)]),
-        show=False, return_grid_shape=True) == (2, 2)
+    assert display.print_grid(
+        np.stack([np.stack([image_0c, image_0c], axis=0), np.stack([image_0c, image_0c], axis=0)]),
+        show=False,
+        return_grid_shape=True,
+    ) == (2, 2)
     plt.close()
 
-    assert display.print_grid(image_3c[np.newaxis, np.newaxis],
-                              show=False, return_grid_shape=True) == (1, 1)
+    assert display.print_grid(image_1c[np.newaxis, np.newaxis], show=False, return_grid_shape=True) == (1, 1)
     plt.close()
-    assert display.print_grid(np.stack([image_3c, image_3c], axis=0)[np.newaxis],
-                              show=False, return_grid_shape=True) == (1, 2)
+    assert display.print_grid(
+        np.stack([image_1c, image_1c], axis=0)[np.newaxis], show=False, return_grid_shape=True
+    ) == (1, 2)
     plt.close()
-    assert display.print_grid(np.stack([image_3c[np.newaxis], image_3c[np.newaxis]], axis=0),
-                              show=False, return_grid_shape=True) == (2, 1)
+    assert display.print_grid(
+        np.stack([image_1c[np.newaxis], image_1c[np.newaxis]], axis=0), show=False, return_grid_shape=True
+    ) == (2, 1)
     plt.close()
-    assert display.print_grid(np.stack([
-        np.stack([image_3c, image_3c], axis=0),
-        np.stack([image_3c, image_3c], axis=0)]),
-        show=False, return_grid_shape=True) == (2, 2)
+    assert display.print_grid(
+        np.stack([np.stack([image_1c, image_1c], axis=0), np.stack([image_1c, image_1c], axis=0)]),
+        show=False,
+        return_grid_shape=True,
+    ) == (2, 2)
     plt.close()
 
-    test_image = {'image': image_3c}
-    assert display.print_grid(test_image, show=False, return_grid_shape=True, suptitle='test_sup') == (1, 1)
-    test_image = {'image': image_1c}
+    assert display.print_grid(image_3c[np.newaxis, np.newaxis], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(
+        np.stack([image_3c, image_3c], axis=0)[np.newaxis], show=False, return_grid_shape=True
+    ) == (1, 2)
+    plt.close()
+    assert display.print_grid(
+        np.stack([image_3c[np.newaxis], image_3c[np.newaxis]], axis=0), show=False, return_grid_shape=True
+    ) == (2, 1)
+    plt.close()
+    assert display.print_grid(
+        np.stack([np.stack([image_3c, image_3c], axis=0), np.stack([image_3c, image_3c], axis=0)]),
+        show=False,
+        return_grid_shape=True,
+    ) == (2, 2)
+    plt.close()
+
+    test_image = {"image": image_3c}
+    assert display.print_grid(test_image, show=False, return_grid_shape=True, suptitle="test_sup") == (1, 1)
+    test_image = {"image": image_1c}
     assert display.print_grid(test_image, show=False, return_grid_shape=True) == (1, 1)
-    test_image = {'image': image_1c, 'cmap': 'viridis', 'title': 'test', 'xlabel': 'testx', 'ylabel': 'testy'}
+    test_image = {"image": image_1c, "cmap": "viridis", "title": "test", "xlabel": "testx", "ylabel": "testy"}
     assert display.print_grid(test_image, show=False, return_grid_shape=True, left=0.1) == (1, 1)
     plt.close()
 
@@ -139,17 +146,19 @@ def test_print_grid_squarify():
     size = display.print_grid(*images, return_grid_shape=True, return_fig=False, do_squarify=True, show=False)
     assert size == (2, 3)
     plt.close()
-    size = display.print_grid(*images, return_grid_shape=True, return_fig=False, do_squarify=True, num_cols=2, show=False)
+    size = display.print_grid(
+        *images, return_grid_shape=True, return_fig=False, do_squarify=True, num_cols=2, show=False
+    )
     assert size == (3, 2)
     plt.close()
 
 
-
 def test_print_grid_tofile(scratch_path):
     test_image = np.ones([10, 10])
-    display.print_grid(test_image, show=False, toFile=scratch_path / 'testprintgrid.png')
-    assert os.path.exists(scratch_path / 'testprintgrid.png')
+    display.print_grid(test_image, show=False, file_name=scratch_path / "testprintgrid.png")
+    assert os.path.exists(scratch_path / "testprintgrid.png")
     plt.close()
+
 
 def test_print_grid_exceptions():
     test_image = np.ones([5, 5, 100, 100, 5])
@@ -157,7 +166,7 @@ def test_print_grid_exceptions():
         assert display.print_grid(test_image)
 
     with pytest.raises(ValueError):
-        assert display.print_grid('string')
+        assert display.print_grid("string")
 
 
 def test_print_image(scratch_path):
@@ -170,9 +179,9 @@ def test_print_image(scratch_path):
 
     test_image = np.ones([100, 100, 3], dtype=np.uint8) * 255
     test_image[25:75, 25:75] = 0
-    display.print_image(test_image, toFile=scratch_path / 'test_image.png', show=False)
+    display.print_image(test_image, file_name=scratch_path / "test_image.png", show=False)
     plt.close()
-    assert os.path.exists(scratch_path / 'test_image.png')
+    assert os.path.exists(scratch_path / "test_image.png")
 
 
 def test_squarify():

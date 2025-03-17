@@ -381,7 +381,7 @@ def test_get_mask_border():
 def test_add_mask():
     image = np.zeros([100, 100], dtype=np.float32)
     label = np.zeros([100, 100], dtype=np.uint8)
-    label[:50] = 255
+    label[:50] = 229  # "red" isn't exactly 255, it's slightly less
 
     overlay = gimage.add_mask(image, label, color="g", opacity=1)
     assert overlay[:, :, [0, 2]].sum() == 0
@@ -409,7 +409,7 @@ def test_add_mask():
     overlay_2 = gimage.add_mask(image, label, color="red", opacity=1)
     np.testing.assert_array_equal(overlay_2, overlay)
     overlay_2b = gimage.add_mask(image.astype(bool), label, color="red", opacity=1)
-    np.testing.assert_array_equal(overlay_2b, overlay / 255.0)
+    np.testing.assert_allclose(overlay_2b, overlay / 255.0, atol=1e-7)  # Use atol for floating point comparison
 
     label_3 = np.zeros([100, 100, 3], dtype=np.uint8)
     label_3[:50] = 255

@@ -1,5 +1,7 @@
 """Binary confusion matrix class."""
 
+from __future__ import annotations
+
 import warnings
 
 import colorama

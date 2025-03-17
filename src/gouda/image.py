@@ -1,5 +1,7 @@
 """Methods/Shortcuts for modifying and handling image data."""
 
+from __future__ import annotations
+
 import os
 import warnings
 from collections.abc import Sequence
@@ -515,23 +517,23 @@ def add_mask(
         scaler = np.iinfo(image.dtype).max
     elif isinstance(image.flat[0], np.floating):
         scaler = 1
-    elif isinstance(image.flat[0], bool):
+    elif isinstance(image.flat[0], bool | np.bool_):
         image = image.astype(np.float32)
         scaler = 1
     else:
         scaler = np.max(image)  # pragma: no cover
-    mask_color: str | None = None
     if isinstance(color, str):
-        mask_color = find_color(color)
-    if mask_color is None:
-        mask_color = matplotlib.colors.to_rgb(color)
+        check = find_color(color, on_err="none")
+        if check is not None:
+            color = check
+    color = matplotlib.colors.to_rgb(color)
     if mask.dtype != bool:
         mask = mask > mask_threshold
     scaler = scaler * opacity
     bias = image[mask] * (1 - opacity)
-    image[:, :, 0][mask] = mask_color[0] * scaler + bias[:, 0]
-    image[:, :, 1][mask] = mask_color[1] * scaler + bias[:, 1]
-    image[:, :, 2][mask] = mask_color[2] * scaler + bias[:, 2]
+    image[:, :, 0][mask] = color[0] * scaler + bias[:, 0]
+    image[:, :, 1][mask] = color[1] * scaler + bias[:, 1]
+    image[:, :, 2][mask] = color[2] * scaler + bias[:, 2]
     return image
 
 

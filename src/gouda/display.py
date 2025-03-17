@@ -1,10 +1,12 @@
 """Convenience methods to display images using matplotlib.pyplot."""
 
+from __future__ import annotations
+
 import inspect
 import os
 from collections.abc import Sequence
 from types import TracebackType
-from typing import Any, Unpack
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +14,7 @@ import numpy.typing as npt
 from matplotlib.figure import Figure
 
 from gouda import data_methods
-from gouda.typing import ShapeType
+from gouda.typing import ShapeType, Unpack
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -352,7 +354,7 @@ class VideoWriter:
         self.codec = codec
         self.interpolator = interpolator
 
-    def __enter__(self) -> "VideoWriter":  # noqa: D105
+    def __enter__(self) -> VideoWriter:  # noqa: D105
         return self
 
     def __exit__(  # noqa: D105

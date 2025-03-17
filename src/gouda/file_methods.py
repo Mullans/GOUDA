@@ -1,5 +1,7 @@
 """General file method and JSON handling."""
 
+from __future__ import annotations
+
 import copy
 import fnmatch
 import glob
@@ -11,12 +13,13 @@ import re
 import warnings
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
-from typing import Any, Unpack
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 
 from gouda.data_methods import num_digits
+from gouda.typing import Unpack
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"

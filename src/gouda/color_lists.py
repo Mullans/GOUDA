@@ -1,5 +1,7 @@
 """A bunch of different colors for use with plotting."""
 
+from __future__ import annotations
+
 COLOR_NOTE = """Aquamarine, Black, Blue, Brown, Fuchsia, Gold, Green, Indigo, Lavender, Magenta, Maroon, Orange, Orchid, Plum, Red, Salmon, Silver, Tan, White, Yellow are found in both html and crayon colors"""
 
 
