@@ -58,6 +58,15 @@ class ConfusionMatrix:
             self.reset(num_classes, dtype=dtype)
         elif predictions is None and labels is None:
             self.reset(2, dtype=dtype)
+        else:
+            max_in: int = 2
+            if predictions is not None:
+                max_in = max(np.max(predictions) + 1, max_in)
+            if labels is not None:
+                max_in = max(np.max(labels) + 1, max_in)
+            self.reset(max_in, dtype=dtype)
+        if self.matrix is None:
+            raise ValueError("Matrix has not been initialized")
         if predictions is not None and labels is not None:
             self.add(predictions, labels, threshold=threshold)
             if self.matrix.dtype != dtype:
@@ -253,8 +262,6 @@ class ConfusionMatrix:
         -----
         mcc = ((tp * tn) - (fp * fn)) / sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
         """
-        if self.matrix is None:
-            raise RuntimeError("Matrix has not been initialized")
         if self._num_classes != 2:
             raise ValueError("Matthews correlation coefficient only applies to binary classifications")
         tp = self.matrix[1, 1]
