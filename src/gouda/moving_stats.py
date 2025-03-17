@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import numpy as np
 import numpy.typing as npt
 
@@ -114,7 +116,7 @@ class ParallelStats:
         """
         if self._count <= 1:
             return 0
-        return np.sqrt(self.var(sample_variance=sample_std))
+        return float(np.sqrt(self.var(sample_variance=sample_std)))
 
     def var(self, sample_variance: bool = False) -> float:
         """Return the variance.
@@ -182,9 +184,9 @@ class MStddev:
     """Class to hold a moving standard deviation with constant-time update and memory."""
 
     def __init__(self) -> None:
-        self._count = 0.0
-        self._mean = 0.0
-        self._variance = 0.0
+        self._count: int = 0
+        self._mean: float = 0.0
+        self._variance: float = 0.0
 
     @property
     def count(self) -> int:
@@ -226,7 +228,7 @@ class MStddev:
         """Return the current stddev."""
         if self._count == 0:
             return 0
-        return np.sqrt(self._variance / self._count)
+        return float(np.sqrt(self._variance / self._count))
 
 
 class MMeanArray:
@@ -239,13 +241,14 @@ class MMeanArray:
     """
 
     def __init__(self, shape: ShapeType, dtype: npt.DTypeLike = float) -> None:
-        self._mean = np.zeros(shape, dtype=dtype)
-        self._count = 0
+        self._mean: npt.NDArray[np.floating] = np.zeros(shape, dtype=dtype)
+        self._count: int = 0
 
     @property
-    def shape(self) -> tuple[int, ...]:
+    def shape(self) -> ShapeType:
         """The shape of the array."""
-        return self._mean.shape
+        shape: Sequence[int] = self._mean.shape
+        return shape
 
     @property
     def dtype(self) -> npt.DTypeLike:
@@ -257,7 +260,7 @@ class MMeanArray:
         """The number of examples used for the mean of each item in the array."""
         return self._count
 
-    def __iadd__(self, value: npt.NDArray) -> MMeanArray:
+    def __iadd__(self, value: npt.NDArray[np.floating]) -> MMeanArray:
         """Update the mean, including the given value."""
         if value.shape != self.shape:
             raise ValueError("Input values must have the same shape as the MMeanArray")
@@ -265,13 +268,15 @@ class MMeanArray:
         self._mean += (value - self._mean) * (1.0 / self._count)
         return self
 
-    def __add__(self, value: npt.NDArray) -> npt.NDArray:
+    def __add__(self, value: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
         """Add a new value to the mean, does not update class values."""
-        return self._mean + value
+        result: npt.NDArray[np.floating] = self._mean + value
+        return result
 
-    def __sub__(self, value: npt.NDArray) -> npt.NDArray:
+    def __sub__(self, value: npt.NDArray) -> npt.NDArray[np.floating]:
         """Subtract a new value from the mean, does not update class values."""
-        return self._mean - value
+        result: npt.NDArray[np.floating] = self._mean - value
+        return result
 
     def __str__(self) -> str:
         """Return the mean as a string."""
@@ -301,9 +306,10 @@ class MStddevArray:
         self._count = 0
 
     @property
-    def shape(self) -> tuple[int, ...]:
+    def shape(self) -> ShapeType:
         """The shape of the array."""
-        return self._variance.shape
+        shape: Sequence[int] = self._variance.shape
+        return shape
 
     @property
     def dtype(self) -> npt.DTypeLike:
@@ -325,7 +331,7 @@ class MStddevArray:
             return np.zeros_like(self._variance)
         return self._variance / self._count
 
-    def __iadd__(self, value: npt.NDArray) -> MStddevArray:
+    def __iadd__(self, value: npt.NDArray[np.floating]) -> MStddevArray:
         """Update the mean and stddev, including the new value."""
         if value.shape != self.shape:
             raise ValueError("Input values must have the same shape as the MStddevArray")
@@ -335,13 +341,15 @@ class MStddevArray:
         self._variance += (value - self._mean) * (value - prev_mean)
         return self
 
-    def __add__(self, value: npt.NDArray) -> npt.NDArray:
+    def __add__(self, value: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
         """Add a value to the stddev, does not update class values."""
-        return self.stddev() + value
+        result: npt.NDArray[np.floating] = self.stddev() + value
+        return result
 
-    def __sub__(self, value: npt.NDArray) -> npt.NDArray:
+    def __sub__(self, value: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
         """Subtract a value from the stddev, does not update class values."""
-        return self.stddev() - value
+        result: npt.NDArray[np.floating] = self.stddev() - value
+        return result
 
     def __str__(self) -> str:
         """Return the stddev as a string."""
@@ -355,4 +363,5 @@ class MStddevArray:
         """Return the current stddev."""
         if self._count == 0:
             return np.zeros_like(self._variance)
-        return np.sqrt(self._variance / self._count)
+        result: npt.NDArray[np.floating] = np.sqrt(self._variance / self._count)
+        return result
