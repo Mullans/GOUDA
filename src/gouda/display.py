@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import inspect
 import os
 from collections.abc import Sequence
-from types import TracebackType
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -13,44 +11,16 @@ import numpy as np
 import numpy.typing as npt
 from matplotlib.figure import Figure
 
-from gouda import data_methods
-from gouda.typing import ShapeType, Unpack
+from gouda.general import extract_method_kwargs
+from gouda.typing import ImageLikeType, Unpack
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
 __license__ = "mit"
 
 
-def _extract_method_kwargs(kwargs: dict, method: callable, remove: bool = True) -> dict[str, Any]:
-    """Extract keyword arguments related to a given method.
-
-    Parameters
-    ----------
-    kwargs : dict
-        A dictionary of keyword arguments
-    method : func
-        A function with keyword arguments
-    remove : bool
-        Whether to remove the extracted keyword arguments from the original dict (the default is True)
-    """
-    method_params = inspect.signature(method).parameters
-    method_kwargs = {}
-    to_remove = []
-    for key, val in kwargs.items():
-        if key in method_params:
-            method_kwargs[key] = val
-            to_remove.append(key)
-    if remove:
-        for key in to_remove:
-            del kwargs[key]
-    return method_kwargs
-
-
-ImageLikeType = npt.ArrayLike | dict[str, str | npt.ArrayLike] | None
-
-
 def print_grid(
-    *images: Unpack[ImageLikeType | Sequence[ImageLikeType] | Sequence[Sequence[ImageLikeType]]],
+    *input_images: Unpack[ImageLikeType | Sequence[ImageLikeType] | Sequence[Sequence[ImageLikeType]]],
     figsize: tuple[int, int] = (8, 8),
     file_name: str | os.PathLike | None = None,
     do_squarify: bool = False,
@@ -59,12 +29,12 @@ def print_grid(
     return_fig: bool = False,
     cmap: str = "gray",
     **kwargs: Unpack[tuple[str, Any]],
-) -> Figure | tuple[int, int] | tuple[Figure, tuple[int, int]]:
+) -> Figure | tuple[int, int] | tuple[Figure, tuple[int, int]] | None:
     """Print out images as a grid.
 
     Parameters
     ----------
-    *images : ImageLikeType | Sequence[ImageLikeType] | Sequence[Sequence[ImageLikeType]]
+    *input_images : ImageLikeType | Sequence[ImageLikeType] | Sequence[Sequence[ImageLikeType]]
         Image(s) to print as a grid
     figsize : (int, int)
         Figure size to pass to pyplot
@@ -107,17 +77,22 @@ def print_grid(
         if item not in kwargs:
             kwargs[item] = None
     kwargs["cmap"] = cmap
-    image_kwargs = _extract_method_kwargs(kwargs, plt.imshow)
-    fig_kwargs = _extract_method_kwargs(kwargs, plt.figure)
-    squarify_kwargs = _extract_method_kwargs(kwargs, squarify)
+    image_kwargs = extract_method_kwargs(kwargs, plt.imshow)
+    fig_kwargs = extract_method_kwargs(kwargs, plt.figure)
+    squarify_kwargs = extract_method_kwargs(kwargs, squarify)
+
+    images: ImageLikeType | Sequence[ImageLikeType] | Sequence[Sequence[ImageLikeType]]
+    images = input_images[0] if len(input_images) == 1 else input_images
 
     if do_squarify:
         images = squarify(images, **squarify_kwargs)
-
-    if len(images) == 1:
-        images = images[0]
+    if not isinstance(images, list | tuple | np.ndarray | str | dict):
+        try:
+            images = np.asarray(images)
+        except ValueError:
+            pass
     if hasattr(images, "__array__"):
-        images = np.array(images)
+        images = np.asarray(images)
     if isinstance(images, list | tuple):
         if len(images) == 0:
             raise ValueError("No images to display")
@@ -181,7 +156,7 @@ def print_grid(
                 for key in image_kwargs:
                     if key not in image_dict:
                         image_dict[key] = image_kwargs[key]
-                imshow_kwargs = _extract_method_kwargs(image_dict, plt.imshow)
+                imshow_kwargs = extract_method_kwargs(image_dict, plt.imshow)
                 if image.dtype == bool:
                     image = image.astype(np.uint8)
                 plt.imshow(image, **imshow_kwargs)
@@ -210,20 +185,19 @@ def print_grid(
         plt.show()
     else:
         plt.close(fig)
-    to_return = []
-    if return_fig:
-        to_return.append(fig)
-    if return_grid_shape:
-        to_return.append((rows, cols))
-    if len(to_return) == 1:
-        return to_return[0]
-    elif len(to_return) > 1:
-        return tuple(to_return)
+    if return_fig and return_grid_shape:
+        return (fig, (rows, cols))
+    elif return_fig:
+        return fig
+    elif return_grid_shape:
+        return (rows, cols)
+    else:
+        return None
 
 
 def print_image(
     image: npt.NDArray,
-    figsize: tuple[int, int] = (8, 6.5),
+    figsize: tuple[float, float] = (8.0, 6.5),
     file_name: str | os.PathLike | None = None,
     show: bool = True,
     allow_interpolation: bool = False,
@@ -282,8 +256,11 @@ def print_image(
 
 
 def squarify(
-    image: npt.NDArray | Sequence[npt.NDArray], axis: ShapeType = 0, num_cols: int | None = None, as_array: bool = False
-) -> npt.NDArray:
+    image: npt.NDArray | Sequence[npt.NDArray],
+    primary_axis: int = 0,
+    num_cols: int | None = None,
+    as_array: bool = False,
+) -> npt.NDArray | list[list[ImageLikeType]]:
     """Reshape a list/array of images into nested elements with the same numbers of rows and columns.
 
     Parameters
@@ -305,18 +282,20 @@ def squarify(
     if isinstance(image, tuple | list):
         num_images = len(image)
         images = list(image)
-    else:
+    elif isinstance(image, np.ndarray):
         # images = np.split(image, image.shape[axis], axis=axis)
         # images = [item for item in images]
         images = []
-        axis_slice = [slice(None) for _ in range(image.ndim)]
-        num_images = image.shape[axis]
+        axis_slice: list[slice | int] = [slice(None) for _ in range(image.ndim)]
+        num_images = image.shape[primary_axis]
         for idx in range(num_images):
-            axis_slice[axis] = idx
+            axis_slice[primary_axis] = idx
             images.append(image[tuple(axis_slice)])
+    else:
+        raise ValueError("Unknown image type: {type(image)}")
     if num_cols is None:
         num_cols = int(np.ceil(np.sqrt(num_images)))
-    outer_list = []
+    outer_list: list[list[ImageLikeType]] = []
     for i in range(0, num_images, num_cols):
         inner_list = []
         for j in range(num_cols):
@@ -328,161 +307,10 @@ def squarify(
             else:
                 inner_list.append(images[i + j])
         outer_list.append(inner_list)
-    if as_array:
-        rows = [np.stack(inner_list, axis=0) for inner_list in outer_list]
-        outer_list = np.stack(rows, axis=0)
+    if as_array and isinstance(outer_list[0][0], npt.ArrayLike):
+        rows: list[npt.ArrayLike] = [
+            np.stack([np.asarray(item) for item in inner_list], axis=0) for inner_list in outer_list
+        ]
+        result_array: npt.NDArray = np.stack(rows, axis=0)
+        return result_array
     return outer_list
-
-
-class VideoWriter:
-    """A convenience wrapper for OpenCV video writing."""
-
-    import cv2
-
-    def __init__(
-        self,
-        out_path: str | os.PathLike,
-        fps: int = 10,
-        codec: str = "MJPG",
-        output_shape: tuple[int, int] | None = None,
-        interpolator: int = cv2.INTER_LINEAR,
-    ) -> None:
-        self.out_path = out_path
-        self.output_shape = output_shape  # assumes (height, width)
-        self.writer = None
-        self.fps = fps
-        self.codec = codec
-        self.interpolator = interpolator
-
-    def __enter__(self) -> VideoWriter:  # noqa: D105
-        return self
-
-    def __exit__(  # noqa: D105
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        if self.writer is not None:
-            self.writer.release()
-
-    def start_writer(self) -> None:
-        """Start the video writer."""
-        codec = self.cv2.VideoWriter_fourcc(*self.codec)
-        self.writer = self.cv2.VideoWriter(self.out_path, codec, self.fps, (self.output_shape[1], self.output_shape[0]))
-
-    def write(self, data: npt.NDArray[Any]) -> None:
-        """Write a frame to the video."""
-        if self.writer is None:
-            if self.output_shape is None:
-                self.output_shape = np.squeeze(data).shape[:2]
-            self.start_writer()
-        data = data_methods.to_uint8(data)
-        if data.ndim == 2:
-            # TODO - allow for color maps
-            data = np.dstack([data] * 3)
-        elif data.ndim == 3 and data.shape[-1] == 4:
-            data = self.cv2.cvtColor(data, self.cv2.RGBA2RGB)
-        if data.shape[:2] != self.output_shape:
-            data = self.cv2.resize(data, (self.output_shape[1], self.output_shape[0]), self.interpolator)
-        self.writer.write(data)
-
-    def __call__(self, data: npt.NDArray[Any]) -> None:
-        """Shortcut to write a frame to the video."""
-        self.write(data)
-
-
-def show_video(
-    data: Sequence[npt.ArrayLike] | npt.NDArray,
-    player_width: int = 500,
-    player_height: int = 300,
-    frame_height: int | None = None,
-    frame_width: int | None = None,
-    file_name: str | os.PathLike = "temp.mp4",
-    show: str | None = "ipython",
-    **kwargs: Unpack[tuple[str, Any]],
-) -> None:
-    """Convert a series of frames to a video and display it.
-
-    Parameters
-    ----------
-    data : list or numpy.ndarray
-        The frames to join into a video
-    player_width : int
-        The width in pixels of the video player
-    player_height : int
-        The height in pixels of the video player
-    frame_height : int
-        The height in pixels of the result video (if None, it will be determined based on the first frame)
-    frame_width : int
-        The width in pixels of the result video (if None, it will be determined based on the first frame)
-    file_name : str or os.PathLike
-        The path to save the output video to
-    show : str or None
-        The method to show the video or None to not display the result (options are 'ipython', 'opencv', None)
-    **kwargs : dict
-        Other parameters for VideoWriter such as fps, codec, interpolator
-
-
-    Note
-    ----
-    Data can be in shape [frames, x, y], [frames, x, y, c], but only 1, 3, or 4 channels will work
-    """
-    defaults = {
-        "fps": 10,
-        "codec": "H264",
-        "frame_height": frame_height,
-        "frame_width": frame_width,
-        "interpolator": 1,  # 1 = cv2.InterLinear
-    }
-
-    for item, val in defaults.items():
-        if item not in kwargs:
-            kwargs[item] = val
-    if isinstance(data, list | tuple):
-        # A list/tuple of arrays
-        if hasattr(data[0], "__array__"):
-            nframes = len(data)
-            temp = np.array(data[0])
-            data_shape = temp.shape
-            ndim = temp.ndim + 1
-        else:
-            raise ValueError(f"Frames must be array-like, not {type(data[0])}")
-    elif hasattr(data, "__array__"):
-        # Array
-        data = np.array(data)
-        nframes = data.shape[0]
-        data_shape = data.shape[1:]
-        ndim = data.ndim
-    else:
-        raise ValueError(f"Unknown data type: {type(data)}")
-
-    if ndim < 2:
-        raise ValueError("Video data must have at frames, height, and width")
-    if not (ndim == 3 or (ndim == 4 and data_shape[-1] in [1, 3, 4])):
-        raise ValueError(f"Unknown video shape: {data_shape}")
-
-    if kwargs["frame_height"] is not None and kwargs["frame_width"] is not None:
-        kwargs["output_shape"] = (int(kwargs["frame_height"]), int(kwargs["frame_width"]))
-    elif kwargs["frame_height"] is not None:
-        width = data_shape[1] * (kwargs["frame_height"] / data_shape[0])
-        kwargs["output_shape"] = (int(kwargs["frame_height"]), int(width))
-    elif kwargs["frame_width"] is not None:
-        height = data_shape[0] * (kwargs["frame_width"] / data_shape[1])
-        kwargs["output_shape"] = (int(height), int(kwargs["frame_width"]))
-    else:
-        kwargs["output_shape"] = (int(data_shape[0]), int(data_shape[1]))
-
-    kwargs["output_shape"] = (int(kwargs["output_shape"][1]), int(kwargs["output_shape"][0]))
-    writer_kwargs = _extract_method_kwargs(kwargs, VideoWriter.__init__)
-    print(writer_kwargs)
-    with VideoWriter(str(file_name), **writer_kwargs) as writer:
-        for i in range(nframes):
-            writer.write(data[i])
-
-    if show == "ipython":
-        from IPython.display import Video
-
-        return Video(str(file_name), height=player_height, width=player_width)
-    elif show == "opencv":
-        raise NotImplementedError("Still working on this - use ipython for now")

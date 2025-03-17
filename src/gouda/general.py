@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterable
+import inspect
+from collections.abc import Callable, Generator, Iterable
 from typing import Any
 
 
@@ -160,3 +161,28 @@ def match_len(*args: Any, count: int | None = None, pad: str = "wrap") -> tuple[
     if count is None:
         count = max([len(item) if is_iter(item) else 1 for item in args])
     return tuple(force_len(item, count, pad=pad) for item in args), count
+
+
+def extract_method_kwargs(kwargs: dict, method: Callable, remove: bool = True) -> dict[str, Any]:
+    """Extract keyword arguments related to a given method.
+
+    Parameters
+    ----------
+    kwargs : dict
+        A dictionary of keyword arguments
+    method : func
+        A function with keyword arguments
+    remove : bool
+        Whether to remove the extracted keyword arguments from the original dict (the default is True)
+    """
+    method_params = inspect.signature(method).parameters
+    method_kwargs = {}
+    to_remove = []
+    for key, val in kwargs.items():
+        if key in method_params:
+            method_kwargs[key] = val
+            to_remove.append(key)
+    if remove:
+        for key in to_remove:
+            del kwargs[key]
+    return method_kwargs

@@ -186,28 +186,28 @@ def test_print_image(scratch_path):
 
 def test_squarify():
     test = np.random.randint(0, 255, size=[8, 200, 200])
-    result = display.squarify(test, axis=0, as_array=False)
+    result = display.squarify(test, primary_axis=0, as_array=False)
     assert len(result) == 3
     for item in result:
         assert len(item) == len(result)
     assert result[-1][-1] is None
 
-    result = display.squarify(test, axis=0, as_array=True)
+    result = display.squarify(test, primary_axis=0, as_array=True)
     assert result.shape == (3, 3, 200, 200)
     assert result[-1, -1].sum() == 0
 
     test = np.random.randint(0, 255, size=[200, 200, 8])
-    result = display.squarify(test, axis=2, as_array=True)
+    result = display.squarify(test, primary_axis=2, as_array=True)
     assert result.shape == (3, 3, 200, 200)
     assert result[-1, -1].sum() == 0
 
     test = [np.random.randint(0, 255, size=[200, 200]) for i in range(8)]
-    result = display.squarify(test, axis=2, as_array=True)
+    result = display.squarify(test, primary_axis=2, as_array=True)
     assert result.shape == (3, 3, 200, 200)
     assert result[-1, -1].sum() == 0
 
     test = [np.random.randint(0, 255, size=[200, 200]) for i in range(8)]
-    result = display.squarify(test, axis=2, as_array=False)
+    result = display.squarify(test, primary_axis=2, as_array=False)
     assert len(result) == 3
     for item in result:
         assert len(item) == len(result)
