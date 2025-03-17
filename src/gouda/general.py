@@ -129,23 +129,25 @@ def force_len(x: Any, count: int, pad: str = "wrap") -> Iterable:  # noqa: ANN40
     if not is_iter(x):
         return (x,) * count
     else:
+        result: Iterable
         if len(x) == count:
-            return x
+            result = x
         elif len(x) < count:
             if pad == "wrap":
                 result = list(x)
                 while len(result) < count:
                     diff = count - len(result)
                     result.extend(x[:diff])
-                return type(x)(result)
+                result = type(x)(result)
             elif pad == "reflect":
                 if len(x) * 2.0 < count:
                     raise ValueError("Cannot reflect enough to force length.")
-                return tuple(list(x) + list(reversed(x))[: count - len(x)])
+                result = tuple(list(x) + list(reversed(x))[: count - len(x)])
             else:
                 raise ValueError(f"Unknown padding method: {pad}.")
         else:
-            return x[:count]
+            result = x[:count]
+        return result
 
 
 def match_len(*args: Any, count: int | None = None, pad: str = "wrap") -> tuple[tuple[Iterable[Any], ...], int]:  # noqa: ANN401
