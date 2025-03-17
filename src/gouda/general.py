@@ -1,11 +1,11 @@
-"""General purpose methods that don't fit other categories"""
+"""General purpose methods that don't fit other categories."""
 
 from collections.abc import Generator, Iterable
 from typing import Any
 
 
-def getattr_recursive(item: Any, attr_string: str) -> Any:
-    """Getattr for nested attributes
+def getattr_recursive(item: Any, attr_string: str) -> Any:  # noqa: ANN401
+    """Getattr for nested attributes.
 
     Parameters
     ----------
@@ -21,16 +21,16 @@ def getattr_recursive(item: Any, attr_string: str) -> Any:
     nested_type = type(item).__name__
     cur_item = item
     for key in attr_string.split("."):
-        try:
+        if hasattr(cur_item, key):
             cur_item = getattr(cur_item, key)
-            nested_type += "." + type(cur_item).__name__
-        except AttributeError:
+        else:
             raise AttributeError(f"'{nested_type}' object has no attribute '{key}'")
+        nested_type += "." + type(cur_item).__name__
     return cur_item
 
 
-def hasattr_recursive(item: Any, attr_string: str) -> Any:
-    """Hasattr for nested attributes
+def hasattr_recursive(item: Any, attr_string: str) -> Any:  # noqa: ANN401
+    """Hasattr for nested attributes.
 
     Parameters
     ----------
@@ -45,15 +45,15 @@ def hasattr_recursive(item: Any, attr_string: str) -> Any:
     """
     cur_item = item
     for key in attr_string.split("."):
-        try:
+        if hasattr(cur_item, key):
             cur_item = getattr(cur_item, key)
-        except AttributeError:
+        else:
             return False
     return True
 
 
-def capped_cycle(iterable: Any) -> Generator[Any, None, None]:
-    """Same thing as itertools.cycle, but with the StopIteration at the end of each cycle"""
+def capped_cycle(iterable: Any) -> Generator[Any, None, None]:  # noqa: ANN401
+    """Do the same thing as itertools.cycle, but with the StopIteration at the end of each cycle."""
     saved = []
     for item in iterable:
         yield item
@@ -61,11 +61,10 @@ def capped_cycle(iterable: Any) -> Generator[Any, None, None]:
     yield StopIteration
     saved.append(StopIteration)
     while saved:  # pragma: no branch
-        for element in saved:
-            yield element
+        yield from saved
 
 
-def nestit(*iterators: Any) -> Generator[Any, None, None]:
+def nestit(*iterators: Any) -> Generator[Any, None, None]:  # noqa: ANN401
     """Combine iterators into a single nested iterator.
 
     WARNING
@@ -74,7 +73,7 @@ def nestit(*iterators: Any) -> Generator[Any, None, None]:
     """
     capped_iterators: list[Any] = [capped_cycle(item) for item in iterators]
     return_object = [next(it) for it in capped_iterators]
-    if any([item == StopIteration for item in return_object]):
+    if any(item is StopIteration for item in return_object):
         raise ValueError("Can't nest with an empty iterator")
     yield return_object
 
@@ -82,7 +81,7 @@ def nestit(*iterators: Any) -> Generator[Any, None, None]:
     while next_up != -1:
         return_object[next_up] = next(capped_iterators[next_up])
         # print(next_up, return_object)
-        if return_object[next_up] == StopIteration:
+        if return_object[next_up] is StopIteration:
             next_up -= 1
             continue
         for idx in range(next_up + 1, len(capped_iterators)):
@@ -91,8 +90,8 @@ def nestit(*iterators: Any) -> Generator[Any, None, None]:
         yield return_object
 
 
-def is_iter(x: Any, non_iter: Iterable[type] = (str, bytes, bytearray)) -> bool:
-    """Check if x is iterable
+def is_iter(x: Any, non_iter: Iterable[type] = (str, bytes, bytearray)) -> bool:  # noqa: ANN401
+    """Check if x is iterable.
 
     Parameters
     ----------
@@ -112,8 +111,8 @@ def is_iter(x: Any, non_iter: Iterable[type] = (str, bytes, bytearray)) -> bool:
         return True
 
 
-def force_len(x: Any, count: int, pad: str = "wrap") -> Iterable:
-    """Force the length of x to a given count
+def force_len(x: Any, count: int, pad: str = "wrap") -> Iterable:  # noqa: ANN401
+    """Force the length of x to a given count.
 
     Parameters
     ----------
@@ -146,8 +145,8 @@ def force_len(x: Any, count: int, pad: str = "wrap") -> Iterable:
             return x[:count]
 
 
-def match_len(*args: Any, count: int | None = None, pad: str = "wrap") -> tuple[tuple[Iterable[Any], ...], int]:
-    """Force all input items to the same length
+def match_len(*args: Any, count: int | None = None, pad: str = "wrap") -> tuple[tuple[Iterable[Any], ...], int]:  # noqa: ANN401
+    """Force all input items to the same length.
 
     Parameters
     ----------
