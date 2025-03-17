@@ -16,4 +16,8 @@ ShapeType = int | Sequence[int]
 FloatArrayType = float | np.floating | npt.NDArray[np.floating]
 LabelArrayType = bool | int | npt.NDArray[np.integer]
 ImageArrayType = npt.NDArray[np.uint8] | npt.NDArray[np.uint16]
-ColorType = str | float | int | tuple[float, float, float] | tuple[int, int, int]
+"""Type for numpy image arrays (e.g. uint8 or uint16)"""
+FullColorType = Sequence[float | int] | npt.NDArray[np.integer] | npt.NDArray[np.floating]
+"""Type for full color values (e.g. RGB, RGBA, etc.)"""
+ColorType = str | float | int | FullColorType
+"""Type for color values (e.g. str, float, int, or full color values)"""
