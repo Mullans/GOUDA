@@ -1,7 +1,13 @@
+"""Functions for color conversion, color distance, and color palette generation."""
+
+from __future__ import annotations
+
 import copy
-import numpy as np
+from collections.abc import Sequence
 from enum import Enum
-from typing import Callable, Union
+
+import numpy as np
+import numpy.typing as npt
 
 # NOTE - Color distance and color palette generation functions in this file are adapted from media lab's javascript iwanthue library - https://medialab.github.io/iwanthue/js/libs/chroma.palette-gen.js
 # NOTE - Color distance conversion functions are adapted from the chroma.js library - https://github.com/gka/chroma.js
@@ -12,28 +18,43 @@ from typing import Callable, Union
 
 LAB_CONSTANTS = {
     # Corresponds roughly to RGB brighter/darker
-    'Kn': 18.0,
-
+    "Kn": 18.0,
     # D65 standard XYZ values normalized to Y = 1
-    'Xn': 0.950470,
-    'Yn': 1.0,
-    'Zn': 1.088830,
-
-    't0': 0.137931034,  # 4 / 29
-    't1': 0.206896552,  # 6 / 29
-    't2': 0.12841855,   # 3 * t1 * t1
-    't3': 0.008856452,  # t1 * t1 * t1
+    "Xn": 0.950470,
+    "Yn": 1.0,
+    "Zn": 1.088830,
+    "t0": 0.137931034,  # 4 / 29
+    "t1": 0.206896552,  # 6 / 29
+    "t2": 0.12841855,  # 3 * t1 * t1
+    "t3": 0.008856452,  # t1 * t1 * t1
 }
 
 
 class Deficiency(Enum):
-    PROTAN = 0
-    DEUTAN = 1
-    TRITAN = 2
+    """Color vision deficiency types."""
+
+    PROTAN = 0  # Protanope
+    DEUTAN = 1  # Deuteranope
+    TRITAN = 2  # Tritanope
+
+    @classmethod
+    def get(cls, value: int | str | Deficiency) -> Deficiency:
+        """Get the deficiency enum value from an int, str, or Deficiency enum value."""
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, str):
+            try:
+                return cls[value.upper()[:6]]
+            except KeyError as e:
+                raise ValueError(
+                    f"Invalid deficiency name: {value}. Can be one of {list(cls.__members__.keys())}"
+                ) from e
+        if isinstance(value, int):
+            return cls(value)
+        raise ValueError(f"Invalid deficiency value: {value}. Can be one of {list(cls.__members__.keys())}")
 
 
 # COLOR CONVERSIONS #################
-
 def sRGB2linearRGB(arr: np.ndarray) -> np.ndarray:
     """Convert sRGB to linearRGB, removing the gamma correction.
 
@@ -58,7 +79,7 @@ def sRGB2linearRGB(arr: np.ndarray) -> np.ndarray:
     return out
 
 
-def linearRGB2sRGB(arr: np.ndarray) -> np.ndarray:
+def linearRGB2sRGB(arr: np.ndarray) -> npt.NDArray[np.float32 | np.uint8]:
     """Convert linearRGB to sRGB, applying the gamma correction.
 
     Parameters
@@ -72,7 +93,7 @@ def linearRGB2sRGB(arr: np.ndarray) -> np.ndarray:
         arr = arr.astype(np.float32) / 255.0
         convert_back = True
     out = np.zeros_like(arr)
-    arr = np.clip(arr, 0., 1.)
+    arr = np.clip(arr, 0.0, 1.0)
     small_mask = arr < 0.0031308
     large_mask = np.logical_not(small_mask)
     out[small_mask] = arr[small_mask] * 12.92
@@ -84,21 +105,21 @@ def linearRGB2sRGB(arr: np.ndarray) -> np.ndarray:
 
 
 def lab2rgb(lab: np.ndarray) -> np.ndarray:
-    """Convert a CIE L*a*b* color to RGB
+    """Convert a CIE L*a*b* color to RGB.
 
     Parameters
     ----------
     lab : np.ndarray
         CIE L*a*b* color to convert to RGB, should have shape [3,]
     """
-    l, a, b = lab
-    y = (l + 16.0) / 116.0
-    x = y + a / 500.0  # if y is not Nan else y
-    z = y - b / 200.0  # if y is not Nan else y
+    lightness, a_star, b_star = lab
+    y = (lightness + 16.0) / 116.0
+    x = y + a_star / 500.0  # if y is not Nan else y
+    z = y - b_star / 200.0  # if y is not Nan else y
 
-    y = LAB_CONSTANTS['Yn'] * lab_xyz(y)
-    x = LAB_CONSTANTS['Xn'] * lab_xyz(x)
-    z = LAB_CONSTANTS['Zn'] * lab_xyz(z)
+    y = LAB_CONSTANTS["Yn"] * lab_xyz(y)
+    x = LAB_CONSTANTS["Xn"] * lab_xyz(x)
+    z = LAB_CONSTANTS["Zn"] * lab_xyz(z)
 
     r = _xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z)  # D65 -> sRGB
     g = _xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z)
@@ -106,8 +127,8 @@ def lab2rgb(lab: np.ndarray) -> np.ndarray:
     return np.round([r, g, b_]).astype(np.uint8)
 
 
-def rgb2lab(rgb):
-    """Convert an RGB color to CIE L*a*b*
+def rgb2lab(rgb: Sequence[float]) -> tuple[float, float, float]:
+    """Convert an RGB color to CIE L*a*b*.
 
     Parameters
     ----------
@@ -120,18 +141,18 @@ def rgb2lab(rgb):
     return max(0, light), 500 * (x - y), 200 * (y - z)
 
 
-def _rgb2xyz(r, g, b):
+def _rgb2xyz(r: float, g: float, b: float) -> tuple[float, float, float]:
     r = _rgb_xyz(r)
     g = _rgb_xyz(g)
     b = _rgb_xyz(b)
-    x = _xyz_lab((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB_CONSTANTS['Xn'])
-    y = _xyz_lab((0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / LAB_CONSTANTS['Yn'])
-    z = _xyz_lab((0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / LAB_CONSTANTS['Zn'])
+    x = _xyz_lab((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB_CONSTANTS["Xn"])
+    y = _xyz_lab((0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / LAB_CONSTANTS["Yn"])
+    z = _xyz_lab((0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / LAB_CONSTANTS["Zn"])
     return x, y, z
 
 
-def _rgb_xyz(r):
-    r /= 255
+def _rgb_xyz(r: float) -> float:
+    r /= 255.0
     if r <= 0.04045:
         return r / 12.92
     else:
@@ -139,106 +160,99 @@ def _rgb_xyz(r):
 
 
 def _xyz_rgb(r: float) -> float:
-    if r <= 0.00304:
-        result = 12.92 * r
-    else:
-        result = 1.055 * np.power(r, 1 / 2.4) - 0.055
+    result = 12.92 * r if r <= 0.00304 else 1.055 * np.power(r, 1 / 2.4) - 0.055
     return 255 * result
 
 
-def lab_xyz(t):
-    if t > LAB_CONSTANTS['t1']:
-        return t ** 3.0
+def lab_xyz(t: float) -> float:
+    """Convert a CIE L*a*b* color to CIEXYZ color space."""
+    if t > LAB_CONSTANTS["t1"]:
+        return t**3.0
     else:
-        return LAB_CONSTANTS['t2'] * (t - LAB_CONSTANTS['t0'])
+        return LAB_CONSTANTS["t2"] * (t - LAB_CONSTANTS["t0"])
 
 
-def _xyz_lab(t):
-    if t > LAB_CONSTANTS['t3']:
+def _xyz_lab(t: float) -> float:
+    if t > LAB_CONSTANTS["t3"]:
         return np.power(t, 1 / 3.0)
     else:
-        return t / LAB_CONSTANTS['t2'] + LAB_CONSTANTS['t0']
+        return t / LAB_CONSTANTS["t2"] + LAB_CONSTANTS["t0"]
 
 
 def validate_lab(lab: np.ndarray) -> bool:
-    """Validate that a CIE L*a*b* color is within the valid range for both L*a*b* and RGB colors
+    """Validate that a CIE L*a*b* color is within the valid range for both L*a*b* and RGB colors.
 
     Parameters
     ----------
     lab : np.ndarray
         The CIE L*a*b* color to validate
     """
-    l, a, b = lab
-    l_check = l >= 0 and l <= 100
-    a_check = a >= -128 and a <= 128
-    b_check = b >= -128 and b <= 128
+    lightness, a_star, b_star = lab
+    l_check = lightness >= 0 and lightness <= 100
+    a_check = a_star >= -128 and a_star <= 128
+    b_check = b_star >= -128 and b_star <= 128
     if not (l_check and a_check and b_check):
         return False
-    y = (l + 16) / 116
-    x = y + a / 500
-    z = y - b / 200
-    y = LAB_CONSTANTS['Yn'] * lab_xyz(y)
-    x = LAB_CONSTANTS['Xn'] * lab_xyz(x)
-    z = LAB_CONSTANTS['Zn'] * lab_xyz(z)
+    y = (lightness + 16) / 116
+    x = y + a_star / 500
+    z = y - b_star / 200
+    y = LAB_CONSTANTS["Yn"] * lab_xyz(y)
+    x = LAB_CONSTANTS["Xn"] * lab_xyz(x)
+    z = LAB_CONSTANTS["Zn"] * lab_xyz(z)
 
     r = _xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z)
     g = _xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z)
-    b = _xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z)
+    b_star = _xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z)
 
     r_check = r >= 0 and r <= 255
     g_check = g >= 0 and g <= 255
-    b_check = b >= 0 and b <= 255
+    b_check = b_star >= 0 and b_star <= 255
     return r_check and g_check and b_check
 
 
 # COLORBLIND SIMULATION #############
 
-def _plane_projection_matrix(normal, deficiency: Deficiency):
+
+def _plane_projection_matrix(normal: npt.NDArray[np.float32], deficiency: Deficiency) -> npt.NDArray[np.float32]:
     if deficiency == Deficiency.PROTAN:
-        return np.array([
-            [0., -normal[1] / normal[0], -normal[2] / normal[0]],
-            [0, 1, 0],
-            [0, 0, 1]
-        ])
+        return np.array([[0.0, -normal[1] / normal[0], -normal[2] / normal[0]], [0, 1, 0], [0, 0, 1]])
     elif deficiency == Deficiency.DEUTAN:
-        return np.array([
-            [1, 0, 0],
-            [-normal[0] / normal[1], 0, -normal[2] / normal[1]],
-            [0, 0, 1]
-        ])
+        return np.array([[1, 0, 0], [-normal[0] / normal[1], 0, -normal[2] / normal[1]], [0, 0, 1]])
     elif deficiency == Deficiency.TRITAN:
-        return np.array([
-            [1, 0, 0],
-            [0, 1, 0],
-            [-normal[0] / normal[2], -normal[1] / normal[2], 0]
-        ])
+        return np.array([[1, 0, 0], [0, 1, 0], [-normal[0] / normal[2], -normal[1] / normal[2], 0]])
     else:
         raise ValueError("Unknown color deficiency")
 
 
-class CVD_Simulator(object):
-    """Color vision deficiency simulator adapted from the DaltonLens implementation of (Brettel, Viénot & Mollon, 1997) 'Computerized simulation of color appearance for dichromats' - https://daltonlens.org/colorblindness-simulator
+class CVDSimulator:
+    """Color vision deficiency simulator adapted from the DaltonLens implementation of (Brettel, Viénot & Mollon, 1997) 'Computerized simulation of color appearance for dichromats' - https://daltonlens.org/colorblindness-simulator.
 
-    NOTE
-    ----
+    Notes
+    -----
     The DaltonLens implementation offers significantly more configurations. This is only their Brettel1997 implementation without Vischeck anchors, using white as the neutral color, and using similar values as their SmithPokorny75 LMS color model. A lot of values here have been pre-computed, so check out https://github.com/DaltonLens for their work.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # XYZJuddVos_from_linearRGB_BT709 @ LMS_from_XYZJuddVos_Smith_Pokorny_1975
-        self._LMS_from_linearRGB = np.array([[1.78824041e-01, 4.35160906e-01, 4.11934969e-02],
-                                             [3.45564232e-02, 2.71553825e-01, 3.86713084e-02],
-                                             [2.99565576e-04, 1.84308960e-03, 1.46708614e-02]])
+        self._LMS_from_linearRGB = np.array(
+            [
+                [1.78824041e-01, 4.35160906e-01, 4.11934969e-02],
+                [3.45564232e-02, 2.71553825e-01, 3.86713084e-02],
+                [2.99565576e-04, 1.84308960e-03, 1.46708614e-02],
+            ]
+        )
         self._linearRGB_from_LMS = np.linalg.inv(self._LMS_from_linearRGB)
         self._lms_neutral = self._LMS_from_linearRGB @ np.array([1.0, 1.0, 1.0])
         self._precomputed = {}
 
-    def simulate_cvd_color(self, base_color, deficiency: Deficiency, severity: float = 1.0):
-        """Simulate the appearance of a color for the given color vision deficiency
+    def simulate_cvd_color(
+        self, base_color: npt.NDArray[np.uint8], deficiency: Deficiency, severity: float = 1.0
+    ) -> npt.NDArray[np.uint8]:
+        """Simulate the appearance of a color for the given color vision deficiency.
 
         Parameters
         ----------
-        base_color : np.ndarray
+        base_color : npt.NDArray[np.uint8]
             The input sRGB color as a uint8 array with shape (3,) and values in [0,255]
         deficiency : Deficiency
             The color vision deficiency to simulate.
@@ -260,8 +274,10 @@ class CVD_Simulator(object):
 
         return (np.clip(cvd_float, 0.0, 1.0) * 255.0).astype(np.uint8)
 
-    def simulate_cvd_image(self, image, deficiency: Deficiency, severity: float = 1.0):
-        """Simulate the appearance of an image for the given color vision deficiency
+    def simulate_cvd_image(
+        self, image: npt.NDArray[np.uint8], deficiency: Deficiency, severity: float = 1.0
+    ) -> npt.NDArray[np.float32]:
+        """Simulate the appearance of an image for the given color vision deficiency.
 
         Parameters
         ----------
@@ -286,28 +302,32 @@ class CVD_Simulator(object):
 
         return (np.clip(im_cvd_float, 0.0, 1.0) * 255.0).astype(np.uint8)
 
-    def _simulate_cvd_linear_rgb(self, image_linear_rgb_float32, deficiency: Deficiency, severity: float):
-        if deficiency == Deficiency.PROTAN or deficiency == Deficiency.DEUTAN:
-            H1, H2, n_sep_plane = self._compute_matrices(deficiency)
-        elif deficiency == Deficiency.TRITAN:
-            H1, H2, n_sep_plane = self._compute_matrices(deficiency)
-        else:
-            raise ValueError("Unknown color deficiency")
+    def _simulate_cvd_linear_rgb(
+        self, image_linear_rgb_float32: npt.NDArray[np.float32], deficiency: Deficiency, severity: float
+    ) -> npt.NDArray[np.float32]:
+        """Simulate the appearance of a linear RGB color for the given color vision deficiency."""
+        # if deficiency == Deficiency.PROTAN or deficiency == Deficiency.DEUTAN:
+        #     h1, h2, n_sep_plane = self._compute_matrices(deficiency)
+        # elif deficiency == Deficiency.TRITAN:
+        #     h1, h2, n_sep_plane = self._compute_matrices(deficiency)
+        # else:
+        #     raise ValueError("Unknown color deficiency")
+        h1, h2, n_sep_plane = self._compute_matrices(deficiency)
 
         im_lms = image_linear_rgb_float32 @ self._LMS_from_linearRGB.T
-        im_H1 = im_lms @ H1.T
-        im_H2 = im_lms @ H2.T
-        H2_indices = np.dot(im_lms, n_sep_plane) < 0
+        im_h1 = im_lms @ h1.T
+        im_h2 = im_lms @ h2.T
+        h2_indices = np.dot(im_lms, n_sep_plane) < 0
 
-        im_H1[H2_indices] = im_H2[H2_indices]
-        im_dichromacy = im_H1 @ self._linearRGB_from_LMS.T
+        im_h1[h2_indices] = im_h2[h2_indices]
+        im_dichromacy = im_h1 @ self._linearRGB_from_LMS.T
 
         if severity < 1.0:
             return im_dichromacy * severity + image_linear_rgb_float32 * (1.0 - severity)
         else:
             return im_dichromacy
 
-    def _compute_matrices(self, deficiency):
+    def _compute_matrices(self, deficiency: Deficiency) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         if deficiency in self._precomputed:
             return self._precomputed[deficiency]
 
@@ -326,16 +346,23 @@ class CVD_Simulator(object):
         if np.dot(n_sep_plane, lms_on_wing1) < 0:
             n1, n2 = n2, n1
             lms_on_wing1, lms_on_wing2 = lms_on_wing2, lms_on_wing1
-        H1 = _plane_projection_matrix(n1, deficiency)
-        H2 = _plane_projection_matrix(n2, deficiency)
-        self._precomputed[deficiency] = (H1, H2, n_sep_plane)
-        return (H1, H2, n_sep_plane)
+        h1 = _plane_projection_matrix(n1, deficiency)
+        h2 = _plane_projection_matrix(n2, deficiency)
+        self._precomputed[deficiency] = (h1, h2, n_sep_plane)
+        return (h1, h2, n_sep_plane)
 
 
 # COLOR DISTANCES ###################
 
-def get_color_distance(color1: np.ndarray, color2: np.ndarray, dist_type: str = 'euclidean', colorblind_simulator: CVD_Simulator = None, from_rgb: bool = False) -> float:
-    """Compute the distance between two CIE L*a*b* colors
+
+def get_color_distance(
+    color1: np.ndarray,
+    color2: np.ndarray,
+    dist_type: str | Deficiency = "euclidean",
+    colorblind_simulator: CVDSimulator = None,
+    from_rgb: bool = False,
+) -> float:
+    """Compute the distance between two CIE L*a*b* colors.
 
     Parameters
     ----------
@@ -359,20 +386,25 @@ def get_color_distance(color1: np.ndarray, color2: np.ndarray, dist_type: str = 
         color1 = rgb2lab(color1)
         color2 = rgb2lab(color2)
     dist_type = dist_type.lower()
-    if dist_type == 'euclidean':
-        return euclidean_distance(color1, color2)
-    elif dist_type == 'cmc':
-        return cmc_distance(color1, color2, 2, 1)
-    elif dist_type == 'compromise':
-        return compromise_distance(color1, color2, colorblind_simulator)
+    try:
+        dist_type = Deficiency.get(dist_type)
+    except ValueError:
+        pass
+    if dist_type == "euclidean":
+        result = euclidean_distance(color1, color2)
+    elif dist_type == "cmc":
+        result = cmc_distance(color1, color2, 2, 1)
+    elif dist_type == "compromise":
+        result = compromise_distance(color1, color2, colorblind_simulator)
     elif isinstance(dist_type, Deficiency):
-        return colorblind_distance(color1, color2, dist_type, colorblind_simulator)
+        result = colorblind_distance(color1, color2, dist_type, colorblind_simulator)
     else:
-        raise ValueError('Unknown color distance type')
+        raise ValueError("Unknown color distance type")
+    return result
 
 
 def euclidean_distance(color1: np.ndarray, color2: np.ndarray) -> float:
-    """Return the euclidean distance between two colors
+    """Return the euclidean distance between two colors.
 
     Parameters
     ----------
@@ -416,29 +448,29 @@ def cmc_distance(lab_color1: np.ndarray, lab_color2: np.ndarray, lightness: int 
     float
         The distance between the colors
     """
-    L1, a1, b1 = lab_color1
-    L2, a2, b2 = lab_color2
+    l1, a1, b1 = lab_color1
+    l2, a2, b2 = lab_color2
 
-    C1 = np.sqrt(a1 ** 2 + b1 ** 2)
-    C2 = np.sqrt(a2 ** 2 + b2 ** 2)
-    deltaC = C1 - C2
-    deltaL = L1 - L2
-    deltaa = a1 - a2
-    deltab = b1 - b2
-    deltaH = np.sqrt(deltaa ** 2 + deltab ** 2 - deltaC ** 2)
-    H1 = np.arctan2(b1, a1) * (180 / np.pi)
-    while H1 < 0:
-        H1 += 360
-    F = np.sqrt(C1 ** 4 / (C1 ** 4 + 1900))
-    T = 0.56 + np.abs(0.2 * np.cos(H1 + 168)) if 164 <= H1 and H1 <= 345 else 0.36 + np.abs(0.4 * np.cos(H1 + 35))
-    S_L = 0.511 if lab_color1[0] < 16 else (0.040975 * L1 / (1 + 0.01765 * L1))
-    S_C = (0.0638 * C1 / (1 + 0.0131 * C1)) + 0.638
-    S_H = S_C * (F * T + 1 - F)
-    return np.sqrt((deltaL / (lightness * S_L)) ** 2 + (deltaC / (chroma * S_C)) ** 2 + (deltaH / S_H) ** 2)
+    c1 = np.sqrt(a1**2 + b1**2)
+    c2 = np.sqrt(a2**2 + b2**2)
+    delta_c = c1 - c2
+    delta_l = l1 - l2
+    delta_a = a1 - a2
+    delta_b = b1 - b2
+    delta_h = np.sqrt(delta_a**2 + delta_b**2 - delta_c**2)
+    h1 = np.arctan2(b1, a1) * (180 / np.pi)
+    while h1 < 0:
+        h1 += 360
+    f = np.sqrt(c1**4 / (c1**4 + 1900))
+    t = 0.56 + np.abs(0.2 * np.cos(h1 + 168)) if (164 <= h1 <= 345) else 0.36 + np.abs(0.4 * np.cos(h1 + 35))
+    s_l = 0.511 if lab_color1[0] < 16 else (0.040975 * l1 / (1 + 0.01765 * l1))
+    s_c = (0.0638 * c1 / (1 + 0.0131 * c1)) + 0.638
+    s_h = s_c * (f * t + 1 - f)
+    return np.sqrt((delta_l / (lightness * s_l)) ** 2 + (delta_c / (chroma * s_c)) ** 2 + (delta_h / s_h) ** 2)
 
 
-def compromise_distance(color1: np.ndarray, color2: np.ndarray, colorblind_simulator: CVD_Simulator) -> float:
-    """Return the CMC distance between two CIE L*a*b* colors weighted across their colorblind representations
+def compromise_distance(color1: np.ndarray, color2: np.ndarray, colorblind_simulator: CVDSimulator) -> float:
+    """Return the CMC distance between two CIE L*a*b* colors weighted across their colorblind representations.
 
     Parameters
     ----------
@@ -464,14 +496,14 @@ def compromise_distance(color1: np.ndarray, color2: np.ndarray, colorblind_simul
         lab_color1 = rgb2lab(cvd_color1)
         lab_color2 = rgb2lab(cvd_color2)
         if lab_color1 is None or lab_color2 is None:
-            if type == 'Protanope':
+            if deficiency == Deficiency.PROTAN:
                 c = 100
-            elif type == 'Deuteranope':
+            elif deficiency == Deficiency.DEUTAN:
                 c = 500
-            elif type == 'Tritanope':
+            elif deficiency == Deficiency.TRITAN:
                 c = 1
             else:
-                raise ValueError('Impossible situation')
+                raise ValueError("Impossible situation")
             distances.append(cmc_distance(lab_color1, lab_color2, 2, 1))
             coeffs.append(c)
     total = 0
@@ -482,8 +514,10 @@ def compromise_distance(color1: np.ndarray, color2: np.ndarray, colorblind_simul
     return total / count
 
 
-def colorblind_distance(color1: np.ndarray, color2: np.ndarray, deficiency: Deficiency, colorblind_simulator: CVD_Simulator) -> float:
-    """Return the CMC distance between two CIE L*a*b* colors when converted to a completely colorblind representation
+def colorblind_distance(
+    color1: np.ndarray, color2: np.ndarray, deficiency: Deficiency, colorblind_simulator: CVDSimulator
+) -> float:
+    """Return the CMC distance between two CIE L*a*b* colors when converted to a completely colorblind representation.
 
     Parameters
     ----------
@@ -510,8 +544,18 @@ def colorblind_distance(color1: np.ndarray, color2: np.ndarray, deficiency: Defi
 
 # COLOR PALETTES
 
-def generate_palette(num_colors: int, check_color: Callable[[np.ndarray], bool] = lambda x: True, force_mode: bool = True, quality: int = 50, ultra_precision: bool = False, distance_type: Union[str, Deficiency] = 'compromise', as_rgb: bool = True, seed: Union[None, int, np.random.Generator] = None) -> list[np.ndarray]:
-    """Generate a perceptually differentiable color palette
+
+def generate_palette(
+    num_colors: int,
+    check_color: callable[[np.ndarray], bool] = lambda x: True,
+    force_mode: bool = True,
+    quality: int = 50,
+    ultra_precision: bool = False,
+    distance_type: str | Deficiency = "compromise",
+    as_rgb: bool = True,
+    seed: None | int | np.random.Generator = None,
+) -> list[np.ndarray]:
+    """Generate a perceptually differentiable color palette.
 
     Parameters
     ----------
@@ -529,7 +573,7 @@ def generate_palette(num_colors: int, check_color: Callable[[np.ndarray], bool] 
         The method to use when computing color distance (can be "euclidean", "cmc", "compromise" or a Deficiency enum value), by default 'compromise'
     as_rgb : bool, optional
         Whether to return colors as RGB (True) or CIE L*a*b* (False), by default True
-    seed : Union[None, int, np.random.Generator], optional
+    seed : None | int | np.random.Generator, optional
         A seed for the random generator, by default None
 
     Returns
@@ -542,17 +586,18 @@ def generate_palette(num_colors: int, check_color: Callable[[np.ndarray], bool] 
     If a Deficiency enum value is passed for `distance_type`, colors will be optimized for that colorblindness type using "cmc" distance
     """
     random = np.random.default_rng(seed)
-    colorblind_simulator = CVD_Simulator()
+    colorblind_simulator = CVDSimulator()
 
-    def check_lab(x):
+    def check_lab(x: tuple[float, float, float]) -> bool:
         return validate_lab(x) and check_color(x)
+
     if force_mode:  # force vector mode
         colors = []
         vectors = {}
-        for i in range(num_colors):
+        for _ in range(num_colors):
             color = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
             while not check_lab(color):
-                color = [100 * np.random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
+                color = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
             colors.append(color)
 
         repulsion = 100
@@ -560,7 +605,7 @@ def generate_palette(num_colors: int, check_color: Callable[[np.ndarray], bool] 
         steps = quality * 20
         for _ in range(steps):
             for i in range(len(colors)):
-                vectors[i] = {'dl': 0, 'da': 0, 'db': 0}
+                vectors[i] = {"dl": 0, "da": 0, "db": 0}
             for i in range(len(colors)):
                 color_a = colors[i]
                 for j in range(i):
@@ -575,30 +620,36 @@ def generate_palette(num_colors: int, check_color: Callable[[np.ndarray], bool] 
                         print(color_a, color_b)
                         raise
                     if d > 0:
-                        force = repulsion / (d ** 2)
-                        vectors[i]['dl'] += dl * force / d
-                        vectors[i]['da'] += da * force / d
-                        vectors[i]['db'] += db * force / d
+                        force = repulsion / (d**2)
+                        vectors[i]["dl"] += dl * force / d
+                        vectors[i]["da"] += da * force / d
+                        vectors[i]["db"] += db * force / d
 
-                        vectors[j]['dl'] += -dl * force / d
-                        vectors[j]['da'] += -da * force / d
-                        vectors[j]['db'] += -db * force / d
+                        vectors[j]["dl"] += -dl * force / d
+                        vectors[j]["da"] += -da * force / d
+                        vectors[j]["db"] += -db * force / d
                     else:
-                        vectors[j]['dl'] += 2 - 4 * random.random()
-                        vectors[j]['da'] += 2 - 4 * random.random()
-                        vectors[j]['db'] += 2 - 4 * random.random()
+                        vectors[j]["dl"] += 2 - 4 * random.random()
+                        vectors[j]["da"] += 2 - 4 * random.random()
+                        vectors[j]["db"] += 2 - 4 * random.random()
 
             for i in range(len(colors)):
                 color = colors[i]
-                displacement = speed * np.sqrt(np.power(vectors[i]['dl'], 2) + np.power(vectors[i]['da'], 2) + np.power(vectors[i]['db'], 2))
+                displacement = speed * np.sqrt(
+                    np.power(vectors[i]["dl"], 2) + np.power(vectors[i]["da"], 2) + np.power(vectors[i]["db"], 2)
+                )
                 if displacement > 0:
                     ratio = speed * min(0.1, displacement) / displacement
-                    candidate_lab = [color[0] + vectors[i]['dl'] * ratio, color[1] + vectors[i]['da'] * ratio, color[2] + vectors[i]['db'] * ratio]
+                    candidate_lab = [
+                        color[0] + vectors[i]["dl"] * ratio,
+                        color[1] + vectors[i]["da"] * ratio,
+                        color[2] + vectors[i]["db"] * ratio,
+                    ]
                     if check_lab(candidate_lab):
                         colors[i] = candidate_lab
     else:
         k_means = []
-        for i in range(num_colors):
+        for _ in range(num_colors):
             lab = [100 * random.random(), 100 * (2 * random.random() - 1), 100 * (2 * random.random() - 1)]
             failsafe = 10
             while not check_color(lab) and failsafe > 0:
@@ -650,20 +701,27 @@ def generate_palette(num_colors: int, check_color: Callable[[np.ndarray], bool] 
                     candidate_kmean[0] /= count
                     candidate_kmean[1] /= count
                     candidate_kmean[2] /= count
-                if count != 0 and check_color(candidate_kmean):  # and candidate_kmean  # Is this an existance check? Why?
+                if count != 0 and check_color(
+                    candidate_kmean
+                ):  # and candidate_kmean  # Is this an existance check? Why?
                     k_means[j] = candidate_kmean
                 else:
                     if len(free_color_samples) > 0:
                         min_distance = np.inf
                         closest = -1
                         for i in range(len(color_samples)):
-                            distance = get_color_distance(color_samples[1], candidate_kmean, distance_type, colorblind_simulator)
+                            distance = get_color_distance(
+                                color_samples[1], candidate_kmean, distance_type, colorblind_simulator
+                            )
                             if distance < min_distance:
                                 min_distance = distance
                                 closest = i
                         if closest >= 0:
                             k_means[j] = color_samples[closest]
-                free_color_samples = filter(lambda x: x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2], free_color_samples)
+                free_color_samples = filter(
+                    lambda x: x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2],
+                    free_color_samples,
+                )
                 free_color_samples = list(free_color_samples)
         colors = k_means
     if as_rgb:

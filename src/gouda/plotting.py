@@ -1,17 +1,19 @@
 """matplotlib plotting and helper methods"""
+
+from collections.abc import Iterable
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
-from typing import Iterable, Optional, Union
 
 from gouda.data_methods import line_dist, rescale, segment_line
 from gouda.general import is_iter
 from gouda.typing import ColorType
 
 
-def parse_color(color: ColorType, float_cmap='viridis', int_cmap='Set1') -> tuple[float, float, float]:
+def parse_color(color: ColorType, float_cmap="viridis", int_cmap="Set1") -> tuple[float, float, float]:
     """Convert the input to a rgb color
 
     NOTE
@@ -26,14 +28,14 @@ def parse_color(color: ColorType, float_cmap='viridis', int_cmap='Set1') -> tupl
     except ValueError:
         if isinstance(color, str):
             # Format is comma- and/or space-separated values
-            bad_chars = str.maketrans({item: '' for item in '()[]'})
+            bad_chars = str.maketrans(dict.fromkeys("()[]", ""))
             color.translate(bad_chars)
-            if ', ' in color:
-                divided = color.split(', ')
-            elif ',' in color:
-                divided = color.split(',')
+            if ", " in color:
+                divided = color.split(", ")
+            elif "," in color:
+                divided = color.split(",")
             else:
-                divided = color.split(' ')
+                divided = color.split(" ")
             rgb = np.array(divided).astype(np.float32)
             return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
         elif isinstance(color, float):
@@ -62,11 +64,11 @@ def plot_accuracy_curve(acc, thresh, label_height=0.5, line_args={}, thresh_args
     thresh_args : dict
         A dictionary of keyword arguments to pass when plotting the threshold vline
     """
-    line_defaults = {'color': 'black', 'label': 'accuracy'}
+    line_defaults = {"color": "black", "label": "accuracy"}
     for key in line_defaults:
         if key not in line_args:
             line_args[key] = line_defaults[key]
-    thresh_defaults = {'color': 'r', 'label': 'best threshold'}
+    thresh_defaults = {"color": "r", "label": "best threshold"}
     for key in thresh_defaults:
         if key not in thresh_args:
             thresh_args[key] = thresh_defaults[key]
@@ -80,42 +82,34 @@ def plot_accuracy_curve(acc, thresh, label_height=0.5, line_args={}, thresh_args
     plt.ylim(0, 1)
     plt.xlim(0, 1)
     if label_height is not None:
-        plt.text(best_thresh + 0.01, label_height, "{:.2f}% @ {:.2f}".format(best_acc * 100, best_thresh))
-    plt.xlabel('Prediction Threshold')
-    plt.ylabel('Accuracy')
+        plt.text(best_thresh + 0.01, label_height, f"{best_acc * 100:.2f}% @ {best_thresh:.2f}")
+    plt.xlabel("Prediction Threshold")
+    plt.ylabel("Accuracy")
 
 
 def quick_line(x1, x2, y1, ytop, y2, lw=1):
     """Generate a path in matplotlib"""
-    verts = [
-        (x1, y1),
-        (x1, ytop),
-        (x2, ytop),
-        (x2, y2)
-    ]
-    codes = [
-        Path.MOVETO,
-        Path.LINETO,
-        Path.LINETO,
-        Path.LINETO
-    ]
+    verts = [(x1, y1), (x1, ytop), (x2, ytop), (x2, y2)]
+    codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO]
     path = Path(verts, codes)
     patch = PathPatch(path, fill=False, lw=1)
     return patch
 
 
-def annotate_arrows(ax,
-                    text,
-                    start_point,
-                    end_points,
-                    y_top=None,
-                    line_width=1,
-                    direction='left',
-                    x_spacing=0.05,
-                    y_spacing=0.07,
-                    y_top_spacing=0.02,
-                    repeat_text=True,
-                    text_spacing=0.02):
+def annotate_arrows(
+    ax,
+    text,
+    start_point,
+    end_points,
+    y_top=None,
+    line_width=1,
+    direction="left",
+    x_spacing=0.05,
+    y_spacing=0.07,
+    y_top_spacing=0.02,
+    repeat_text=True,
+    text_spacing=0.02,
+):
     """Add arrows that start at a point, go upwards, go over, and then descend to another point - mostly useful for bar graphs
 
     Parameters
@@ -145,14 +139,14 @@ def annotate_arrows(ax,
     text_spacing : bool
         extra spacing between lines if text repeated
     """
-    end_points = sorted(end_points, key=lambda x: x[0], reverse=direction == 'left')
+    end_points = sorted(end_points, key=lambda x: x[0], reverse=direction == "left")
     if not repeat_text:
-        text_spacing = 0.
+        text_spacing = 0.0
     if y_top is None:
         y_top = max([point[1] for point in end_points] + [start_point[1]]) + y_top_spacing + y_spacing
 
     x_jitter = np.arange(len(end_points)) * x_spacing
-    x_jitter -= x_jitter[-1] / 2.
+    x_jitter -= x_jitter[-1] / 2.0
 
     # best_mid = [0, None]
     x_start, y_start = start_point
@@ -164,16 +158,28 @@ def annotate_arrows(ax,
         max_y = y_top + (y_top_spacing + text_spacing) * i
         line = quick_line(x_start + x_jitter[i], x_end, y_start, max_y, y_end, lw=line_width)
         if repeat_text:
-            ax.annotate(text, xy=((x_start + x_end) / 2., max_y), ha='center', va='bottom', zorder=10)
+            ax.annotate(text, xy=((x_start + x_end) / 2.0, max_y), ha="center", va="bottom", zorder=10)
         ax.add_patch(line)
 
     x_vals = [point[0] for point in end_points] + [x_start]
-    mid_x = (min(x_vals) + max(x_vals)) / 2.
+    mid_x = (min(x_vals) + max(x_vals)) / 2.0
     if not repeat_text:
-        ax.annotate(text, xy=(mid_x, y_top + y_top_spacing * (len(end_points) - 1)), ha='center', va='bottom', zorder=10)
+        ax.annotate(
+            text, xy=(mid_x, y_top + y_top_spacing * (len(end_points) - 1)), ha="center", va="bottom", zorder=10
+        )
 
 
-def colorplot(x: Iterable, y: Iterable, ax: Optional[mpl.axes.Axes] = None, cmap: Union[mpl.colors.Colormap, str] = 'jet', step_size: float = 0.01, step_as_percent=True, start_val: float = 0.0, end_val: float = 1.0, **kwargs) -> plt.Axes:
+def colorplot(
+    x: Iterable,
+    y: Iterable,
+    ax: mpl.axes.Axes | None = None,
+    cmap: mpl.colors.Colormap | str = "jet",
+    step_size: float = 0.01,
+    step_as_percent=True,
+    start_val: float = 0.0,
+    end_val: float = 1.0,
+    **kwargs,
+) -> plt.Axes:
     """Plot a line with a color gradient
 
     Parameters
@@ -209,9 +215,9 @@ def colorplot(x: Iterable, y: Iterable, ax: Optional[mpl.axes.Axes] = None, cmap
     Each line segment will always be at least 1 step along the color gradient. If the line segment is longer than 1 step, the segment will be subdivided into smaller segments of approximately length `step_size` (see :meth:`gouda.segment_line` for details).
     """
     if not (is_iter(x) and is_iter(y)):
-        raise ValueError('x and y must be iterables of values to plot')
+        raise ValueError("x and y must be iterables of values to plot")
     if len(x) != len(y):
-        raise ValueError('x and y must be the same length but got {} and {}'.format(len(x), len(y)))
+        raise ValueError(f"x and y must be the same length but got {len(x)} and {len(y)}")
 
     if ax is None:
         ax = plt.gca()
@@ -223,21 +229,34 @@ def colorplot(x: Iterable, y: Iterable, ax: Optional[mpl.axes.Axes] = None, cmap
 
     all_segments = []
     for idx in range(len(x) - 1):
-        x1, x2 = x[idx: idx + 2]
-        y1, y2 = y[idx: idx + 2]
+        x1, x2 = x[idx : idx + 2]
+        y1, y2 = y[idx : idx + 2]
         segments = segment_line(x1, x2, y1, y2, step_size=step_size)
         all_segments.append(segments)
     all_segments = np.concatenate(all_segments, axis=0)
-    segment_dists = np.sqrt((all_segments[:, 1, 0] - all_segments[:, 0, 0]) ** 2 + (all_segments[:, 1, 1] - all_segments[:, 0, 1]) ** 2)
+    segment_dists = np.sqrt(
+        (all_segments[:, 1, 0] - all_segments[:, 0, 0]) ** 2 + (all_segments[:, 1, 1] - all_segments[:, 0, 1]) ** 2
+    )
     segment_dists = rescale(np.cumsum(segment_dists), start_val, end_val)
-    lc = mpl.collections.LineCollection(all_segments, array=segment_dists, cmap=cmap, norm=mpl.colors.Normalize(vmin=0, vmax=1), **kwargs)
+    lc = mpl.collections.LineCollection(
+        all_segments, array=segment_dists, cmap=cmap, norm=mpl.colors.Normalize(vmin=0, vmax=1), **kwargs
+    )
     ax.add_collection(lc)
     if ax.get_autoscale_on():
         ax.autoscale()
     return ax, lc
 
 
-def plot_joint_arrow(x: Iterable, y: Iterable, linewidth: float = 5.0, headwidth: float = 2.0, headlength: Optional[float] = None, ax: Optional[mpl.axes.Axes] = None, color: Optional[ColorType] = None, label: str = None):
+def plot_joint_arrow(
+    x: Iterable,
+    y: Iterable,
+    linewidth: float = 5.0,
+    headwidth: float = 2.0,
+    headlength: float | None = None,
+    ax: mpl.axes.Axes | None = None,
+    color: ColorType | None = None,
+    label: str = None,
+):
     """Plot a jointed line ending in an arrowhead
 
     Parameters
@@ -265,31 +284,40 @@ def plot_joint_arrow(x: Iterable, y: Iterable, linewidth: float = 5.0, headwidth
         The axes used for the plot
     """
     if not (is_iter(x) and is_iter(y)):
-        raise ValueError('x and y must be iterables of values to plot')
+        raise ValueError("x and y must be iterables of values to plot")
     if len(x) != len(y):
-        raise ValueError('x and y must be the same length but got {} and {}'.format(len(x), len(y)))
+        raise ValueError(f"x and y must be the same length but got {len(x)} and {len(y)}")
 
     if ax is None:
         ax = plt.gca()
 
-    linewidth = mpl.rcParams['lines.linewidth'] if linewidth is None else linewidth
-    mutation_scale = mpl.rcParams['font.size']
+    linewidth = mpl.rcParams["lines.linewidth"] if linewidth is None else linewidth
+    mutation_scale = mpl.rcParams["font.size"]
     line_kwargs = dict()
     arrow_kwargs = dict(mutation_scale=mutation_scale)
-    arrowstyle = 'simple'
+    arrowstyle = "simple"
     style_scale = linewidth / mutation_scale
-    arrowstyle = mpl.patches.ArrowStyle(arrowstyle,
-                                        tail_width=style_scale,
-                                        head_width=style_scale * headwidth,
-                                        head_length=style_scale * headlength)
+    arrowstyle = mpl.patches.ArrowStyle(
+        arrowstyle, tail_width=style_scale, head_width=style_scale * headwidth, head_length=style_scale * headlength
+    )
 
     points = np.column_stack([x, y])
     points[-1] = (points[-2] + points[-1]) / 2  # only go halfway so it doesn't overlap arrowhead
     path = mpl.path.Path(points, [mpl.path.Path.MOVETO] + [mpl.path.Path.LINETO] * (len(points) - 1))
-    patch = mpl.patches.PathPatch(path, facecolor='none', edgecolor=color, lw=linewidth, label=None, **line_kwargs)
+    patch = mpl.patches.PathPatch(path, facecolor="none", edgecolor=color, lw=linewidth, label=None, **line_kwargs)
     ax.add_patch(patch)
 
-    arrow = mpl.patches.FancyArrowPatch([x[-2], y[-2]], [x[-1], y[-1]], color=color, label=label, lw=0, shrinkA=0, shrinkB=0, arrowstyle=arrowstyle, **arrow_kwargs)
+    arrow = mpl.patches.FancyArrowPatch(
+        [x[-2], y[-2]],
+        [x[-1], y[-1]],
+        color=color,
+        label=label,
+        lw=0,
+        shrinkA=0,
+        shrinkB=0,
+        arrowstyle=arrowstyle,
+        **arrow_kwargs,
+    )
     ax.add_patch(arrow)
     plt.plot([min(x), max(x)], [min(y), max(y)], alpha=0, label=None)
     return ax

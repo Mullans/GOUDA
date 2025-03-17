@@ -1,9 +1,9 @@
 """Classes to handle constant-time mean/stddev updates"""
+
 import numpy as np
 
 
 class ParallelStats:
-
     def __init__(self, stabilize=False):
         """Object for aggregation of stats across multiple arrays/values
 
@@ -22,8 +22,8 @@ class ParallelStats:
         self._count = 0
         self._mean = 0.0
         self._ssd = 0.0  # sum of square differences
-        self._min = float('inf')
-        self._max = float('-inf')
+        self._min = float("inf")
+        self._max = float("-inf")
         self.stabilize = stabilize
 
     def __add__(self, value):
@@ -55,7 +55,7 @@ class ParallelStats:
             self._mean = (count_a * mean_a + count_b * mean_b) / self._count
         else:
             self._mean = mean_a + delta * count_b * count_denom
-        self._ssd = ssd_a + ssd_b + delta ** 2 * count_a * count_b * count_denom
+        self._ssd = ssd_a + ssd_b + delta**2 * count_a * count_b * count_denom
         return self
 
     def __call__(self, value, stabilize=None):
@@ -123,7 +123,7 @@ class ParallelStats:
         return self._max
 
 
-class MMean(object):
+class MMean:
     """Class to hold a moving mean with constant-time update and memory."""
 
     def __init__(self):
@@ -162,7 +162,7 @@ class MMean(object):
         return self._mean
 
 
-class MStddev(object):
+class MStddev:
     """Class to hold a moving standard deviation with constant-time update and memory."""
 
     def __init__(self):
@@ -213,7 +213,7 @@ class MStddev(object):
         return np.sqrt(self._variance / self._count)
 
 
-class MMeanArray(object):
+class MMeanArray:
     """Class to hold an array of element-wise independent means that update in constant-time and memory.
 
     Note
@@ -221,6 +221,7 @@ class MMeanArray(object):
         Value shape must be the same or broadcastable to the shape of the
         mean array for all operations.
     """
+
     def __init__(self, shape, dtype=float):
         self._mean = np.zeros(shape, dtype=dtype)
         self._count = 0
@@ -243,7 +244,7 @@ class MMeanArray(object):
     def __iadd__(self, value):
         """Update the _mean, including the given value."""
         if value.shape != self.shape:
-            raise ValueError('Input values must have the same shape as the MMeanArray')
+            raise ValueError("Input values must have the same shape as the MMeanArray")
         self._count += 1
         self._mean += (value - self._mean) * (1.0 / self._count)
         return self
@@ -269,7 +270,7 @@ class MMeanArray(object):
         return self._mean
 
 
-class MStddevArray(object):
+class MStddevArray:
     """Class to hold an array of element-wise independent standard deviations that update in constant-time and memory.
 
     Note
@@ -311,7 +312,7 @@ class MStddevArray(object):
     def __iadd__(self, value):
         """Update the mean and stddev, including the new value."""
         if value.shape != self.shape:
-            raise ValueError('Input values must have the same shape as the MStddevArray')
+            raise ValueError("Input values must have the same shape as the MStddevArray")
         self._count += 1
         prev_mean = np.copy(self._mean)
         self._mean += (1.0 / self._count) * (value - self._mean)

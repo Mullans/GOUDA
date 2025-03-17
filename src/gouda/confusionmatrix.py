@@ -1,7 +1,9 @@
 """Confusion matrix class"""
+
+import warnings
+
 import colorama
 import numpy as np
-import warnings
 
 __author__ = "Sean Mullan"
 __copyright__ = "Sean Mullan"
@@ -10,10 +12,10 @@ __license__ = "mit"
 
 def underline(string):
     """Shortcut to underline ANSI text"""
-    return '\033[4m' + string + '\033[0m'
+    return "\033[4m" + string + "\033[0m"
 
 
-class ConfusionMatrix(object):
+class ConfusionMatrix:
     """
     2D array to represent and evaluate a confusion matrix.
 
@@ -38,8 +40,8 @@ class ConfusionMatrix(object):
     * Dtype may be set to change memory usage, but will always be treated as an int. No checking is done to prevent overflow if dtype is manually set.
 
     """
-    def __init__(self, predictions=None, labels=None, threshold=None, num_classes=None, dtype=int):
 
+    def __init__(self, predictions=None, labels=None, threshold=None, num_classes=None, dtype=int):
         self.matrix = None
         self._num_classes = 0
         self.threshold = threshold
@@ -109,15 +111,19 @@ class ConfusionMatrix(object):
     def __add__(self, matrix):
         """Add two matrices together.
 
-        NOTE: Output dtype defaults to first matrix type."""
+        NOTE: Output dtype defaults to first matrix type.
+        """
         incoming_matrix = np.copy(matrix.matrix)
         if self.matrix.dtype != matrix.dtype:
-            warnings.warn("Second matrix converted from {} to {} in order to match first matrix.".format(matrix.dtype, self.matrix.dtype), UserWarning)
+            warnings.warn(
+                f"Second matrix converted from {matrix.dtype} to {self.matrix.dtype} in order to match first matrix.",
+                UserWarning,
+            )
             incoming_matrix = incoming_matrix.astype(self.matrix.dtype)
         output_size = max(self._num_classes, matrix.num_classes)
         output = np.zeros((output_size, output_size), dtype=self.dtype)
-        output[:self._num_classes, :self._num_classes] += self.matrix
-        output[:matrix.num_classes, :matrix.num_classes] += incoming_matrix
+        output[: self._num_classes, : self._num_classes] += self.matrix
+        output[: matrix.num_classes, : matrix.num_classes] += incoming_matrix
         output_mat = ConfusionMatrix(num_classes=output_size, dtype=self.matrix.dtype)
         output_mat.matrix = output
         return output_mat
@@ -143,7 +149,11 @@ class ConfusionMatrix(object):
 
     def accuracy(self):
         """Get the total accuracy in the matrix"""
-        return np.sum([self.matrix[i, i] for i in range(self._num_classes)]) / np.sum(self.matrix) if np.sum(self.matrix) > 0 else 0
+        return (
+            np.sum([self.matrix[i, i] for i in range(self._num_classes)]) / np.sum(self.matrix)
+            if np.sum(self.matrix) > 0
+            else 0
+        )
 
     def specificity(self, class_index=None):
         """Return the specificity of all classes or a single class.
@@ -153,12 +163,29 @@ class ConfusionMatrix(object):
         specificity = (true negative) / (true negative + false positive) for each class.
         """
         if class_index is None:
-            tn = np.array([sum([self.matrix[j, :i].sum() + self.matrix[j, i + 1:].sum() for j in range(self._num_classes) if j != i]) for i in range(self._num_classes)])
+            tn = np.array(
+                [
+                    sum(
+                        [
+                            self.matrix[j, :i].sum() + self.matrix[j, i + 1 :].sum()
+                            for j in range(self._num_classes)
+                            if j != i
+                        ]
+                    )
+                    for i in range(self._num_classes)
+                ]
+            )
             fp = np.array([self.matrix[i, :].sum() - self.matrix[i, i].sum() for i in range(self._num_classes)])
             return np.divide(tn, tn + fp, where=(tn + fp) > 0)
 
         else:
-            tn = sum([self.matrix[j, :class_index].sum() + self.matrix[j, class_index + 1:].sum() for j in range(self._num_classes) if j != class_index])
+            tn = sum(
+                [
+                    self.matrix[j, :class_index].sum() + self.matrix[j, class_index + 1 :].sum()
+                    for j in range(self._num_classes)
+                    if j != class_index
+                ]
+            )
             fp = self.matrix[class_index, :].sum() - self.matrix[class_index, class_index].sum()
             return np.divide(tn, tn + fp, where=(tn + fp) > 0)
 
@@ -170,9 +197,16 @@ class ConfusionMatrix(object):
         sensitivity = (true positive) / (true positive + false negative) for each class.
         """
         if class_index is None:
-            return [self.matrix[i, i] / self.matrix[i, :].sum() if self.matrix[i, :].sum() > 0 else 0 for i in range(self._num_classes)]
+            return [
+                self.matrix[i, i] / self.matrix[i, :].sum() if self.matrix[i, :].sum() > 0 else 0
+                for i in range(self._num_classes)
+            ]
         else:
-            return self.matrix[class_index, class_index] / self.matrix[class_index, :].sum() if self.matrix[class_index, :].sum() > 0 else 0
+            return (
+                self.matrix[class_index, class_index] / self.matrix[class_index, :].sum()
+                if self.matrix[class_index, :].sum() > 0
+                else 0
+            )
 
     def precision(self, class_index=None):
         """Return the precision of all classes or a single class.
@@ -182,9 +216,16 @@ class ConfusionMatrix(object):
         precision = (true positive) / (true positive + false positive)
         """
         if class_index is None:
-            return [self.matrix[i, i] / self.matrix[:, i].sum() if self.matrix[:, i].sum() > 0 else 0 for i in range(self._num_classes)]
+            return [
+                self.matrix[i, i] / self.matrix[:, i].sum() if self.matrix[:, i].sum() > 0 else 0
+                for i in range(self._num_classes)
+            ]
         else:
-            return self.matrix[class_index, class_index] / self.matrix[:, class_index].sum() if self.matrix[class_index, :].sum() > 0 else 0
+            return (
+                self.matrix[class_index, class_index] / self.matrix[:, class_index].sum()
+                if self.matrix[class_index, :].sum() > 0
+                else 0
+            )
 
     def mcc(self):
         """Return the Matthews correlation coefficient of a binary confusion matrix.
@@ -203,7 +244,7 @@ class ConfusionMatrix(object):
         # fp = sum([self.matrix[j, 1] for j in range(self._num_classes) if j != 1])
         # fn = sum([self.matrix[:, j].sum() - self.matrix[j, j] for j in range(self._num_classes) if j != 1])
         with warnings.catch_warnings(record=False):
-            warnings.filterwarnings('error')
+            warnings.filterwarnings("error")
             try:
                 result = ((tp * tn) - (fp * fn)) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
             except RuntimeWarning:  # pragma: no cover
@@ -228,6 +269,7 @@ class ConfusionMatrix(object):
 
     def add_array(self, predicted, expected, threshold=None):
         """Add data to the confusion matrix as numpy arrays
+
         Parameters
         ----------
         predicted : numpy.ndarray
@@ -241,10 +283,10 @@ class ConfusionMatrix(object):
         if threshold is None:
             threshold = self.threshold
         if not isinstance(predicted, np.ndarray):
-            raise ValueError("predicted and expected must be arrays, not {}".format(type(predicted)))
+            raise ValueError(f"predicted and expected must be arrays, not {type(predicted)}")
         if not isinstance(expected, np.ndarray):
-            raise ValueError("predicted and expected must be arrays, not {}".format(type(expected)))
-        if 'float' in predicted.dtype.name:
+            raise ValueError(f"predicted and expected must be arrays, not {type(expected)}")
+        if "float" in predicted.dtype.name:
             if predicted.ndim == 2 and predicted.shape[1] > 1:
                 # Assumes predicted samples as [samples, classes]
                 predicted = np.argmax(predicted, axis=1)
@@ -253,17 +295,17 @@ class ConfusionMatrix(object):
                     predicted = np.round(predicted)
                 else:
                     predicted = predicted > threshold
-        if 'float' in expected.dtype.name:
+        if "float" in expected.dtype.name:
             warnings.warn("Float type labels will be automatically rounded to the nearest integer", UserWarning)
             expected = np.round(expected).astype(int)
-        if not ('int' in expected.dtype.name or 'bool' in expected.dtype.name):
-            raise ValueError("Expected must be either an int or a bool, not {}".format(expected.dtype))
+        if not ("int" in expected.dtype.name or "bool" in expected.dtype.name):
+            raise ValueError(f"Expected must be either an int or a bool, not {expected.dtype}")
         max_in = max(expected.max(), predicted.max()) + 1
         if self.matrix is None:
             self.reset(max_in, dtype=expected.dtype)
         if self._num_classes < max_in:
             new_matrix = np.zeros((max_in, max_in), dtype=self.dtype)
-            new_matrix[:self._num_classes, :self._num_classes] += self.matrix
+            new_matrix[: self._num_classes, : self._num_classes] += self.matrix
             self.matrix = new_matrix
             self._num_classes = max_in
         expected = expected.astype(self.dtype).flatten()
@@ -314,7 +356,11 @@ class ConfusionMatrix(object):
         elif isinstance(expected, (float, int, bool)) and isinstance(predicted, (list, np.ndarray)):
             # Class probabilities with single expected label
             predicted_class = np.argmax(predicted).astype(int)
-        elif isinstance(predicted, (list, np.ndarray)) and isinstance(expected, (list, np.ndarray)) and len(predicted) == len(expected):
+        elif (
+            isinstance(predicted, (list, np.ndarray))
+            and isinstance(expected, (list, np.ndarray))
+            and len(predicted) == len(expected)
+        ):
             # Paired lists
             for x, y in zip(predicted, expected):
                 self.add(x, y, threshold=threshold)
@@ -337,7 +383,7 @@ class ConfusionMatrix(object):
             self.reset(max_in, dtype=np.array(expected).dtype)
         if self._num_classes < max_in:
             new_matrix = np.zeros((max_in, max_in), dtype=self.dtype)
-            new_matrix[:self._num_classes, :self._num_classes] += self.matrix
+            new_matrix[: self._num_classes, : self._num_classes] += self.matrix
             self.matrix = new_matrix
             self._num_classes = max_in
         self.matrix[expected_class, predicted_class] += 1
@@ -362,15 +408,17 @@ class ConfusionMatrix(object):
         """
         specificities = self.specificity()
         sensitivities = self.sensitivity()
-        expected_string = u"\u2193" + " Expected"
-        predicted_string = u"\u2192" + "  Predicted"
+        expected_string = "\u2193" + " Expected"
+        predicted_string = "\u2192" + "  Predicted"
         leading_space = "            "
         confusion_string = "         "
         item_width = str(np.ceil(np.log10(self.matrix.max())).astype(int))
-        header_string = "        " + "".join([('| {:^' + item_width + 'd} ').format(i) for i in range(self._num_classes)])
+        header_string = "        " + "".join(
+            [("| {:^" + item_width + "d} ").format(i) for i in range(self._num_classes)]
+        )
         if show_sensitivities:
             header_string += "| Sensitivity"
-        confusion_string += predicted_string + "\n" + expected_string + "  " + underline(header_string) + '\n'
+        confusion_string += predicted_string + "\n" + expected_string + "  " + underline(header_string) + "\n"
         for i in range(self._num_classes):
             line_string = "    {:1d}   |"
             for j in range(self._num_classes):
@@ -385,19 +433,19 @@ class ConfusionMatrix(object):
                 line_string = line_string.format(i, *self.matrix[i])
             if i == self.num_classes - 1:
                 line_string = underline(line_string)
-            confusion_string += leading_space + line_string + '\n'
+            confusion_string += leading_space + line_string + "\n"
 
         if show_specificities:
-            specificity_string = '        Specificity '
+            specificity_string = "        Specificity "
             for _ in range(self._num_classes):
-                specificity_string += '| {:>' + item_width + '.4f} '
-            confusion_string += (specificity_string + '\n').format(*specificities)
+                specificity_string += "| {:>" + item_width + ".4f} "
+            confusion_string += (specificity_string + "\n").format(*specificities)
 
         if show_accuracy:
-            confusion_string += "\nAccuracy: {:.4f}".format(self.accuracy())
+            confusion_string += f"\nAccuracy: {self.accuracy():.4f}"
 
         print(confusion_string)
         if return_string:
-            for item in [colorama.Fore.GREEN, colorama.Style.RESET_ALL, '\033[4m', '\033[0m']:
-                confusion_string = confusion_string.replace(item, '')
+            for item in [colorama.Fore.GREEN, colorama.Style.RESET_ALL, "\033[4m", "\033[0m"]:
+                confusion_string = confusion_string.replace(item, "")
             return confusion_string

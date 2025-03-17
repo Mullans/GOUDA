@@ -78,6 +78,7 @@ exclude = [
     "dist",
     "build",
     ".tox",
+    ".venv",
     "docs",
     "gouda/_version.py",
 ]
@@ -90,19 +91,31 @@ extend-exclude = ["ignore_*"]
 [tool.ruff.lint]
 select = [
     "E4", "E7", "E9", "F", "B",
-    "W", "I",
-    "ANN", "A", "C4", "FA", "PIE", "PT", "Q", "RET", "SIM", "I", "NPY", "N", "PERF", "D", "UP",
+    "W", #"I",
+    "ANN", "A", "C4", "FA", "PIE", "PT", "Q", "SIM", "I", "NPY", "N", "PERF", "D", "UP",
     "PLC", "PLE", "FURB", "RUF",
+    # "RET"  # Tried and removed
     ]
-ignore = ["E501", "D203"]
+ignore = [
+    "E501", "B028", # Unnecessary
+    "D203", # Contradicts other rules
+    "SIM105", "N802", "UP015", # Counter-productive
+    "B905"  # Remove when 3.9 no longer supported
+]
 fixable = ["ALL"]
 unfixable = []
 exclude = [
-    "binaryconfusionmatrix.py"
+    "binaryconfusionmatrix.py",
+    "tests/*"
 ]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["gouda"]
+extra-standard-library = ["setuptools", "pkg_resources"]
+default-section = "third-party"
 
 [tool.ruff.format]
 quote-style = "double"
@@ -114,3 +127,10 @@ docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "F403"]
+
+[tool.mypy]  # https://mypy.readthedocs.io/en/stable/config_file.html#example-pyproject-toml
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+exclude = [    # regex
+]

@@ -1,7 +1,7 @@
 exclude: '^docs/conf.py|conda.recipe/meta.yaml'
 
 repos:
-- repo: git://github.com/pre-commit/pre-commit-hooks
+- repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v2.2.3
   hooks:
   - id: trailing-whitespace
@@ -16,10 +16,25 @@ repos:
   - id: requirements-txt-fixer
   - id: mixed-line-ending
     args: ['--fix=no']
-  - id: flake8
-    # args: ['--max-line-length=88']  # default of Black
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.11.0
+  hooks:
+    # Run the linter.
+    - id: ruff
+      types_or: [ python, pyi]
+      args: [ --fix ]
+    # Run the formatter.
+    - id: ruff-format
+      types_or: [ python, pyi]
 
 - repo: https://github.com/pre-commit/mirrors-isort
   rev: v5.9.3
   hooks:
   - id: isort
+
+# -   repo: https://github.com/pre-commit/mirrors-mypy
+#     rev: ''  # Use the sha / tag you want to point at
+#     hooks:
+#     -   id: mypy

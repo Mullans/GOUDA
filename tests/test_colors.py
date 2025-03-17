@@ -14,11 +14,13 @@ def test_sRGB_conversions():
 
 
 def test_LAB_conversions():
-    check_pairs = [([255, 255, 255], [100, 0, 0]),
-                   ([0, 0, 0], [0, 0, 0]),
-                   ([255, 0, 0], [54.29, 80.81, 69.89]),
-                   ([0, 255, 0], [87.82, -79.29, 80.99]),
-                   ([0, 0, 255], [29.57, 69.30, -112.03])]
+    check_pairs = [
+        ([255, 255, 255], [100, 0, 0]),
+        ([0, 0, 0], [0, 0, 0]),
+        ([255, 0, 0], [54.29, 80.81, 69.89]),
+        ([0, 255, 0], [87.82, -79.29, 80.99]),
+        ([0, 0, 255], [29.57, 69.30, -112.03]),
+    ]
     for start_color, mid_color in check_pairs:
         color_check = np.asarray(start_color).astype(np.uint8)
         forward_check = gouda.colors.rgb2lab(color_check)
@@ -28,7 +30,7 @@ def test_LAB_conversions():
 
 
 def test_CVD_simulation():
-    sim = gouda.colors.CVD_Simulator()
+    sim = gouda.colors.CVDSimulator()
     test_palette = np.asarray([[198, 224, 0], [227, 1, 79], [1, 40, 133], [255, 133, 57], [0, 81, 67]])
 
     true_protan = np.asarray([[252, 216, 0], [83, 82, 80], [0, 45, 133], [172, 150, 58], [79, 76, 66]])

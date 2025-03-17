@@ -1,16 +1,17 @@
 """General file method and JSON handling"""
+
 import copy
 import fnmatch
 import glob
 import gzip
 import importlib
 import json
-import numpy as np
 import os
 import re
 import warnings
 from contextlib import nullcontext
-from typing import Union
+
+import numpy as np
 
 from gouda.data_methods import num_digits
 
@@ -34,19 +35,21 @@ def ensure_dir(*paths):
 
     """
     # TODO - Can this all be replaced with `os.makedirs(os.path.join([str(path) for path in paths]))`? The only difference is the non-dir check
-    full_path = ''
+    full_path = ""
     for path in paths:
         full_path = os.path.join(full_path, str(path))
         if os.path.exists(full_path) and os.path.isdir(full_path):
             continue
         elif os.path.exists(full_path):
-            raise ValueError("A file without an extension is blocking directory creation at {}".format(full_path))
+            raise ValueError(f"A file without an extension is blocking directory creation at {full_path}")
         else:
             os.makedirs(full_path, exist_ok=True)
     return full_path
 
 
-def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name}{sep}{idx}{ext}', default_sep: str = '_') -> str:
+def next_filename(
+    filename: str, first_idx: int = 2, path_fmt: str = "{base_name}{sep}{idx}{ext}", default_sep: str = "_"
+) -> str:
     """Check if a given file exists, and return the next numbered filename in the order if it does.
 
     Parameters
@@ -95,17 +98,17 @@ def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name
 
     # Convert format to regex pattern
     pattern = re.escape(path_fmt)
-    pattern = pattern.replace(r'\{idx\}', r'(?P<idx>\d+)')
-    pattern = pattern.replace(r'\{sep\}', r'(?P<sep>[_\-]+)')
-    pattern = pattern.replace(r'\{base_name\}', r'(?P<base_name>.+)')
-    pattern = pattern.replace(r'\{ext\}', r'(?P<ext>\.[^.]+)')
+    pattern = pattern.replace(r"\{idx\}", r"(?P<idx>\d+)")
+    pattern = pattern.replace(r"\{sep\}", r"(?P<sep>[_\-]+)")
+    pattern = pattern.replace(r"\{base_name\}", r"(?P<base_name>.+)")
+    pattern = pattern.replace(r"\{ext\}", r"(?P<ext>\.[^.]+)")
     pattern = re.compile(f"^{pattern}$")
 
     # Identify current index, base name, and separator
     match = pattern.match(f"{base_name}{extension}")
     if match:
         current_idx = int(match.group("idx")) if match.group("idx") else None
-        if 'sep' in match.groupdict():
+        if "sep" in match.groupdict():
             sep = match.group("sep") or "_"
         base_name = match.group("base_name")
     else:
@@ -113,10 +116,7 @@ def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name
     idx = 1 + current_idx if current_idx is not None else first_idx
 
     while True:
-        next_check = os.path.join(
-            path,
-            path_fmt.format(base_name=base_name, sep=sep, idx=idx, ext=extension)
-        )
+        next_check = os.path.join(path, path_fmt.format(base_name=base_name, sep=sep, idx=idx, ext=extension))
         if os.path.isfile(next_check):
             idx += 1
         else:
@@ -127,47 +127,47 @@ def next_filename(filename: str, first_idx: int = 2, path_fmt: str = '{base_name
 def load_json(filename):
     """Load a JSON file, and re-form any numpy arrays if :func:`~gouda.save_json` was used to write them."""
     filename = str(filename)
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         data = json.load(f)
     np_filename = None
-    if isinstance(data, dict) and 'slice_start' in data:
-        data = slice(data['slice_start'], data['slice_stop'], data['slice_step'])
+    if isinstance(data, dict) and "slice_start" in data:
+        data = slice(data["slice_start"], data["slice_stop"], data["slice_step"])
     elif isinstance(data, list):
-        if data[-1] == 'numpy':
-            np_filename = filename.rsplit('.', 1)[0] + '_array.npz'
+        if data[-1] == "numpy":
+            np_filename = filename.rsplit(".", 1)[0] + "_array.npz"
             data = data[0]
-        elif data[-1] == 'numpy_zip':
-            np_filename = filename.rsplit('.', 1)[0] + '_arrayzip.npz'
+        elif data[-1] == "numpy_zip":
+            np_filename = filename.rsplit(".", 1)[0] + "_arrayzip.npz"
             data = data[0]
-        elif data[-1] == 'numpy_embed':
+        elif data[-1] == "numpy_embed":
             data = data[0]
         # else:
         #     return data
-    with open(np_filename, 'rb') if np_filename is not None else nullcontext() as numpy_file:
+    with open(np_filename, "rb") if np_filename is not None else nullcontext() as numpy_file:
         if np_filename is not None:
             arrays = np.load(numpy_file)
 
         def renumpy(_data):
             if isinstance(_data, list):
                 if len(_data) == 2 and isinstance(_data[0], str):
-                    if 'numpy.' in _data[0]:
+                    if "numpy." in _data[0]:
                         _data = np.dtype(_data[0][6:]).type(_data[1])
-                    elif 'set.' in _data[0]:
+                    elif "set." in _data[0]:
                         _data = set(renumpy(_data[1]))
                 else:
                     for i in range(len(_data)):
                         _data[i] = renumpy(_data[i])
             elif isinstance(_data, dict):
-                if 'numpy_array' in _data:
-                    if isinstance(_data['numpy_array'], list):
-                        new_data = np.array(_data['numpy_array'], dtype=_data['dtype']).reshape(_data['shape'])
+                if "numpy_array" in _data:
+                    if isinstance(_data["numpy_array"], list):
+                        new_data = np.array(_data["numpy_array"], dtype=_data["dtype"]).reshape(_data["shape"])
                     else:
-                        new_data = arrays[_data['numpy_array']]
-                        if new_data.dtype != _data['dtype'] or list(new_data.shape) != _data['shape']:
+                        new_data = arrays[_data["numpy_array"]]
+                        if new_data.dtype != _data["dtype"] or list(new_data.shape) != _data["shape"]:
                             raise ValueError("Numpy array file doesn't match expected stored numpy array data")
                     return new_data
-                elif 'slice_start' in _data:
-                    _data = slice(_data['slice_start'], _data['slice_stop'], _data['slice_step'])
+                elif "slice_start" in _data:
+                    _data = slice(_data["slice_start"], _data["slice_stop"], _data["slice_step"])
                 else:
                     for key in _data.keys():
                         _data[key] = renumpy(_data[key])
@@ -210,7 +210,7 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
     out_arrays = {}
     used_arrays = [False]
     if embed_arrays and compressed:
-        warnings.warn('Cannot compress an array that is embedded in a JSON', UserWarning)
+        warnings.warn("Cannot compress an array that is embedded in a JSON", UserWarning)
         compressed = False
 
     def unnumpy(_data):
@@ -219,29 +219,33 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
             for i in range(len(_data)):
                 new_data.append(unnumpy(_data[i]))
         elif isinstance(_data, set):
-            new_data = ['set.', unnumpy(list(_data))]
+            new_data = ["set.", unnumpy(list(_data))]
         elif isinstance(_data, dict):
             new_data = {}
             for key in _data.keys():
                 new_data[key] = unnumpy(_data[key])
         elif isinstance(_data, slice):
-            new_data = {'slice_start': _data.start, 'slice_stop': _data.stop, 'slice_step': _data.step}
+            new_data = {"slice_start": _data.start, "slice_stop": _data.stop, "slice_step": _data.step}
         elif isinstance(_data, np.ndarray):
             used_arrays[0] = True
             if embed_arrays:
                 new_data = {"numpy_array": _data.tolist(), "dtype": str(_data.dtype), "shape": _data.shape}
             else:
-                new_data = {"numpy_array": 'array_{}'.format(len(out_arrays)), 'dtype': str(_data.dtype), 'shape': _data.shape}
-                out_arrays['array_{}'.format(len(out_arrays))] = _data
-        elif 'numpy' in str(type(_data)):
+                new_data = {
+                    "numpy_array": f"array_{len(out_arrays)}",
+                    "dtype": str(_data.dtype),
+                    "shape": _data.shape,
+                }
+                out_arrays[f"array_{len(out_arrays)}"] = _data
+        elif "numpy" in str(type(_data)):
             dtype = str(_data.dtype)
             if np.issubdtype(_data.dtype, np.integer):
                 _data = int(_data)
             elif np.issubdtype(_data.dtype, np.floating):
                 _data = float(_data)
             else:
-                raise ValueError('Un-JSON-able dtype {} found'.format(dtype))
-            new_data = ['numpy.' + dtype, _data]
+                raise ValueError(f"Un-JSON-able dtype {dtype} found")
+            new_data = ["numpy." + dtype, _data]
         else:
             new_data = copy.copy(_data)
         return new_data
@@ -250,25 +254,26 @@ def save_json(data, filename, embed_arrays=True, compressed=False):
     if used_arrays[0]:
         data = [data]
         if compressed:
-            data.append('numpy_zip')
+            data.append("numpy_zip")
         elif embed_arrays:
-            data.append('numpy_embed')
+            data.append("numpy_embed")
         else:
-            data.append('numpy')
-    with open(filename, 'w') as f:
+            data.append("numpy")
+    with open(filename, "w") as f:
         json.dump(data, f, indent=2, sort_keys=True)
     if len(out_arrays) != 0:
-        np_filename = filename.rsplit('.', 1)[0]
+        np_filename = filename.rsplit(".", 1)[0]
         if compressed:
-            np.savez_compressed(np_filename + '_arrayzip.npz', **out_arrays)
+            np.savez_compressed(np_filename + "_arrayzip.npz", **out_arrays)
         else:
-            np.savez(np_filename + '_array.npz', **out_arrays)
+            np.savez(np_filename + "_array.npz", **out_arrays)
 
 
 def create_image_checker():
     """Create the :meth:`gouda.is_image` method that can be used to check if a file is an image based on available libraries"""
-    if importlib.util.find_spec('PIL.Image'):
+    if importlib.util.find_spec("PIL.Image"):
         import PIL.Image
+
         def is_image(path):
             """Check if the path is an image file"""
             path = str(path)
@@ -279,16 +284,18 @@ def create_image_checker():
                 return True
             except PIL.UnidentifiedImageError:
                 return False
-    elif importlib.util.find_spec('puremagic'):
+    elif importlib.util.find_spec("puremagic"):
         import puremagic
+
         def is_image(path):
             """Check if the path is an image file"""
             path = str(path)
             if os.path.isdir(path):
                 return False
-            return puremagic.magic_file(path)[0].mime_type.startswith('image/')
-    elif importlib.util.find_spec('imghdr'):
+            return puremagic.magic_file(path)[0].mime_type.startswith("image/")
+    elif importlib.util.find_spec("imghdr"):
         import imghdr
+
         def is_image(path):
             """Check if the path is an image file"""
             path = str(path)
@@ -296,12 +303,16 @@ def create_image_checker():
                 return False
             return imghdr.what(path) is not None
     else:
+
         def is_image(path):
             """Check if the path is an image file"""
             raise ImportError("No image checking libraries found - install PIL, puremagic, or imghdr")
+
     return is_image
 
+
 is_image = create_image_checker()
+
 
 def fullsplit(path):
     """Split the path into head, basename, and extension
@@ -313,18 +324,18 @@ def fullsplit(path):
     """
     # return os.path.split(path)
     head, tail = os.path.split(path)
-    splitpath = tail.split('.')
-    to_add = ''
-    while splitpath[0] == '':
+    splitpath = tail.split(".")
+    to_add = ""
+    while splitpath[0] == "":
         splitpath = splitpath[1:]
-        to_add += '.'
+        to_add += "."
     splitpath[0] = to_add + splitpath[0]
     if len(splitpath) == 1:
-        return head, splitpath[0], ''
+        return head, splitpath[0], ""
     elif len(splitpath) > 2:
-        return head, splitpath[0], '.' + '.'.join(splitpath[1:])
+        return head, splitpath[0], "." + ".".join(splitpath[1:])
     else:
-        return head, splitpath[0], '.' + splitpath[1]
+        return head, splitpath[0], "." + splitpath[1]
 
 
 def basicname(path):
@@ -332,14 +343,16 @@ def basicname(path):
     return fullsplit(path)[1]
 
 
-def fast_glob(base_path: str,
-              glob_pattern: Union[str, re.Pattern],
-              regex_flags: int = 0,
-              sort: bool = False,
-              basenames: bool = False,
-              recursive: bool = False,
-              follow_symlinks: bool = False,
-              iter: bool = False) -> list[str]:
+def fast_glob(
+    base_path: str,
+    glob_pattern: str | re.Pattern,
+    regex_flags: int = 0,
+    sort: bool = False,
+    basenames: bool = False,
+    recursive: bool = False,
+    follow_symlinks: bool = False,
+    iter: bool = False,
+) -> list[str]:
     """Fast globbing method that uses scandir to find files and directories whose basename match a given pattern.
 
     Parameters
@@ -377,16 +390,19 @@ def fast_glob(base_path: str,
     def search_generator():
         for item in os.scandir(base_path):
             if recursive and item.is_dir(follow_symlinks=follow_symlinks):
-                yield from fast_glob(item.path,
-                                     glob_pattern,
-                                     regex_flags=regex_flags,
-                                     sort=False,
-                                     basenames=basenames,
-                                     recursive=recursive,
-                                     follow_symlinks=follow_symlinks,
-                                     iter=iter)
+                yield from fast_glob(
+                    item.path,
+                    glob_pattern,
+                    regex_flags=regex_flags,
+                    sort=False,
+                    basenames=basenames,
+                    recursive=recursive,
+                    follow_symlinks=follow_symlinks,
+                    iter=iter,
+                )
             if glob_pattern.match(item.name):
                 yield item.name if basenames else item.path
+
     if iter:
         return search_generator()
     else:
@@ -396,13 +412,15 @@ def fast_glob(base_path: str,
         return results
 
 
-def find_images(base_path: str,
-                sort: bool = False,
-                basenames: bool = False,
-                recursive: bool = False,
-                follow_symlinks: bool = False,
-                fast_check: bool = False,
-                iter: bool = False) -> list[str]:
+def find_images(
+    base_path: str,
+    sort: bool = False,
+    basenames: bool = False,
+    recursive: bool = False,
+    follow_symlinks: bool = False,
+    fast_check: bool = False,
+    iter: bool = False,
+) -> list[str]:
     """_summary_
 
     Parameters
@@ -432,22 +450,36 @@ def find_images(base_path: str,
     list[str]
         The list of images
     """
+
     def image_generator():
         if fast_check:
-            pattern = '|'.join([r'\.jpe?g', r'\.png', r'\.tiff', r'\.gif', r'\.bmp', r'\.webp'])  # noqa W605
-            regex = re.compile(r'.*({})$'.format(pattern), re.I)
-            yield from fast_glob(base_path, regex, regex_flags=re.I, sort=False, basenames=basenames, recursive=recursive, follow_symlinks=follow_symlinks, iter=True)
+            pattern = "|".join([r"\.jpe?g", r"\.png", r"\.tiff", r"\.gif", r"\.bmp", r"\.webp"])
+            regex = re.compile(rf".*({pattern})$", re.IGNORECASE)
+            yield from fast_glob(
+                base_path,
+                regex,
+                regex_flags=re.IGNORECASE,
+                sort=False,
+                basenames=basenames,
+                recursive=recursive,
+                follow_symlinks=follow_symlinks,
+                iter=True,
+            )
         else:
             for item in os.scandir(base_path):
                 if recursive and item.is_dir(follow_symlinks=follow_symlinks):
-                    yield from find_images(item.path,
-                                           sort=False,
-                                           basenames=basenames,
-                                           recursive=recursive,
-                                           follow_symlinks=follow_symlinks,
-                                           fast_check=False, iter=iter)
+                    yield from find_images(
+                        item.path,
+                        sort=False,
+                        basenames=basenames,
+                        recursive=recursive,
+                        follow_symlinks=follow_symlinks,
+                        fast_check=False,
+                        iter=iter,
+                    )
                 elif is_image(item.path):
                     yield item.name if basenames else item.path
+
     if iter:
         return image_generator()
     else:
@@ -457,7 +489,7 @@ def find_images(base_path: str,
         return images
 
 
-def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
+def get_sorted_filenames(pattern, sep="_", ending=True, reverse=False):
     """Sort filenames based on ending digits
 
     Parameters
@@ -477,6 +509,7 @@ def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
 
     This method is only useful in the case where you have file_2.txt and file_10.txt where file_10 would be sorted first with other methods because the 1 is at the same index as the 2.
     """
+
     def get_copy_num(x):
         x = basicname(x)
         item = x.rsplit(sep, 1) if ending else x.split(sep, 1)
@@ -512,8 +545,8 @@ def get_sorted_filenames(pattern, sep='_', ending=True, reverse=False):
 
 def save_arr(path, arr):
     path = str(path)
-    if path.endswith('.gz'):
-        with gzip.open(path, 'wb') as f:
+    if path.endswith(".gz"):
+        with gzip.open(path, "wb") as f:
             np.save(f, arr)
     else:
         np.save(path, arr)
@@ -521,10 +554,10 @@ def save_arr(path, arr):
 
 def read_arr(path):
     path = str(path)
-    if path.endswith('.gz'):
-        with gzip.open(path, 'rb') as f:
+    if path.endswith(".gz"):
+        with gzip.open(path, "rb") as f:
             data = np.load(f)
     else:
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             data = np.load(f)
     return data

@@ -1,10 +1,13 @@
 """Methods for working with data and numpy arrays"""
+
 from __future__ import annotations
+
+import warnings
+from collections.abc import Iterable
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-import warnings
-from typing import Any, Iterable, List, Optional, Tuple, Union
 
 from gouda.general import is_iter
 from gouda.typing import FloatArrayType, LabelArrayType, ShapeType
@@ -25,7 +28,7 @@ def to_uint8(x: npt.NDArray, allow_rescale: bool = False) -> npt.NDArray[np.uint
     npt.NDArray[np.uint8]
         Converted array
 
-    NOTES
+    Notes
     -----
     input range [0, 255] -> cast to uint8
     input range [-1, 1] -> x * 127.5 + 127.5 -> cast to uint8
@@ -39,9 +42,9 @@ def to_uint8(x: npt.NDArray, allow_rescale: bool = False) -> npt.NDArray[np.uint
     elif x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
         pass
     elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:  # input range [-1, 1]
-        x = ((x * 127.5) + 127.5)
+        x = (x * 127.5) + 127.5
     elif x.min() >= 0 and x.max() <= 1:  # input range [0, 1]
-        x = (x * 255.0)
+        x = x * 255.0
     else:
         warnings.warn("Cannot determine input range. Rescaling to [0, 1]")
         x = rescale(x, 0, 255)
@@ -105,7 +108,10 @@ def factors(x: int) -> set[int]:
         raise ValueError("Factors can only be found with non-zero integers")
     if x < 0:
         x = np.abs(x)
-        warnings.warn("Only positive factors will be returned, but negative numbers have a positive and negative factor for each.", UserWarning)
+        warnings.warn(
+            "Only positive factors will be returned, but negative numbers have a positive and negative factor for each.",
+            UserWarning,
+        )
     factors = set([1, int(x)])
     for i in range(2, int(np.sqrt(x) + 1)):
         if (x / float(i)) == int(x / i):
@@ -151,7 +157,7 @@ def flip_dict(dict: dict, unique_items: bool = False, force_list_values: bool = 
         return new_dict
 
 
-def num_digits(x: Union[int, float]) -> int:
+def num_digits(x: int | float) -> int:
     """Return the number of integer digits"""
     if x == 0:
         return 1
@@ -180,7 +186,10 @@ def prime_factors(x: int) -> list[int]:
         raise ValueError("Factors can only be found with non-zero integers")
     if x < 0:
         x = np.abs(x)
-        warnings.warn("Only positive factors will be returned, but negative numbers have a positive and negative factor for each.", UserWarning)
+        warnings.warn(
+            "Only positive factors will be returned, but negative numbers have a positive and negative factor for each.",
+            UserWarning,
+        )
     factors = [int(x)]
     prime_factors = []
     while len(factors) > 0:
@@ -224,7 +233,14 @@ def prime_overlap(x: int, y: int) -> list[int]:
     return sorted(overlap)
 
 
-def rescale(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, input_min: Optional[float] = None, input_max: Optional[float] = None, axis: Optional[ShapeType] = None) -> npt.NDArray[np.floating]:
+def rescale(
+    data: npt.ArrayLike,
+    output_min: float = 0,
+    output_max: float = 1,
+    input_min: float | None = None,
+    input_max: float | None = None,
+    axis: ShapeType | None = None,
+) -> npt.NDArray[np.floating]:
     """Rescales data to have range [new_min, new_max] along axis or axes indicated
 
     Parameters
@@ -262,7 +278,7 @@ def rescale(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, i
     return (x * new_range) + output_min
 
 
-def order_normalization(data: npt.ArrayLike, order: int = 2, axis: Optional[ShapeType] = None) -> npt.NDArray[np.floating]:
+def order_normalization(data: npt.ArrayLike, order: int = 2, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
     """Normalize data by its matrix or vector norm
 
     Parameters
@@ -287,7 +303,9 @@ def order_normalization(data: npt.ArrayLike, order: int = 2, axis: Optional[Shap
     return np.divide(data, np.expand_dims(norm, axis))
 
 
-def clip(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, input_min: float = 0, input_max: float = 255) -> FloatArrayType:
+def clip(
+    data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, input_min: float = 0, input_max: float = 255
+) -> FloatArrayType:
     """Clip an array to a given range, then rescale the clipped array from the input range to the output range.
 
     Parameters
@@ -318,7 +336,13 @@ def clip(data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, inpu
     return np.multiply(data, scaler) + bias
 
 
-def percentile_rescale(x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: Optional[float] = None, output_min: float = 0, output_max: float = 1) -> FloatArrayType:
+def percentile_rescale(
+    x: npt.ArrayLike,
+    low_percentile: float = 0.5,
+    high_percentile: float | None = None,
+    output_min: float = 0,
+    output_max: float = 1,
+) -> FloatArrayType:
     """Clip an array to given percentiles, then rescale it to an output range
 
     Parameters
@@ -347,7 +371,9 @@ def percentile_rescale(x: npt.ArrayLike, low_percentile: float = 0.5, high_perce
     return clip(x, output_min, output_max, low_val, high_val)
 
 
-def percentile_normalize(x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: Optional[float] = None) -> FloatArrayType:
+def percentile_normalize(
+    x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: float | None = None
+) -> FloatArrayType:
     """Normalize data after clipping to a percentile value
 
     Parameters
@@ -391,7 +417,7 @@ def sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> Any:
 def inv_sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> Any:
     """Return the inverse of the sigmoid function for the given value/array."""
     if x > 1 or x < 0:
-        raise ValueError('Inverse sigmoid input must be in range [0, 1]')
+        raise ValueError("Inverse sigmoid input must be in range [0, 1]")
     elif x == 0:
         return -np.inf
     elif x == 1:
@@ -399,7 +425,7 @@ def inv_sigmoid(x: npt.NDArray, epsilon: float = 1e-7) -> Any:
     return np.log(x / ((1 + epsilon) - ((1 + epsilon) * x)))
 
 
-def softmax(x: npt.ArrayLike, axis: Optional[ShapeType] = None) -> FloatArrayType:
+def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayType:
     """Return the softmax of the array
 
     Parameters
@@ -423,7 +449,7 @@ def softmax(x: npt.ArrayLike, axis: Optional[ShapeType] = None) -> FloatArrayTyp
     return np.divide(e_x, div, where=div != 0, out=np.zeros_like(x))
 
 
-def normalize(data: npt.ArrayLike, axis: Optional[ShapeType] = None) -> FloatArrayType:
+def normalize(data: npt.ArrayLike, axis: ShapeType | None = None) -> FloatArrayType:
     """Return data normalized to have zero mean and unit variance along axis or axes indicated.
 
     Parameters
@@ -446,7 +472,9 @@ def normalize(data: npt.ArrayLike, axis: Optional[ShapeType] = None) -> FloatArr
     return np.divide(data - mean, stddev, where=stddev != 0, out=np.zeros_like(data))
 
 
-def roc_curve(label: npt.ArrayLike, pred: npt.ArrayLike, as_rates: bool = True) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+def roc_curve(
+    label: npt.ArrayLike, pred: npt.ArrayLike, as_rates: bool = True
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Get the ROC curve for the data.
 
     Parameters
@@ -467,7 +495,7 @@ def roc_curve(label: npt.ArrayLike, pred: npt.ArrayLike, as_rates: bool = True) 
     pred = np.asarray(pred)
     label = np.ravel(label)
     pred = np.ravel(pred)
-    desc_score_indices = np.argsort(pred, kind='mergesort')[::-1]
+    desc_score_indices = np.argsort(pred, kind="mergesort")[::-1]
     y_score = pred[desc_score_indices]
     y_true = label[desc_score_indices]
 
@@ -492,7 +520,9 @@ def roc_curve(label: npt.ArrayLike, pred: npt.ArrayLike, as_rates: bool = True) 
         return fps, tps, thresh
 
 
-def mcc_curve(label: npt.ArrayLike, pred: npt.ArrayLike, optimal_only: bool = False) -> Tuple[FloatArrayType, FloatArrayType]:
+def mcc_curve(
+    label: npt.ArrayLike, pred: npt.ArrayLike, optimal_only: bool = False
+) -> tuple[FloatArrayType, FloatArrayType]:
     """Get the Matthew's Correlation Coefficient for different thresholds
 
     Parameters
@@ -513,7 +543,12 @@ def mcc_curve(label: npt.ArrayLike, pred: npt.ArrayLike, optimal_only: bool = Fa
     return optimal_mcc_from_roc(fps, tps, thresh, optimal_only=optimal_only)
 
 
-def optimal_mcc_from_roc(fps: npt.NDArray[np.floating], tps: npt.NDArray[np.floating], thresholds: npt.NDArray[np.floating], optimal_only=True) -> Tuple[FloatArrayType, FloatArrayType]:
+def optimal_mcc_from_roc(
+    fps: npt.NDArray[np.floating],
+    tps: npt.NDArray[np.floating],
+    thresholds: npt.NDArray[np.floating],
+    optimal_only=True,
+) -> tuple[FloatArrayType, FloatArrayType]:
     """Get the Matthew's Correlation Coefficient for different thresholds
 
     Parameters
@@ -544,7 +579,9 @@ def optimal_mcc_from_roc(fps: npt.NDArray[np.floating], tps: npt.NDArray[np.floa
     return mcc, thresholds
 
 
-def accuracy_curve(label: npt.ArrayLike, pred: npt.ArrayLike, return_peak: bool = False) -> Union[Tuple[FloatArrayType, FloatArrayType, float, float], Tuple[FloatArrayType, FloatArrayType]]:
+def accuracy_curve(
+    label: npt.ArrayLike, pred: npt.ArrayLike, return_peak: bool = False
+) -> tuple[FloatArrayType, FloatArrayType, float, float] | tuple[FloatArrayType, FloatArrayType]:
     """Get the accuracy values for each possible threshold in the predictions.
 
     Parameters
@@ -564,7 +601,7 @@ def accuracy_curve(label: npt.ArrayLike, pred: npt.ArrayLike, return_peak: bool 
     label = np.asarray(label)
     pred = np.asarray(pred)
 
-    desc_score_indices = np.argsort(pred, kind='mergesort')[::-1]
+    desc_score_indices = np.argsort(pred, kind="mergesort")[::-1]
     y_score = pred[desc_score_indices]
     y_true = label[desc_score_indices]
 
@@ -582,7 +619,9 @@ def accuracy_curve(label: npt.ArrayLike, pred: npt.ArrayLike, return_peak: bool 
     return acc, thresh
 
 
-def spec_at_sens(label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: Union[List[float], FloatArrayType] = [0.95]) -> List[float]:
+def spec_at_sens(
+    label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: list[float] | FloatArrayType = [0.95]
+) -> list[float]:
     """Get the peak specificity for each sensitivity.
 
     Parameters
@@ -599,14 +638,16 @@ def spec_at_sens(label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: Union
     List[float]
         The list of specificities for the given sensitivities
     """
-    if not hasattr(sensitivities, '__iter__'):
+    if not hasattr(sensitivities, "__iter__"):
         sensitivities = [sensitivities]  # type: ignore - we only reach here if type = float
     fpr, tpr, thresholds = roc_curve(label, pred)
     specs = [np.max((1 - fpr)[tpr >= min_sens]) for min_sens in sensitivities]  # type: ignore - type is iterable by this point
     return specs
 
 
-def get_confusion_stats(label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 0.5) -> Tuple[int, int, int, int]:
+def get_confusion_stats(
+    label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 0.5
+) -> tuple[int, int, int, int]:
     """Get the true positive, false positive, true negative, and false negative values for the given data
 
     Parameters
@@ -683,7 +724,13 @@ def jaccard_coef(label: LabelArrayType, pred: npt.ArrayLike, threshold=0.5) -> f
     return tp / denom
 
 
-def value_crossing(array: npt.NDArray[Any], threshold: float = 0, positive_crossing: bool = True, negative_crossing: bool = True, return_indices: bool = False) -> int:
+def value_crossing(
+    array: npt.NDArray[Any],
+    threshold: float = 0,
+    positive_crossing: bool = True,
+    negative_crossing: bool = True,
+    return_indices: bool = False,
+) -> int:
     """Get the count of instances where a series crosses a value.
 
     Parameters
@@ -717,31 +764,31 @@ def value_crossing(array: npt.NDArray[Any], threshold: float = 0, positive_cross
     if positive_crossing and negative_crossing:
         crossing = (pos[:-1] & npos[1:]) | (npos[:-1] & pos[1:])
     elif negative_crossing:
-        crossing = (pos[:-1] & npos[1:])
+        crossing = pos[:-1] & npos[1:]
     elif positive_crossing:
-        crossing = (npos[:-1] & pos[1:])
+        crossing = npos[:-1] & pos[1:]
     else:
-        raise ValueError('Either positive and/or negative crossings must be used')
+        raise ValueError("Either positive and/or negative crossings must be used")
     if return_indices:
         return idxs[np.concatenate([crossing, np.array([False])])]
     return crossing.sum()
 
 
-def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.float_]:
+def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.float64]:
     """Find the continuous index of the center of mass for the input n-dimensional array"""
     input_arr = np.asarray(input_arr)
     flat_mass = np.reshape(input_arr, [-1, 1])
     total_mass = np.sum(flat_mass)
     if total_mass == 0:
         raise ValueError("Cannot find the center if the total mass is 0")
-    grids = np.meshgrid(*[np.arange(axis_length) for axis_length in input_arr.shape], indexing='ij')
+    grids = np.meshgrid(*[np.arange(axis_length) for axis_length in input_arr.shape], indexing="ij")
     coords = np.stack([np.reshape(grid, [-1]) for grid in grids], axis=-1)
 
     center_of_mass = np.sum(flat_mass * coords, axis=0) / total_mass
     return center_of_mass
 
 
-def max_signal(data: npt.ArrayLike, axis: Optional[ShapeType] = None) -> Any:
+def max_signal(data: npt.ArrayLike, axis: ShapeType | None = None) -> Any:
     """Return the signed value with the largest absolute value along the given axis
 
     Parameters
@@ -765,7 +812,7 @@ def max_signal(data: npt.ArrayLike, axis: Optional[ShapeType] = None) -> Any:
         return np.where(np.abs(mins) > maxes, mins, maxes)
 
 
-def argmax_signal(data: npt.ArrayLike, axis: Optional[int] = None) -> Union[Tuple[np.int_, ...], npt.NDArray[np.int_]]:
+def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.int_, ...] | npt.NDArray[np.int_]:
     """Return the index of the signed value with the largest absolute value along an axis
 
     Parameters
@@ -823,7 +870,9 @@ def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
     return reject
 
 
-def segment_line(x1: float, x2: float, y1: float, y2: float, segment_size: float = 0.01, num_segments: Optional[int] = None):
+def segment_line(
+    x1: float, x2: float, y1: float, y2: float, segment_size: float = 0.01, num_segments: int | None = None
+):
     """Divide a line into smaller segments
 
     Parameters
@@ -879,11 +928,13 @@ def line_dist(x: Iterable, y: Iterable) -> float:
         Total distance along the line
     """
     if not (is_iter(x) and is_iter(y)):
-        raise ValueError('x and y must be iterables of values to plot')
+        raise ValueError("x and y must be iterables of values to plot")
     x = np.squeeze(np.asarray(x))
     y = np.squeeze(np.asarray(y))
     if x.shape != y.shape or x.ndim > 1 or y.ndim > 1:
-        raise ValueError('x and y must be 1D iterables of values along a line but found shapes {} and {}'.format(x.shape, y.shape))
+        raise ValueError(
+            f"x and y must be 1D iterables of values along a line but found shapes {x.shape} and {y.shape}"
+        )
 
     dists = np.sqrt((x[1:] - x[:-1]) ** 2 + (y[1:] - y[:-1]) ** 2)
     return np.sum(dists)

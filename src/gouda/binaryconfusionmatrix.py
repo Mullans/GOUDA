@@ -1,7 +1,9 @@
-"""Binary confusion matrix class"""
+"""Binary confusion matrix class."""
+
+import warnings
+
 import colorama
 import numpy as np
-import warnings
 
 from gouda.data_methods import num_digits
 
@@ -12,12 +14,11 @@ __license__ = "mit"
 
 def underline(string):
     """Shortcut to underline ANSI text"""
-    return '\033[4m' + string + '\033[0m'
+    return "\033[4m" + string + "\033[0m"
 
 
-class BinaryConfusionMatrix():
-    """
-    2D array to represent and evaluate a 2-class confusion matrix.
+class BinaryConfusionMatrix:
+    """2D array to represent and evaluate a 2-class confusion matrix.
 
     Parameters
     ----------
@@ -37,7 +38,17 @@ class BinaryConfusionMatrix():
     * Dtype may be set to change memory usage, but will always be treated as an int. No checking is done to prevent overflow if dtype is manually set.
 
     """
-    def __init__(self, predictions=None, labels=None, threshold=0.5, dtype=int, pos_label='True', neg_label='False', title='BinaryConfusionMatrix'):
+
+    def __init__(
+        self,
+        predictions=None,
+        labels=None,
+        threshold=0.5,
+        dtype=int,
+        pos_label="True",
+        neg_label="False",
+        title="BinaryConfusionMatrix",
+    ):
         self.threshold = threshold
         self.reset(dtype)
         if predictions is not None:
@@ -120,7 +131,7 @@ class BinaryConfusionMatrix():
 
     def __repr__(self):
         digits = max([num_digits(item) for item in np.nditer(self.__matrix)])
-        row_str = '{:' + str(digits) + 'd}, {:' + str(digits) + 'd}'
+        row_str = "{:" + str(digits) + "d}, {:" + str(digits) + "d}"
         spacer = " " * 22
         format_string = "BinaryConfusionMatrix([" + row_str + "]\n" + spacer + "[" + row_str + "])"
         return format_string.format(*self.__matrix.flatten())
@@ -146,14 +157,17 @@ class BinaryConfusionMatrix():
             if len(predictions) == 2:
                 predictions, labels = predictions
             else:
-                raise ValueError('If passing a single list, it must be [predictions, labels]')
+                raise ValueError("If passing a single list, it must be [predictions, labels]")
         elif labels is None:
             predictions = np.array(predictions)
             if 2 not in predictions.shape:
                 raise ValueError("At least one dimension must be a stack of prediction/label values")
             axis_to_split = np.where(np.array(predictions.shape) == 2)[0]
             if len(axis_to_split) > 1:
-                warnings.warn("Multiple dimensions have size 2. Splitting the first one into prediction/label arrays.", UserWarning)
+                warnings.warn(
+                    "Multiple dimensions have size 2. Splitting the first one into prediction/label arrays.",
+                    UserWarning,
+                )
             predictions, labels = np.split(predictions, 2, axis=axis_to_split[0])
         labels = np.array(labels)
         predictions = np.array(predictions)
@@ -204,9 +218,9 @@ class BinaryConfusionMatrix():
         fp = self.__matrix[0, 1]
         fn = self.__matrix[1, 0]
         with warnings.catch_warnings(record=False):
-            warnings.filterwarnings('error')
+            warnings.filterwarnings("error")
             try:
-                top = ((tp * tn) - (fp * fn))
+                top = (tp * tn) - (fp * fn)
                 bottom = (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)
                 if bottom == 0:
                     return 0
@@ -256,35 +270,46 @@ class BinaryConfusionMatrix():
     def save(self, path, title=None):
         """Save the current binary confusion matrix to a text file"""
         title = self.title if title is None else title
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(title + '\n')
-            f.write('Threshold: {}\n'.format(self.threshold))
-            f.write('Datatype: {}\n'.format(str(self.dtype)))
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(title + "\n")
+            f.write("Threshold: {}\n".format(self.threshold))
+            f.write("Datatype: {}\n".format(str(self.dtype)))
             f.write(self.print(return_string=True))
 
     @staticmethod
     def load(path):
         """Load a binary confusion matrix that was saved as a text file."""
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             title = f.readline().strip()
             threshold = float(f.readline()[11:].strip())
             datatype = np.dtype(f.readline()[10:].strip())
             f.readline()
             next_line = f.readline()
-            _, neg_label, pos_label = next_line.split('|')
+            _, neg_label, pos_label = next_line.split("|")
             neg_label = neg_label.strip()
             pos_label = pos_label.strip()
-            next_line = f.readline().split('|')
+            next_line = f.readline().split("|")
             tn = int(next_line[1].strip())
             fp = int(next_line[2].strip())
-            next_line = f.readline().split('|')
+            next_line = f.readline().split("|")
             fn = int(next_line[1].strip())
             tp = int(next_line[2].strip())
-        new_matrix = BinaryConfusionMatrix(threshold=threshold, pos_label=pos_label, neg_label=neg_label, dtype=datatype, title=title)
+        new_matrix = BinaryConfusionMatrix(
+            threshold=threshold, pos_label=pos_label, neg_label=neg_label, dtype=datatype, title=title
+        )
         new_matrix.add_matrix(np.array([[tn, fp], [fn, tp]]))
         return new_matrix
 
-    def print(self, show_specificity=False, show_sensitivity=False, show_accuracy=False, as_label=True, pos_label=None, neg_label=None, return_string=False):
+    def print(
+        self,
+        show_specificity=False,
+        show_sensitivity=False,
+        show_accuracy=False,
+        as_label=True,
+        pos_label=None,
+        neg_label=None,
+        return_string=False,
+    ):
         """Format and print the confusion matrix
 
         Parameters
@@ -314,8 +339,8 @@ class BinaryConfusionMatrix():
             Confusion matrix formatted for plain-text printing if return_string is True.
 
         """
-        expected_string = u"\u2193" + " Expected"
-        predicted_string = u"\u2192" + "  Predicted"
+        expected_string = "\u2193" + " Expected"
+        predicted_string = "\u2192" + "  Predicted"
         leading_space = "            "
         confusion_string = "         "
 
@@ -332,10 +357,16 @@ class BinaryConfusionMatrix():
             item_width = max(item_width, len(pos_label), len(neg_label))
         item_width = str(item_width)
         if as_label:
-            header_string = " " * (int(item_width) + 3) + ('| {:^' + item_width + '} ').format(neg_label) + ('| {:^' + item_width + '} ').format(pos_label)
+            header_string = (
+                " " * (int(item_width) + 3)
+                + ("| {:^" + item_width + "} ").format(neg_label)
+                + ("| {:^" + item_width + "} ").format(pos_label)
+            )
         else:
-            header_string = "        " + ('| {:^' + item_width + 'd} ').format(0) + ('| {:^' + item_width + 'd} ').format(1)
-        confusion_string += predicted_string + "\n" + expected_string + "  " + underline(header_string) + '\n'
+            header_string = (
+                "        " + ("| {:^" + item_width + "d} ").format(0) + ("| {:^" + item_width + "d} ").format(1)
+            )
+        confusion_string += predicted_string + "\n" + expected_string + "  " + underline(header_string) + "\n"
         if as_label:
             line_string_1 = ("  {:^" + item_width + "} |").format(neg_label)
             line_string_2 = ("  {:^" + item_width + "} |").format(pos_label)
@@ -346,26 +377,26 @@ class BinaryConfusionMatrix():
         line_string_1 += colorama.Fore.GREEN + " {:" + item_width + "d} " + colorama.Style.RESET_ALL + "|"
         # FP
         line_string_1 += " {:" + item_width + "d} |"
-        line_string_1 = line_string_1.format(*self.__matrix[0]) + '\n'
+        line_string_1 = line_string_1.format(*self.__matrix[0]) + "\n"
         # FN
         line_string_2 += " {:" + item_width + "d} |"
         # TP
         line_string_2 += colorama.Fore.GREEN + " {:" + item_width + "d} " + colorama.Style.RESET_ALL + "|"
         line_string_2 = line_string_2.format(*self.__matrix[1])
-        line_string_2 = underline(line_string_2) + '\n'
+        line_string_2 = underline(line_string_2) + "\n"
 
         confusion_string += leading_space + line_string_1 + leading_space + line_string_2
 
         if show_accuracy:
             confusion_string += "\nAccuracy:    {:.4f}".format(self.accuracy())
         if show_sensitivity:
-            confusion_string += '\nSensitivity: {:.4f}'.format(self.sensitivity())
+            confusion_string += "\nSensitivity: {:.4f}".format(self.sensitivity())
         if show_specificity:
-            confusion_string += '\nSpecificity: {:.4f}'.format(self.specificity())
+            confusion_string += "\nSpecificity: {:.4f}".format(self.specificity())
 
         if return_string:
-            for item in [colorama.Fore.GREEN, colorama.Style.RESET_ALL, '\033[4m', '\033[0m']:
-                confusion_string = confusion_string.replace(item, '')
+            for item in [colorama.Fore.GREEN, colorama.Style.RESET_ALL, "\033[4m", "\033[0m"]:
+                confusion_string = confusion_string.replace(item, "")
             return confusion_string
         else:
             print(confusion_string)

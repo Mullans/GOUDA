@@ -1,10 +1,11 @@
 """General purpose methods that don't fit other categories"""
+
 from collections.abc import Generator, Iterable
-from typing import Any, Optional
+from typing import Any
 
 
 def getattr_recursive(item: Any, attr_string: str) -> Any:
-    """getattr for nested attributes
+    """Getattr for nested attributes
 
     Parameters
     ----------
@@ -19,17 +20,17 @@ def getattr_recursive(item: Any, attr_string: str) -> Any:
     """
     nested_type = type(item).__name__
     cur_item = item
-    for key in attr_string.split('.'):
+    for key in attr_string.split("."):
         try:
             cur_item = getattr(cur_item, key)
-            nested_type += '.' + type(cur_item).__name__
+            nested_type += "." + type(cur_item).__name__
         except AttributeError:
-            raise AttributeError("'{}' object has no attribute '{}'".format(nested_type, key))
+            raise AttributeError(f"'{nested_type}' object has no attribute '{key}'")
     return cur_item
 
 
 def hasattr_recursive(item: Any, attr_string: str) -> Any:
-    """hasattr for nested attributes
+    """Hasattr for nested attributes
 
     Parameters
     ----------
@@ -43,7 +44,7 @@ def hasattr_recursive(item: Any, attr_string: str) -> Any:
     An example would be a module with submodules: `hasattr_recursive(os, 'path.basename')` would return True
     """
     cur_item = item
-    for key in attr_string.split('.'):
+    for key in attr_string.split("."):
         try:
             cur_item = getattr(cur_item, key)
         except AttributeError:
@@ -111,7 +112,7 @@ def is_iter(x: Any, non_iter: Iterable[type] = (str, bytes, bytearray)) -> bool:
         return True
 
 
-def force_len(x: Any, count: int, pad: str = 'wrap') -> Iterable:
+def force_len(x: Any, count: int, pad: str = "wrap") -> Iterable:
     """Force the length of x to a given count
 
     Parameters
@@ -124,28 +125,28 @@ def force_len(x: Any, count: int, pad: str = 'wrap') -> Iterable:
         Padding method for extending x. Can be either 'wrap' or 'reflect', by default 'wrap'
     """
     if not is_iter(x):
-        return (x, ) * count
+        return (x,) * count
     else:
         if len(x) == count:
             return x
         elif len(x) < count:
-            if pad == 'wrap':
+            if pad == "wrap":
                 result = list(x)
                 while len(result) < count:
                     diff = count - len(result)
                     result.extend(x[:diff])
                 return type(x)(result)
-            elif pad == 'reflect':
+            elif pad == "reflect":
                 if len(x) * 2.0 < count:
-                    raise ValueError('Cannot reflect enough to force length.')
-                return tuple(list(x) + list(reversed(x))[:count - len(x)])
+                    raise ValueError("Cannot reflect enough to force length.")
+                return tuple(list(x) + list(reversed(x))[: count - len(x)])
             else:
-                raise ValueError(f'Unknown padding method: {pad}.')
+                raise ValueError(f"Unknown padding method: {pad}.")
         else:
             return x[:count]
 
 
-def match_len(*args: Any, count: Optional[int] = None, pad: str = 'wrap') -> tuple[tuple[Iterable[Any], ...], int]:
+def match_len(*args: Any, count: int | None = None, pad: str = "wrap") -> tuple[tuple[Iterable[Any], ...], int]:
     """Force all input items to the same length
 
     Parameters

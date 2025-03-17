@@ -1,5 +1,6 @@
 """Utilities for data science and machine learning."""
-from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
+
+from importlib.metadata import PackageNotFoundError, version
 
 try:
     # Change here if project is renamed and does not equal the package name

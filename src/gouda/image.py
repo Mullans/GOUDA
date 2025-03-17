@@ -1,9 +1,11 @@
 """Methods/Shortcuts for modifying and handling image data."""
+
+import os
+import warnings
+
 import matplotlib
 import numpy as np
 import numpy.typing as npt
-import os
-import warnings
 
 from gouda import constants, data_methods, plotting
 from gouda.goudapath import GoudaPath, GPathLike
@@ -16,7 +18,7 @@ __license__ = "mit"
 try:
     import cv2
 except ModuleNotFoundError:  # pragma: no cover
-    warnings.warn('OpenCV module not found - some image methods will raise exceptions')
+    warnings.warn("OpenCV module not found - some image methods will raise exceptions")
 
 
 def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
@@ -39,7 +41,7 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
     else:
         path = str(path)
     if not os.path.exists(path):
-        raise ValueError("No file found at path '{}'".format(path))
+        raise ValueError(f"No file found at path '{path}'")
     if flag == constants.GRAYSCALE:
         return cv2.imread(path, 0)
     elif flag == constants.RGB:
@@ -61,7 +63,7 @@ def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
         image data to save - must be uint8/uint16 and with shape [x, y], [x, y, 1], or [x, y, 3]
     as_RGB: bool
         If true, flips the channels before saving (OpenCV assumes BGR image by default)
-        """
+    """
     if isinstance(path, GoudaPath):
         path = path.path
     else:
@@ -74,7 +76,7 @@ def imwrite(path: GPathLike, image: ImageArrayType, as_RGB: bool = True):
     elif image.ndim == 3 and image.shape[2] == 3:
         pass
     else:
-        raise ValueError("Image must be of shape [x, y, 1], [x, y, 3], or [x, y], not {}".format(image.shape))
+        raise ValueError(f"Image must be of shape [x, y, 1], [x, y, 3], or [x, y], not {image.shape}")
     if as_RGB:
         cv2.imwrite(path, image[:, :, ::-1])
     else:
@@ -106,7 +108,7 @@ def stack_label(label: npt.NDArray, label_channel: int = 0, as_uint8: bool = Tru
         to_stack[label_channel] = label
         return np.dstack(to_stack)
     else:
-        raise ValueError("Not a valid color channel index: {}".format(label_channel))
+        raise ValueError(f"Not a valid color channel index: {label_channel}")
 
 
 def laplacian_var(image: npt.NDArray) -> npt.NDArray:
@@ -129,7 +131,9 @@ def sobel_var(image: npt.NDArray) -> npt.NDArray:
     return cv2.addWeighted(grad_x, 0.5, grad_y, 0.5, 0).var()
 
 
-def split_signs(mask: npt.NDArray, positive_color: ColorType = (0., 1., 0.), negative_color: ColorType = (1., 0., 0.)) -> npt.NDArray:
+def split_signs(
+    mask: npt.NDArray, positive_color: ColorType = (0.0, 1.0, 0.0), negative_color: ColorType = (1.0, 0.0, 0.0)
+) -> npt.NDArray:
     """Split a single channel image mask with +/- values into color channels
 
     Parameters
@@ -176,9 +180,7 @@ def masked_lineup(image, label):
     return [
         image,
         add_mask(image, label),
-        np.dstack([label * 255,
-                   np.zeros_like(label),
-                   np.zeros_like(label)]).astype(np.uint8)
+        np.dstack([label * 255, np.zeros_like(label), np.zeros_like(label)]).astype(np.uint8),
     ]
 
 
@@ -281,15 +283,12 @@ def crop_to_mask(image, mask, with_label=False, smoothing=True):
     x0, x1 = x_range[0][0], x_range[0][-1]
     y0, y1 = y_range[0][0], y_range[0][-1]
     if smoothing:
-        smooth_mask = cv2.GaussianBlur(
-            mask.astype(np.uint8) * 255.0, (5, 5), 0)
+        smooth_mask = cv2.GaussianBlur(mask.astype(np.uint8) * 255.0, (5, 5), 0)
         # mask[mask<0.8] = 0
         # mask[mask>=0.8] = 1
     else:
         smooth_mask = mask.astype(np.uint8) * 255.0
-    masked_image = cv2.bitwise_and(image,
-                                   image,
-                                   mask=smooth_mask.astype(np.uint8))
+    masked_image = cv2.bitwise_and(image, image, mask=smooth_mask.astype(np.uint8))
     if with_label:
         return masked_image[x0:x1, y0:y1], mask[x0:x1, y0:y1]
     return masked_image[x0:x1, y0:y1]
@@ -308,7 +307,7 @@ def get_bounds(mask: np.ndarray, bg_val: float = 0, as_slice: bool = False) -> l
         mask = mask != bg_val
     for i in range(mask.ndim):
         axis_check = np.any(mask, axis=tuple([j for j in range(mask.ndim) if j != i]))
-        axis_range = np.where(axis_check == True) # noqa
+        axis_range = np.where(axis_check == True)  # noqa
         bounds.append([axis_range[0][0], axis_range[0][-1] + 1])
     if as_slice:
         bounds = tuple([slice(b[0], b[1]) for b in bounds])
@@ -394,11 +393,11 @@ def padded_resize(image, size=[960, 540], allow_rotate=True, interpolation=cv2.I
         if padx < pady:
             new_shape = [x + padx, y, max(c, 1)]
             padded_image = np.zeros(new_shape, dtype=data_type)
-            padded_image[int(padx // 2):-int(padx - padx // 2), :] = image
+            padded_image[int(padx // 2) : -int(padx - padx // 2), :] = image
         else:
             new_shape = [x, y + pady, max(c, 1)]
             padded_image = np.zeros(new_shape, dtype=data_type)
-            padded_image[:, int(pady // 2):-int(pady - pady // 2)] = image
+            padded_image[:, int(pady // 2) : -int(pady - pady // 2)] = image
     else:
         padded_image = image
     padded_image = cv2.resize(padded_image, (size[1], size[0]), interpolation).astype(data_type)
@@ -421,8 +420,7 @@ def vertical_flip(image):
 def adjust_gamma(image, gamma=1.0):
     """Adjust the gamma of the image."""
     invGamma = 1.0 / gamma
-    table = np.array([((i / 255.0)**invGamma) * 255
-                      for i in np.arange(0, 256)]).astype(np.uint8)
+    table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype(np.uint8)
     return cv2.LUT(image, table)
 
 
@@ -446,7 +444,7 @@ def polar_to_cartesian(image, output_shape=None):
     return output
 
 
-def get_mask_border(mask, inside_border=True, border_thickness=2, kernel='ellipse'):
+def get_mask_border(mask, inside_border=True, border_thickness=2, kernel="ellipse"):
     """Get the border of a boolean mask.
 
     mask: np.ndarray
@@ -463,7 +461,7 @@ def get_mask_border(mask, inside_border=True, border_thickness=2, kernel='ellips
     kernel options are ['rect', 'cross', 'ellipse'] or any cv2.MorphShapes enum
     """
     if isinstance(kernel, str):
-        kernel = {'rect': cv2.MORPH_RECT, 'cross': cv2.MORPH_CROSS, 'ellipse': cv2.MORPH_ELLIPSE}[kernel]
+        kernel = {"rect": cv2.MORPH_RECT, "cross": cv2.MORPH_CROSS, "ellipse": cv2.MORPH_ELLIPSE}[kernel]
     mask_type = mask.dtype
     mask = mask.astype(np.float32)
     element = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (border_thickness * 2 + 1, border_thickness * 2 + 1))
@@ -474,7 +472,7 @@ def get_mask_border(mask, inside_border=True, border_thickness=2, kernel='ellips
     return border
 
 
-def add_mask(image, mask, color='red', opacity=0.5, mask_threshold=0.5):
+def add_mask(image, mask, color="red", opacity=0.5, mask_threshold=0.5):
     """Add a binary outline/mask over a given image.
 
     Parameters
@@ -499,11 +497,11 @@ def add_mask(image, mask, color='red', opacity=0.5, mask_threshold=0.5):
     if isinstance(image, list):
         return [add_mask(item, mask, color=color, opacity=opacity) for item in image]
     if opacity < 0.0 or opacity > 1.0:
-        raise ValueError('opacity must be between 0.0 and 1.0')
+        raise ValueError("opacity must be between 0.0 and 1.0")
     image = np.squeeze(image).copy()
     mask = np.squeeze(mask)
     if mask.ndim != 2:
-        raise ValueError('Only 2-dimensional binary masks can be used')
+        raise ValueError("Only 2-dimensional binary masks can be used")
     if image.shape[:2] != mask.shape[:2]:
         raise ValueError("image and outline must have the same height and width")
     if image.ndim == 2:
@@ -577,6 +575,7 @@ def fast_label(item):
     requires scipy, which is not a main requirement of the rest of GOUDA
     """
     from scipy.ndimage import _ni_label
+
     label_dest = np.empty(item.shape, dtype=np.uint16)
     structure = np.ones([3] * len(item.shape), dtype=bool)
     _ni_label._label(item, structure, label_dest)
@@ -613,6 +612,7 @@ def mask_by_triplet(pred, lower_thresh=0.3, upper_thresh=0.75, area_thresh=2000,
     """
     # TODO - Add tests
     import skimage.measure
+
     flat_pred = np.squeeze(pred)
     mask_shape = np.shape(flat_pred)
 

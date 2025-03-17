@@ -1,5 +1,7 @@
 """Convenience methods to display images using matplotlib.pyplot."""
+
 import inspect
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -35,7 +37,17 @@ def _extract_method_kwargs(kwargs, method, remove=True):
     return method_kwargs
 
 
-def print_grid(*images, figsize=(8, 8), toFile=None, do_squarify=False, show=True, return_grid_shape=False, return_fig=False, cmap='gray', **kwargs):
+def print_grid(
+    *images,
+    figsize=(8, 8),
+    toFile=None,
+    do_squarify=False,
+    show=True,
+    return_grid_shape=False,
+    return_fig=False,
+    cmap="gray",
+    **kwargs,
+):
     """Print out images as a grid.
 
     Parameters
@@ -73,11 +85,11 @@ def print_grid(*images, figsize=(8, 8), toFile=None, do_squarify=False, show=Tru
     #TODO - allow passing row/col height/width instead of figsize - https://stackoverflow.com/a/4306340/2348288
     #TODO - allow passing row/col labels
     """
-    defaults = ['hspace', 'wspace', 'left', 'bottom', 'right', 'top']
+    defaults = ["hspace", "wspace", "left", "bottom", "right", "top"]
     for item in defaults:
         if item not in kwargs:
             kwargs[item] = None
-    kwargs['cmap'] = cmap
+    kwargs["cmap"] = cmap
     image_kwargs = _extract_method_kwargs(kwargs, plt.imshow)
     fig_kwargs = _extract_method_kwargs(kwargs, plt.figure)
     squarify_kwargs = _extract_method_kwargs(kwargs, squarify)
@@ -87,11 +99,11 @@ def print_grid(*images, figsize=(8, 8), toFile=None, do_squarify=False, show=Tru
 
     if len(images) == 1:
         images = images[0]
-    if hasattr(images, '__array__'):
+    if hasattr(images, "__array__"):
         images = np.array(images)
     if isinstance(images, (list, tuple)):
         if len(images) == 0:
-            raise ValueError('No images to display')
+            raise ValueError("No images to display")
         if isinstance(images[0], (list, tuple)):
             # list of lists of images
             rows = len(images)
@@ -125,30 +137,30 @@ def print_grid(*images, figsize=(8, 8), toFile=None, do_squarify=False, show=Tru
             cols = images.shape[1]
             to_show = [[images[i, j] for j in range(images.shape[1])] for i in range(images.shape[0])]
         else:
-            raise ValueError('Invalid array shape: {}'.format(images.shape))
+            raise ValueError(f"Invalid array shape: {images.shape}")
     elif isinstance(images, dict):
         rows = 1
         cols = 1
         to_show = [[images]]
     else:
-        raise ValueError("Invalid input type: {}".format(type(images)))
+        raise ValueError(f"Invalid input type: {type(images)}")
     if rows == 0 or cols == 0:
-        raise ValueError('No images to display')
+        raise ValueError("No images to display")
 
     fig = plt.figure(figsize=figsize, **fig_kwargs)
-    gs = fig.add_gridspec(int(rows), int(cols), hspace=kwargs['hspace'], wspace=kwargs['wspace'])
+    gs = fig.add_gridspec(int(rows), int(cols), hspace=kwargs["hspace"], wspace=kwargs["wspace"])
 
     for row in range(rows):
         image_row = to_show[row]
         for col in range(len(image_row)):
             image = image_row[col]
-            if image is None or (isinstance(image, dict) and image['image'] is None):
+            if image is None or (isinstance(image, dict) and image["image"] is None):
                 continue
             ax = fig.add_subplot(gs[row, col])
 
             if isinstance(image, dict):
                 image_dict = image
-                image = np.squeeze(image_dict['image'])
+                image = np.squeeze(image_dict["image"])
                 for key in image_kwargs:
                     if key not in image_dict:
                         image_dict[key] = image_kwargs[key]
@@ -156,12 +168,12 @@ def print_grid(*images, figsize=(8, 8), toFile=None, do_squarify=False, show=Tru
                 if image.dtype == bool:
                     image = image.astype(np.uint8)
                 plt.imshow(image, **imshow_kwargs)
-                if 'title' in image_dict:
-                    ax.set_title(image_dict['title'])
-                if 'xlabel' in image_dict:
-                    ax.set_xlabel(image_dict['xlabel'])
-                if 'ylabel' in image_dict:
-                    ax.set_ylabel(image_dict['ylabel'])
+                if "title" in image_dict:
+                    ax.set_title(image_dict["title"])
+                if "xlabel" in image_dict:
+                    ax.set_xlabel(image_dict["xlabel"])
+                if "ylabel" in image_dict:
+                    ax.set_ylabel(image_dict["ylabel"])
             else:
                 image = np.squeeze(image)
                 plt.imshow(image, **image_kwargs)
@@ -169,9 +181,9 @@ def print_grid(*images, figsize=(8, 8), toFile=None, do_squarify=False, show=Tru
             plt.setp(ax.spines.values(), visible=False)
             ax.xaxis.set_major_locator(plt.NullLocator())
             ax.yaxis.set_major_locator(plt.NullLocator())
-    plt.subplots_adjust(left=kwargs['left'], bottom=kwargs['bottom'], right=kwargs['right'], top=kwargs['top'])
-    if 'suptitle' in kwargs:
-        plt.suptitle(kwargs['suptitle'])
+    plt.subplots_adjust(left=kwargs["left"], bottom=kwargs["bottom"], right=kwargs["right"], top=kwargs["top"])
+    if "suptitle" in kwargs:
+        plt.suptitle(kwargs["suptitle"])
     if all([kwargs[key] is None for key in defaults]):
         fig.tight_layout()
     if toFile is not None:
@@ -210,15 +222,7 @@ def print_image(image, figsize=(8, 6.5), toFile=None, show=True, allow_interpola
     imshow_args : dict
         Extra args to pass directly to the pyplot.imshow call (the default is {})
     """
-    defaults = {
-        'hspace': 0,
-        'wspace': 0,
-        'left': 0,
-        'bottom': 0,
-        'right': 1,
-        'top': 1,
-        'cmap': 'bone'
-    }
+    defaults = {"hspace": 0, "wspace": 0, "left": 0, "bottom": 0, "right": 1, "top": 1, "cmap": "bone"}
 
     for item in defaults:
         if item not in kwargs:
@@ -226,20 +230,22 @@ def print_image(image, figsize=(8, 6.5), toFile=None, show=True, allow_interpola
     image = np.squeeze(image)
     fig = plt.figure(figsize=figsize)
     if max(image.shape[:2]) / min(image.shape[:2]) > 10 and allow_interpolation:
-        imshow_args['interpolation'] = 'nearest'
-        imshow_args['aspect'] = 'auto'
+        imshow_args["interpolation"] = "nearest"
+        imshow_args["aspect"] = "auto"
     if image.ndim == 2:
-        imshow_args['cmap'] = kwargs['cmap']
+        imshow_args["cmap"] = kwargs["cmap"]
 
     plt.imshow(image, **imshow_args)
     plt.gca().set_axis_off()
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    plt.subplots_adjust(top=kwargs['top'],
-                        bottom=kwargs['bottom'],
-                        right=kwargs['right'],
-                        left=kwargs['left'],
-                        hspace=kwargs['hspace'],
-                        wspace=kwargs['wspace'])
+    plt.subplots_adjust(
+        top=kwargs["top"],
+        bottom=kwargs["bottom"],
+        right=kwargs["right"],
+        left=kwargs["left"],
+        hspace=kwargs["hspace"],
+        wspace=kwargs["wspace"],
+    )
     plt.margins(0, 0)
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
@@ -286,7 +292,7 @@ def squarify(image, axis=0, num_cols=None, as_array=False):
     outer_list = []
     for i in range(0, num_images, num_cols):
         inner_list = []
-        for j in range(0, num_cols):
+        for j in range(num_cols):
             if i + j >= num_images:
                 if as_array:
                     inner_list.append(np.zeros_like(images[0]))
@@ -304,7 +310,7 @@ def squarify(image, axis=0, num_cols=None, as_array=False):
 class VideoWriter:
     import cv2
 
-    def __init__(self, out_path, fps=10, codec='MJPG', output_shape=None, interpolator=cv2.INTER_LINEAR):
+    def __init__(self, out_path, fps=10, codec="MJPG", output_shape=None, interpolator=cv2.INTER_LINEAR):
         """A convenience wrapper for OpenCV video writing"""
         self.out_path = out_path
         self.output_shape = output_shape  # assumes (height, width)
@@ -343,7 +349,16 @@ class VideoWriter:
         self.write(data)
 
 
-def show_video(data, player_width=500, player_height=300, frame_height=None, frame_width=None, toFile='temp.mp4', show='ipython', **kwargs):
+def show_video(
+    data,
+    player_width=500,
+    player_height=300,
+    frame_height=None,
+    frame_width=None,
+    toFile="temp.mp4",
+    show="ipython",
+    **kwargs,
+):
     """Convert a series of frames to a video and display it.
 
     Parameters
@@ -371,11 +386,11 @@ def show_video(data, player_width=500, player_height=300, frame_height=None, fra
     Data can be in shape [frames, x, y], [frames, x, y, c], but only 1, 3, or 4 channels will work
     """
     defaults = {
-        'fps': 10,
-        'codec': 'H264',
-        'frame_height': frame_height,
-        'frame_width': frame_width,
-        'interpolator': 1  # 1 = cv2.InterLinear
+        "fps": 10,
+        "codec": "H264",
+        "frame_height": frame_height,
+        "frame_width": frame_width,
+        "interpolator": 1,  # 1 = cv2.InterLinear
     }
 
     for item in defaults:
@@ -383,47 +398,48 @@ def show_video(data, player_width=500, player_height=300, frame_height=None, fra
             kwargs[item] = defaults[item]
     if isinstance(data, (list, tuple)):
         # A list/tuple of arrays
-        if hasattr(data[0], '__array__'):
+        if hasattr(data[0], "__array__"):
             nframes = len(data)
             temp = np.array(data[0])
             data_shape = temp.shape
             ndim = temp.ndim + 1
         else:
-            raise ValueError('Frames must be array-like, not {}'.format(type(data[0])))
-    elif hasattr(data, '__array__'):
+            raise ValueError(f"Frames must be array-like, not {type(data[0])}")
+    elif hasattr(data, "__array__"):
         # Array
         data = np.array(data)
         nframes = data.shape[0]
         data_shape = data.shape[1:]
         ndim = data.ndim
     else:
-        raise ValueError('Unknown data type: {}'.format(type(data)))
+        raise ValueError(f"Unknown data type: {type(data)}")
 
     if ndim < 2:
-        raise ValueError('Video data must have at frames, height, and width')
+        raise ValueError("Video data must have at frames, height, and width")
     if not (ndim == 3 or (ndim == 4 and data_shape[-1] in [1, 3, 4])):
-        raise ValueError('Unknown video shape: {}'.format(data_shape))
+        raise ValueError(f"Unknown video shape: {data_shape}")
 
-    if kwargs['frame_height'] is not None and kwargs['frame_width'] is not None:
-        kwargs['output_shape'] = (int(kwargs['frame_height']), int(kwargs['frame_width']))
-    elif kwargs['frame_height'] is not None:
-        width = data_shape[1] * (kwargs['frame_height'] / data_shape[0])
-        kwargs['output_shape'] = (int(kwargs['frame_height']), int(width))
-    elif kwargs['frame_width'] is not None:
-        height = data_shape[0] * (kwargs['frame_width'] / data_shape[1])
-        kwargs['output_shape'] = (int(height), int(kwargs['frame_width']))
+    if kwargs["frame_height"] is not None and kwargs["frame_width"] is not None:
+        kwargs["output_shape"] = (int(kwargs["frame_height"]), int(kwargs["frame_width"]))
+    elif kwargs["frame_height"] is not None:
+        width = data_shape[1] * (kwargs["frame_height"] / data_shape[0])
+        kwargs["output_shape"] = (int(kwargs["frame_height"]), int(width))
+    elif kwargs["frame_width"] is not None:
+        height = data_shape[0] * (kwargs["frame_width"] / data_shape[1])
+        kwargs["output_shape"] = (int(height), int(kwargs["frame_width"]))
     else:
-        kwargs['output_shape'] = (int(data_shape[0]), int(data_shape[1]))
+        kwargs["output_shape"] = (int(data_shape[0]), int(data_shape[1]))
 
-    kwargs['output_shape'] = (int(kwargs['output_shape'][1]), int(kwargs['output_shape'][0]))
+    kwargs["output_shape"] = (int(kwargs["output_shape"][1]), int(kwargs["output_shape"][0]))
     writer_kwargs = _extract_method_kwargs(kwargs, VideoWriter.__init__)
     print(writer_kwargs)
     with VideoWriter(str(toFile), **writer_kwargs) as writer:
         for i in range(nframes):
             writer.write(data[i])
 
-    if show == 'ipython':
+    if show == "ipython":
         from IPython.display import Video
+
         return Video(str(toFile), height=player_height, width=player_width)
-    elif show == 'opencv':
-        raise NotImplementedError('Still working on this - use ipython for now')
+    elif show == "opencv":
+        raise NotImplementedError("Still working on this - use ipython for now")
