@@ -1,24 +1,30 @@
-"""Classes to handle constant-time mean/stddev updates"""
+"""Classes to handle constant-time mean/stddev updates."""
+
+from __future__ import annotations
 
 import numpy as np
+import numpy.typing as npt
+
+from gouda.typing import ShapeType
 
 
 class ParallelStats:
-    def __init__(self, stabilize=False):
-        """Object for aggregation of stats across multiple arrays/values
+    """Object for aggregation of stats across multiple arrays/values.
 
-        Parameters
-        ----------
-        stabilize : bool
-            Should a potentially more stable method be used to update the mean
+    Parameters
+    ----------
+    stabilize : bool
+        Should a potentially more stable method be used to update the mean
 
-        Note
-        ----------
-        Stabilize should be set to True for cases where self._count is rougly equal to the incoming count and both are large. In practice, there did not seem to be much error (<1e-10) even when repeatedly using arrays with 100k values each.
+    Note
+    ----------
+    Stabilize should be set to True for cases where self._count is rougly equal to the incoming count and both are large. In practice, there did not seem to be much error (<1e-10) even when repeatedly using arrays with 100k values each.
 
-        The algorithm used is adapted from:
-        https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
-        """
+    The algorithm used is adapted from:
+    https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+    """
+
+    def __init__(self, stabilize: bool = False) -> None:
         self._count = 0
         self._mean = 0.0
         self._ssd = 0.0  # sum of square differences
@@ -26,12 +32,14 @@ class ParallelStats:
         self._max = float("-inf")
         self.stabilize = stabilize
 
-    def __add__(self, value):
+    def __add__(self, value: ParallelStats) -> ParallelStats:
+        """Add two ParallelStats objects together."""
         stats_a = self.copy()
         stats_a += value
         return stats_a
 
-    def __iadd__(self, value):
+    def __iadd__(self, value: ParallelStats | npt.ArrayLike) -> ParallelStats:
+        """Update the stats with the given value or ParallelStats object."""
         count_a = self._count
         mean_a = self._mean
         ssd_a = self._ssd
@@ -40,7 +48,7 @@ class ParallelStats:
             mean_b = value.mean()
             ssd_b = value.ssd()
         else:
-            value = np.array(value)
+            value = np.asarray(value)
             count_b = value.size
             mean_b = value.mean()
             ssd_b = ((value - mean_b) ** 2).sum()
@@ -58,17 +66,20 @@ class ParallelStats:
         self._ssd = ssd_a + ssd_b + delta**2 * count_a * count_b * count_denom
         return self
 
-    def __call__(self, value, stabilize=None):
+    def __call__(self, value: int | float | ParallelStats | npt.ArrayLike, stabilize: bool | None = None) -> None:
+        """Wrap the __iadd__ method to allow for a more natural interface."""
         if stabilize is not None:
             self.stabilize = stabilize
         self += value
 
-    def copy(self):
+    def copy(self) -> ParallelStats:
+        """Return a copy of the current stats."""
         stats_copy = ParallelStats()
         stats_copy.copy_stats(self)
         return stats_copy
 
-    def copy_stats(self, stats):
+    def copy_stats(self, stats: ParallelStats) -> None:
+        """Copy the stats from another ParallelStats object."""
         self._count = stats.count()
         self._mean = stats.mean()
         self._ssd = stats.ssd()
@@ -76,22 +87,25 @@ class ParallelStats:
         self._max = stats.max()
         self.stabilize = stats.stabilize
 
-    def count(self):
+    def count(self) -> int:
+        """Return the count of items included in the stats."""
         return self._count
 
-    def mean(self):
+    def mean(self) -> float:
+        """Return the mean."""
         return self._mean
 
-    def summary(self):  # pragma: no cover
+    def summary(self) -> None:  # pragma: no cover
+        """Print a summary of the stats."""
         print(f"Count: {self._count:d}, Min: {self._min:.2f}, Max: {self._max:.2f}")
         print(f"Mean: {self._mean:.4f}, Std: {self.std():.4f}, Var: {self.var():.4f}")
 
-    def ssd(self):
-        """Return the sum of squared differences"""
+    def ssd(self) -> float:
+        """Return the sum of squared differences."""
         return self._ssd
 
-    def std(self, sample_std=False):
-        """Return the standard deviation
+    def std(self, sample_std: bool = False) -> float:
+        """Return the standard deviation.
 
         Parameters
         ----------
@@ -102,8 +116,8 @@ class ParallelStats:
             return 0
         return np.sqrt(self.var(sample_variance=sample_std))
 
-    def var(self, sample_variance=False):
-        """Return the variance
+    def var(self, sample_variance: bool = False) -> float:
+        """Return the variance.
 
         Parameters
         ----------
@@ -116,48 +130,50 @@ class ParallelStats:
             return self._ssd / (self._count - 1)
         return self._ssd / self._count
 
-    def min(self):
+    def min(self) -> float | int:
+        """Return the minimum value."""
         return self._min
 
-    def max(self):
+    def max(self) -> float | int:
+        """Return the maximum value."""
         return self._max
 
 
 class MMean:
     """Class to hold a moving mean with constant-time update and memory."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._mean = 0.0
         self._count = 0
 
     @property
-    def count(self):
-        """The count of items included in the mean"""
+    def count(self) -> int:
+        """The count of items included in the mean."""
         return self._count
 
-    def __iadd__(self, value):
+    def __iadd__(self, value: int | float) -> MMean:
         """Update the mean, including the given value."""
         self._count += 1
         self._mean += (1.0 / self._count) * (value - self._mean)
         return self
 
-    def __add__(self, value):
+    def __add__(self, value: int | float) -> float:
         """Add a new value to the mean, does not update class values."""
         return self._mean + value
 
-    def __sub__(self, value):
+    def __sub__(self, value: int | float) -> float:
         """Subtract a new value from the mean, does not update class values."""
         return self._mean - value
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the mean as a string."""
         return str(self._mean)
 
-    def __call__(self):
-        """Alternate method for self.mean()"""
+    def __call__(self) -> float:
+        """Alternate method for self.mean()."""
         return self._mean
 
-    def mean(self):
+    def mean(self) -> float:
         """Return the mean."""
         return self._mean
 
@@ -165,17 +181,17 @@ class MMean:
 class MStddev:
     """Class to hold a moving standard deviation with constant-time update and memory."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._count = 0.0
         self._mean = 0.0
         self._variance = 0.0
 
     @property
-    def count(self):
-        """The count of items included in the standard deviation"""
+    def count(self) -> int:
+        """The count of items included in the standard deviation."""
         return self._count
 
-    def __iadd__(self, value):
+    def __iadd__(self, value: int | float) -> MStddev:
         """Update the mean and stddev, including the new value."""
         self._count += 1
         prev_mean = self._mean
@@ -183,30 +199,30 @@ class MStddev:
         self._variance += (value - self._mean) * (value - prev_mean)
         return self
 
-    def __add__(self, value):
+    def __add__(self, value: int | float) -> float:
         """Add a value to the stddev, does not update class values."""
         return self.stddev() + value
 
-    def __call__(self):
-        """Alternate method for self.stddev"""
+    def __call__(self) -> float:
+        """Alternate method for self.stddev."""
         return self.stddev()
 
-    def __sub__(self, value):
+    def __sub__(self, value: int | float) -> float:
         """Subtract a value from the stddev, does not update class values."""
         return self.stddev() - value
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the stddev as a string."""
         if self._count == 0:
             return str(0)
         stddev = np.sqrt(self._variance / self._count)
         return str(stddev)
 
-    def mean(self):
-        """Return the mean"""
+    def mean(self) -> float:
+        """Return the mean."""
         return self._mean
 
-    def stddev(self):
+    def stddev(self) -> float:
         """Return the current stddev."""
         if self._count == 0:
             return 0
@@ -222,51 +238,51 @@ class MMeanArray:
         mean array for all operations.
     """
 
-    def __init__(self, shape, dtype=float):
+    def __init__(self, shape: ShapeType, dtype: npt.DTypeLike = float) -> None:
         self._mean = np.zeros(shape, dtype=dtype)
         self._count = 0
 
     @property
-    def shape(self):
-        """The shape of the array"""
+    def shape(self) -> tuple[int, ...]:
+        """The shape of the array."""
         return self._mean.shape
 
     @property
-    def dtype(self):
-        """The type of data stored in the array"""
+    def dtype(self) -> npt.DTypeLike:
+        """The type of data stored in the array."""
         return self._mean.dtype
 
     @property
-    def count(self):
-        """The number of examples used for the mean of each item in the array"""
+    def count(self) -> int:
+        """The number of examples used for the mean of each item in the array."""
         return self._count
 
-    def __iadd__(self, value):
-        """Update the _mean, including the given value."""
+    def __iadd__(self, value: npt.NDArray) -> MMeanArray:
+        """Update the mean, including the given value."""
         if value.shape != self.shape:
             raise ValueError("Input values must have the same shape as the MMeanArray")
         self._count += 1
         self._mean += (value - self._mean) * (1.0 / self._count)
         return self
 
-    def __add__(self, value):
+    def __add__(self, value: npt.NDArray) -> npt.NDArray:
         """Add a new value to the mean, does not update class values."""
         return self._mean + value
 
-    def __sub__(self, value):
+    def __sub__(self, value: npt.NDArray) -> npt.NDArray:
         """Subtract a new value from the mean, does not update class values."""
         return self._mean - value
 
-    def __str__(self):
-        """Return the _mean as a string."""
+    def __str__(self) -> str:
+        """Return the mean as a string."""
         return str(self._mean)
 
-    def __call__(self):
-        """Alternate method for self.mean()"""
+    def __call__(self) -> npt.NDArray[np.floating]:
+        """Alternate method for self.mean()."""
         return self._mean
 
-    def mean(self):
-        """Return the _mean."""
+    def mean(self) -> npt.NDArray[np.floating]:
+        """Return the mean."""
         return self._mean
 
 
@@ -279,37 +295,37 @@ class MStddevArray:
         mean array for all operations.
     """
 
-    def __init__(self, shape, dtype=float):
+    def __init__(self, shape: ShapeType, dtype: npt.DTypeLike = float) -> None:
         self._mean = np.zeros(shape, dtype=dtype)
         self._variance = np.zeros(shape, dtype=dtype)
         self._count = 0
 
     @property
-    def shape(self):
-        """The shape of the array"""
+    def shape(self) -> tuple[int, ...]:
+        """The shape of the array."""
         return self._variance.shape
 
     @property
-    def dtype(self):
-        """The type of data stored in the array"""
+    def dtype(self) -> npt.DTypeLike:
+        """The type of data stored in the array."""
         return self._mean.dtype
 
     @property
-    def count(self):
-        """The number of examples used for the standard deviation of each item in the array"""
+    def count(self) -> int:
+        """The number of examples used for the standard deviation of each item in the array."""
         return self._count
 
-    def mean(self):
-        """Return the mean of the array"""
+    def mean(self) -> npt.NDArray[np.floating]:
+        """Return the mean of the array."""
         return self._mean
 
-    def variance(self):
-        """Return the variance of the array"""
+    def variance(self) -> npt.NDArray[np.floating]:
+        """Return the variance of the array."""
         if self._count == 0:
             return np.zeros_like(self._variance)
         return self._variance / self._count
 
-    def __iadd__(self, value):
+    def __iadd__(self, value: npt.NDArray) -> MStddevArray:
         """Update the mean and stddev, including the new value."""
         if value.shape != self.shape:
             raise ValueError("Input values must have the same shape as the MStddevArray")
@@ -319,23 +335,23 @@ class MStddevArray:
         self._variance += (value - self._mean) * (value - prev_mean)
         return self
 
-    def __add__(self, value):
+    def __add__(self, value: npt.NDArray) -> npt.NDArray:
         """Add a value to the stddev, does not update class values."""
         return self.stddev() + value
 
-    def __sub__(self, value):
+    def __sub__(self, value: npt.NDArray) -> npt.NDArray:
         """Subtract a value from the stddev, does not update class values."""
         return self.stddev() - value
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the stddev as a string."""
         return str(self.stddev())
 
-    def __call__(self):
-        """Alternate method for self.stddev()"""
+    def __call__(self) -> npt.NDArray[np.floating]:
+        """Alternate method for self.stddev()."""
         return self.stddev()
 
-    def stddev(self):
+    def stddev(self) -> npt.NDArray[np.floating]:
         """Return the current stddev."""
         if self._count == 0:
             return np.zeros_like(self._variance)
