@@ -1,10 +1,8 @@
 """General purpose methods that don't fit other categories."""
 
-from __future__ import annotations
-
 import inspect
 from collections.abc import Callable, Generator, Iterable
-from typing import Any
+from typing import Any, Optional
 
 
 def getattr_recursive(item: Any, attr_string: str) -> Any:  # noqa: ANN401
@@ -150,7 +148,7 @@ def force_len(x: Any, count: int, pad: str = "wrap") -> Iterable:  # noqa: ANN40
         return result
 
 
-def match_len(*args: Any, count: int | None = None, pad: str = "wrap") -> tuple[tuple[Iterable[Any], ...], int]:  # noqa: ANN401
+def match_len(*args: Any, count: Optional[int] = None, pad: str = "wrap") -> tuple[tuple[Iterable[Any], ...], int]:  # noqa: ANN401
     """Force all input items to the same length.
 
     Parameters

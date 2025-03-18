@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional, Union
+
 import numpy as np
 import numpy.typing as npt
 
@@ -38,7 +40,7 @@ class ParallelStats:
         stats_a += value
         return stats_a
 
-    def __iadd__(self, value: ParallelStats | npt.ArrayLike) -> ParallelStats:
+    def __iadd__(self, value: Union[ParallelStats, npt.ArrayLike]) -> ParallelStats:
         """Update the stats with the given value or ParallelStats object."""
         count_a = self._count
         mean_a = self._mean
@@ -66,7 +68,9 @@ class ParallelStats:
         self._ssd = ssd_a + ssd_b + delta**2 * count_a * count_b * count_denom
         return self
 
-    def __call__(self, value: int | float | ParallelStats | npt.ArrayLike, stabilize: bool | None = None) -> None:
+    def __call__(
+        self, value: Union[int, float, ParallelStats, npt.ArrayLike], stabilize: Optional[bool] = None
+    ) -> None:
         """Wrap the __iadd__ method to allow for a more natural interface."""
         if stabilize is not None:
             self.stabilize = stabilize
@@ -130,11 +134,11 @@ class ParallelStats:
             return self._ssd / (self._count - 1)
         return self._ssd / self._count
 
-    def min(self) -> float | int:
+    def min(self) -> Union[float, int]:
         """Return the minimum value."""
         return self._min
 
-    def max(self) -> float | int:
+    def max(self) -> Union[float, int]:
         """Return the maximum value."""
         return self._max
 
@@ -151,17 +155,17 @@ class MMean:
         """The count of items included in the mean."""
         return self._count
 
-    def __iadd__(self, value: int | float) -> MMean:
+    def __iadd__(self, value: Union[int, float]) -> MMean:
         """Update the mean, including the given value."""
         self._count += 1
         self._mean += (1.0 / self._count) * (value - self._mean)
         return self
 
-    def __add__(self, value: int | float) -> float:
+    def __add__(self, value: Union[int, float]) -> float:
         """Add a new value to the mean, does not update class values."""
         return self._mean + value
 
-    def __sub__(self, value: int | float) -> float:
+    def __sub__(self, value: Union[int, float]) -> float:
         """Subtract a new value from the mean, does not update class values."""
         return self._mean - value
 
@@ -191,7 +195,7 @@ class MStddev:
         """The count of items included in the standard deviation."""
         return self._count
 
-    def __iadd__(self, value: int | float) -> MStddev:
+    def __iadd__(self, value: Union[int, float]) -> MStddev:
         """Update the mean and stddev, including the new value."""
         self._count += 1
         prev_mean = self._mean
@@ -199,7 +203,7 @@ class MStddev:
         self._variance += (value - self._mean) * (value - prev_mean)
         return self
 
-    def __add__(self, value: int | float) -> float:
+    def __add__(self, value: Union[int, float]) -> float:
         """Add a value to the stddev, does not update class values."""
         return self.stddev() + value
 
@@ -207,7 +211,7 @@ class MStddev:
         """Alternate method for self.stddev."""
         return self.stddev()
 
-    def __sub__(self, value: int | float) -> float:
+    def __sub__(self, value: Union[int, float]) -> float:
         """Subtract a value from the stddev, does not update class values."""
         return self.stddev() - value
 

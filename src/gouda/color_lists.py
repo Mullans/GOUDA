@@ -1,6 +1,6 @@
 """A bunch of different colors for use with plotting."""
 
-from __future__ import annotations
+from typing import Optional, Union
 
 import matplotlib.colors
 import numpy as np
@@ -10,9 +10,9 @@ from gouda.typing import ColorType
 COLOR_NOTE = """Aquamarine, Black, Blue, Brown, Fuchsia, Gold, Green, Indigo, Lavender, Magenta, Maroon, Orange, Orchid, Plum, Red, Salmon, Silver, Tan, White, Yellow are found in both html and crayon colors"""
 
 
-def find_color_rgb(color: str | ColorType) -> tuple[float, float, float]:
+def find_color_rgb(color: Union[str, ColorType]) -> tuple[float, float, float]:
     """Convert a color string or tuple to a tuple of floats."""
-    cleaned_color: str | tuple[float, float, float] | tuple[int, int, int]
+    cleaned_color: Union[str, tuple[float, float, float], tuple[int, int, int]]
     if isinstance(color, str):
         color_check = find_color_hex(color, on_err="pass")
         cleaned_color = color if color_check is None else color_check
@@ -23,7 +23,7 @@ def find_color_rgb(color: str | ColorType) -> tuple[float, float, float]:
             cleaned_color = (int(color[0]), int(color[1]), int(color[2]))
         else:
             raise ValueError("Color array must be of type float or int")
-    elif isinstance(color, list | tuple):
+    elif isinstance(color, (list, tuple)):
         cleaned_color = tuple(color)
     else:
         raise ValueError(f"Color must be a string, list, tuple, or numpy array - found {type(color)}")
@@ -31,7 +31,7 @@ def find_color_rgb(color: str | ColorType) -> tuple[float, float, float]:
     return result_color
 
 
-def find_color_hex(color_name: str, on_err: str = "raise") -> str | None:
+def find_color_hex(color_name: str, on_err: str = "raise") -> Optional[str]:
     """Return the hexcode string for a given color."""
     # Basic check
     if color_name in html:

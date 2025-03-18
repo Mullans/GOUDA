@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, Optional, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -61,8 +61,8 @@ def plot_accuracy_curve(
     acc: npt.NDArray[np.floating],
     thresh: npt.NDArray[np.floating],
     label_height: float = 0.5,
-    line_args: dict | None = None,
-    thresh_args: dict | None = None,
+    line_args: Optional[dict] = None,
+    thresh_args: Optional[dict] = None,
 ) -> None:
     """Plot the accuracy for the given accuracy and threshold values.
 
@@ -118,7 +118,7 @@ def annotate_arrows(
     text: str,
     start_point: tuple[float, float],
     end_points: list[tuple[float, float]],
-    y_top: float | None = None,
+    y_top: Optional[float] = None,
     line_width: int = 1,
     direction: Literal["left", "right"] = "left",
     x_spacing: float = 0.05,
@@ -189,13 +189,13 @@ def annotate_arrows(
 def colorplot(
     x: Sequence[float],
     y: Sequence[float],
-    ax: mpl.axes.Axes | None = None,
-    cmap: mpl.colors.Colormap | str = "jet",
+    ax: Optional[mpl.axes.Axes] = None,
+    cmap: Union[mpl.colors.Colormap, str] = "jet",
     step_size: float = 0.01,
     step_as_percent: bool = True,
     start_val: float = 0.0,
     end_val: float = 1.0,
-    **kwargs: str | int | float,
+    **kwargs: Union[str, int, float],
 ) -> mpl.axes.Axes:
     """Plot a line with a color gradient.
 
@@ -269,10 +269,10 @@ def plot_joint_arrow(
     y: Sequence[float],
     linewidth: float = 5.0,
     headwidth: float = 2.0,
-    headlength: float | None = None,
-    ax: mpl.axes.Axes | None = None,
-    color: ColorType | None = None,
-    label: str | None = None,
+    headlength: Optional[float] = None,
+    ax: Optional[mpl.axes.Axes] = None,
+    color: Optional[ColorType] = None,
+    label: Optional[str] = None,
 ) -> mpl.axes.Axes:
     """Plot a jointed line ending in an arrowhead.
 

@@ -38,7 +38,7 @@ dependencies = [
     "matplotlib",
     "colorama",
     "types-colorama",  # for mypy
-    "scipy-stubs", # for mypy
+    "scipy-stubs; python_version >= '3.10'", # for mypy
     "typing-extensions; python_version < '3.10'",
 ]
 
@@ -60,9 +60,11 @@ Repository = "https://github.com/mullans/GOUDA"
 where = ["src"]
 
 [tool.setuptools_scm]
-write_to = "src/gouda/_version.py"
+# write_to = "src/gouda/_version.py"
 # https://setuptools-scm.readthedocs.io/en/latest/extending/#available-implementations
-version_scheme = "no-guess-dev"
+version_scheme = "only-version"
+local_scheme = "no-local-version"
+
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -104,7 +106,7 @@ ignore = [
     "E501", "B028", # Unnecessary
     "D203", # Contradicts other rules
     "SIM105", "N802", "UP015", # Counter-productive
-    "B905"  # Remove when 3.9 no longer supported
+    "B905", "UP007", "UP038"  # Remove when 3.9 no longer supported
 ]
 fixable = ["ALL"]
 unfixable = []

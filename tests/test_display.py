@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +10,7 @@ import pytest
 from gouda import display
 
 
-# @pytest.mark.skip(reason='Takes to long for general case')
+@pytest.mark.skipif(sys.platform == "win32", reason="Bug in matplotlib/tkinter on Windows")
 def test_print_grid():
     # List Tests
     image = np.random.randint(0, 255, size=[100, 100])
@@ -135,6 +138,7 @@ def test_print_grid():
         assert display.print_grid([])
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Bug in matplotlib/tkinter on Windows")
 def test_print_grid_squarify():
     image_0c = np.random.randint(0, 255, size=[100, 100])
     image_1c = np.random.randint(0, 255, size=[100, 100, 1])
@@ -153,6 +157,7 @@ def test_print_grid_squarify():
     plt.close()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Bug in matplotlib/tkinter on Windows")
 def test_print_grid_tofile(scratch_path):
     test_image = np.ones([10, 10])
     display.print_grid(test_image, show=False, file_name=scratch_path / "testprintgrid.png")
@@ -160,6 +165,7 @@ def test_print_grid_tofile(scratch_path):
     plt.close()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Bug in matplotlib/tkinter on Windows")
 def test_print_grid_exceptions():
     test_image = np.ones([5, 5, 100, 100, 5])
     with pytest.raises(ValueError):
@@ -169,6 +175,7 @@ def test_print_grid_exceptions():
         assert display.print_grid("string")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Bug in matplotlib/tkinter on Windows")
 def test_print_image(scratch_path):
     test_image = np.ones([100, 100])
     test_image[25:75, 25:75] = 0
@@ -184,6 +191,7 @@ def test_print_image(scratch_path):
     assert os.path.exists(scratch_path / "test_image.png")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Bug in matplotlib/tkinter on Windows")
 def test_squarify():
     test = np.random.randint(0, 255, size=[8, 200, 200])
     result = display.squarify(test, primary_axis=0, as_array=False)

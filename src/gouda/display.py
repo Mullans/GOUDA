@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,14 +18,14 @@ from gouda.typing import ImageLikeType
 def print_grid(
     *input_images: Any,  # noqa: ANN401 # Using Any for input_images to avoid complex nested types
     figsize: tuple[int, int] = (8, 8),
-    file_name: str | os.PathLike | None = None,
+    file_name: Union[str, os.PathLike, None] = None,
     do_squarify: bool = False,
     show: bool = True,
     return_grid_shape: bool = False,
     return_fig: bool = False,
     cmap: str = "gray",
     **kwargs: Any,  # noqa: ANN401
-) -> Figure | tuple[int, int] | tuple[Figure, tuple[int, int]] | None:
+) -> Union[Figure, tuple[int, int], tuple[Figure, tuple[int, int]], None]:
     """Print out images as a grid.
 
     Parameters
@@ -83,17 +83,17 @@ def print_grid(
     if do_squarify:
         # Use type: ignore to bypass the type check for the squarify function call
         images = squarify(images, **squarify_kwargs)  # type: ignore
-    if not isinstance(images, list | tuple | np.ndarray | str | dict):
+    if not isinstance(images, (list, tuple, np.ndarray, str, dict)):
         try:
             images = np.asarray(images)
         except ValueError:
             pass
     if hasattr(images, "__array__"):
         images = np.asarray(images)
-    if isinstance(images, list | tuple):
+    if isinstance(images, (list, tuple)):
         if len(images) == 0:
             raise ValueError("No images to display")
-        if isinstance(images[0], list | tuple):
+        if isinstance(images[0], (list, tuple)):
             # list of lists of images
             rows = len(images)
             cols = max([len(item) for item in images])
@@ -195,10 +195,10 @@ def print_grid(
 def print_image(
     image: npt.NDArray,
     figsize: tuple[float, float] = (8.0, 6.5),
-    file_name: str | os.PathLike | None = None,
+    file_name: Union[str, os.PathLike, None] = None,
     show: bool = True,
     allow_interpolation: bool = False,
-    imshow_args: dict[str, Any] | None = None,
+    imshow_args: Union[dict[str, Any], None] = None,
     **kwargs: Any,  # noqa: ANN401
 ) -> None:
     """Similar to pyplot.imshow, but with axes and margins for a single image.
@@ -253,11 +253,11 @@ def print_image(
 
 
 def squarify(
-    image: npt.NDArray | Sequence[npt.NDArray],
+    image: Union[npt.NDArray, Sequence[npt.NDArray]],
     primary_axis: int = 0,
-    num_cols: int | None = None,
+    num_cols: Optional[int] = None,
     as_array: bool = False,
-) -> npt.NDArray | list[list[ImageLikeType]]:
+) -> Union[npt.NDArray, list[list[ImageLikeType]]]:
     """Reshape a list/array of images into nested elements with the same numbers of rows and columns.
 
     Parameters
@@ -276,14 +276,14 @@ def squarify(
     If there are not a square number of images, then the last row will have None values as placeholders. If as_array is True, these will be zeros instead.
     If as_array is True, this assumes that all images have the same shape.
     """
-    if isinstance(image, tuple | list):
+    if isinstance(image, (tuple, list)):
         num_images = len(image)
         images = list(image)
     elif isinstance(image, np.ndarray):
         # images = np.split(image, image.shape[axis], axis=axis)
         # images = [item for item in images]
         images = []
-        axis_slice: list[slice | int] = [slice(None) for _ in range(image.ndim)]
+        axis_slice: list[Union[slice, int]] = [slice(None) for _ in range(image.ndim)]
         num_images = image.shape[primary_axis]
         for idx in range(num_images):
             axis_slice[primary_axis] = idx

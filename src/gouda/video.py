@@ -5,15 +5,22 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 from types import TracebackType
-from typing import Any
+from typing import Any, Optional, Union
 
 import cv2
-import IPython.display
 import numpy as np
 import numpy.typing as npt
 
 from gouda import data_methods
 from gouda.general import extract_method_kwargs
+
+try:
+    from IPython.display import Video
+
+    IPYTHON_AVAILABLE = True
+except ImportError:
+    Video = None
+    IPYTHON_AVAILABLE = False
 
 
 class VideoWriter:
@@ -21,15 +28,15 @@ class VideoWriter:
 
     def __init__(
         self,
-        out_path: str | os.PathLike,
+        out_path: Union[str, os.PathLike],
         fps: int = 10,
         codec: str = "MJPG",
-        output_shape: tuple[int, int] | None = None,
+        output_shape: Optional[tuple[int, int]] = None,
         interpolator: int = cv2.INTER_LINEAR,
     ) -> None:
         self.out_path = out_path
         self.output_shape = output_shape  # assumes (height, width)
-        self.writer: cv2.VideoWriter | None = None
+        self.writer: Optional[cv2.VideoWriter] = None
         self.fps = fps
         self.codec = codec
         self.interpolator = interpolator
@@ -39,9 +46,9 @@ class VideoWriter:
 
     def __exit__(  # noqa: D105
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
     ) -> None:
         if self.writer is not None:
             self.writer.release()
@@ -79,15 +86,15 @@ class VideoWriter:
 
 
 def show_video(
-    data: Sequence[npt.ArrayLike] | npt.NDArray,
+    data: Union[Sequence[npt.ArrayLike], npt.NDArray],
     player_width: int = 500,
     player_height: int = 300,
-    frame_height: int | None = None,
-    frame_width: int | None = None,
-    file_name: str | os.PathLike = "temp.mp4",
-    show: str | None = "ipython",
+    frame_height: Optional[int] = None,
+    frame_width: Optional[int] = None,
+    file_name: Union[str, os.PathLike] = "temp.mp4",
+    show: Optional[str] = "ipython",
     **kwargs: Any,  # noqa: ANN401
-) -> None | IPython.display.Video:
+) -> Optional[object]:
     """Convert a series of frames to a video and display it.
 
     Parameters
@@ -125,7 +132,7 @@ def show_video(
     for item, val in defaults.items():
         if item not in kwargs:
             kwargs[item] = val
-    if isinstance(data, list | tuple):
+    if isinstance(data, (list, tuple)):
         # A list/tuple of arrays
         if hasattr(data[0], "__array__"):
             nframes = len(data)
@@ -167,7 +174,9 @@ def show_video(
             writer.write(data[i])
 
     if show == "ipython":
-        return IPython.display.Video(str(file_name), height=player_height, width=player_width)
+        if not IPYTHON_AVAILABLE:
+            raise ImportError("IPython is not available, cannot show video in a notebook")
+        return Video(str(file_name), height=player_height, width=player_width)
     elif show == "opencv":
         raise NotImplementedError("Still working on this - use ipython for now")
     return None

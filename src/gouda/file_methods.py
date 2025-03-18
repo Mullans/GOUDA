@@ -14,7 +14,7 @@ import warnings
 from collections.abc import Callable, Generator
 from contextlib import nullcontext
 from io import BufferedReader
-from typing import Any
+from typing import Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -59,6 +59,7 @@ def next_filename(
     """Check if a given file exists, and return the next numbered filename in the order if it does.
 
     Parameters
+    ----------
     ----------
     filename : str
         The filename to check and iterate on
@@ -130,7 +131,7 @@ def next_filename(
 
 
 # JSON methods
-def load_json(filename: str | os.PathLike) -> Any:  # noqa: ANN401
+def load_json(filename: Union[str, os.PathLike]) -> Any:  # noqa: ANN401
     """Load a JSON file, and re-form any numpy arrays if :func:`~gouda.save_json` was used to write them."""
     filename = str(filename)
     with open(filename, "r") as f:
@@ -149,7 +150,7 @@ def load_json(filename: str | os.PathLike) -> Any:  # noqa: ANN401
             data = data[0]
         # else:
         #     return data
-    numpy_file: BufferedReader | None
+    numpy_file: Optional[BufferedReader]
     with open(np_filename, "rb") if np_filename is not None else nullcontext() as numpy_file:
         if np_filename is not None and numpy_file is not nullcontext and numpy_file is not None:
             arrays = np.load(numpy_file)
@@ -195,7 +196,12 @@ def is_jsonable(data: Any) -> bool:  # noqa: ANN401
         return False
 
 
-def save_json(data: Any, filename: str | os.PathLike, embed_arrays: bool = True, compressed: bool = False) -> None:  # noqa: ANN401
+def save_json(
+    data: Any,  # noqa: ANN401
+    filename: Union[str, os.PathLike],
+    embed_arrays: bool = True,
+    compressed: bool = False,
+) -> None:
     """Save a list/dict/numpy.ndarray as a JSON file.
 
     Parameters
@@ -221,8 +227,8 @@ def save_json(data: Any, filename: str | os.PathLike, embed_arrays: bool = True,
         compressed = False
 
     def _unnumpy(_data: Any) -> Any:  # noqa: ANN401
-        new_data: list | tuple | set | dict | slice | npt.NDArray | np.generic | Any
-        if isinstance(_data, list | tuple):
+        new_data: Union[list, tuple, set, dict, slice, npt.NDArray, np.generic, Any]
+        if isinstance(_data, (list, tuple)):
             new_data = [_unnumpy(item) for item in _data]
         elif isinstance(_data, set):
             new_data = ["set.", _unnumpy(list(_data))]
@@ -273,12 +279,12 @@ def save_json(data: Any, filename: str | os.PathLike, embed_arrays: bool = True,
             np.savez(np_filename + "_array.npz", allow_pickle=True, **out_arrays)
 
 
-def create_image_checker() -> Callable[[str | os.PathLike], bool]:
+def create_image_checker() -> Callable[[Union[str, os.PathLike],], bool]:  # fmt: skip
     """Create the :meth:`gouda.is_image` method that can be used to check if a file is an image based on available libraries."""
     if importlib.util.find_spec("PIL.Image"):
         import PIL.Image
 
-        def is_image(path: str | os.PathLike) -> bool:
+        def is_image(path: Union[str, os.PathLike]) -> bool:
             """Check if the path is an image file."""
             path = str(path)
             if os.path.isdir(path):
@@ -291,7 +297,7 @@ def create_image_checker() -> Callable[[str | os.PathLike], bool]:
     elif importlib.util.find_spec("puremagic"):
         import puremagic
 
-        def is_image(path: str | os.PathLike) -> bool:
+        def is_image(path: Union[str, os.PathLike]) -> bool:
             """Check if the path is an image file."""
             path = str(path)
             if os.path.isdir(path):
@@ -301,7 +307,7 @@ def create_image_checker() -> Callable[[str | os.PathLike], bool]:
     elif importlib.util.find_spec("imghdr"):
         import imghdr
 
-        def is_image(path: str | os.PathLike) -> bool:
+        def is_image(path: Union[str, os.PathLike]) -> bool:
             """Check if the path is an image file."""
             path = str(path)
             if os.path.isdir(path):
@@ -309,7 +315,7 @@ def create_image_checker() -> Callable[[str | os.PathLike], bool]:
             return imghdr.what(path) is not None
     else:
 
-        def is_image(path: str | os.PathLike) -> bool:
+        def is_image(path: Union[str, os.PathLike]) -> bool:
             """Check if the path is an image file."""
             raise ImportError("No image checking libraries found - install PIL, puremagic, or imghdr")
 
@@ -319,7 +325,7 @@ def create_image_checker() -> Callable[[str | os.PathLike], bool]:
 is_image = create_image_checker()
 
 
-def fullsplit(path: str | os.PathLike) -> tuple[str, str, str]:
+def fullsplit(path: Union[str, os.PathLike]) -> tuple[str, str, str]:
     """Split the path into head, basename, and extension.
 
     NOTE
@@ -343,21 +349,21 @@ def fullsplit(path: str | os.PathLike) -> tuple[str, str, str]:
         return head, splitpath[0], "." + splitpath[1]
 
 
-def basicname(path: str | os.PathLike) -> str:
+def basicname(path: Union[str, os.PathLike]) -> str:
     """Return the basename of the path without the extension."""
     return fullsplit(path)[1]
 
 
 def fast_glob(
     base_path: str,
-    glob_pattern: str | re.Pattern,
+    glob_pattern: Union[str, re.Pattern],
     regex_flags: int = 0,
     sort: bool = False,
     basenames: bool = False,
     recursive: bool = False,
     follow_symlinks: bool = False,
     as_iterator: bool = False,
-) -> list[str] | Generator[str, None, None]:
+) -> Union[list[str], Generator[str, None, None]]:
     """Fast globbing method that uses scandir to find files and directories whose basename match a given pattern.
 
     Parameters
@@ -425,7 +431,7 @@ def find_images(
     follow_symlinks: bool = False,
     fast_check: bool = False,
     as_iterator: bool = False,
-) -> list[str] | Generator[str, None, None]:
+) -> Union[list[str], Generator[str, None, None]]:
     """Find all images in a directory and optionally its sub-directories.
 
     Parameters
@@ -515,7 +521,7 @@ def get_sorted_filenames(pattern: str, sep: str = "_", ending: bool = True, reve
     This method is only useful in the case where you have file_2.txt and file_10.txt where file_10 would be sorted first with other methods because the 1 is at the same index as the 2.
     """
 
-    def _get_copy_num(x: str | os.PathLike) -> int:
+    def _get_copy_num(x: Union[str, os.PathLike]) -> int:
         x = basicname(x)
         item = x.rsplit(sep, 1) if ending else x.split(sep, 1)
         if len(item) != 2:
@@ -534,7 +540,7 @@ def get_sorted_filenames(pattern: str, sep: str = "_", ending: bool = True, reve
     digits = num_digits(max_num)
     key_string = "{:0" + str(digits) + "d}"
 
-    def _get_copy_key(x: str | os.PathLike) -> str:
+    def _get_copy_key(x: Union[str, os.PathLike]) -> str:
         x = basicname(x)
         item = x.rsplit(sep, 1) if ending else x.split(sep, 1)
         if len(item) != 2:
@@ -548,7 +554,7 @@ def get_sorted_filenames(pattern: str, sep: str = "_", ending: bool = True, reve
     return sorted(files, key=_get_copy_key, reverse=reverse)
 
 
-def save_arr(path: str | os.PathLike, arr: npt.NDArray[Any]) -> None:
+def save_arr(path: Union[str, os.PathLike], arr: npt.NDArray[Any]) -> None:
     """Save a numpy array to a file."""
     path = str(path)
     if path.endswith(".gz"):
@@ -559,7 +565,7 @@ def save_arr(path: str | os.PathLike, arr: npt.NDArray[Any]) -> None:
             np.save(f, arr)
 
 
-def read_arr(path: str | os.PathLike) -> npt.NDArray[Any]:
+def read_arr(path: Union[str, os.PathLike]) -> npt.NDArray[Any]:
     """Read a numpy array from a file."""
     path = str(path)
     data: npt.NDArray[Any]

@@ -10,10 +10,6 @@ import numpy as np
 from gouda.data_methods import num_digits
 from gouda.symbols import underline
 
-__author__ = "Sean Mullan"
-__copyright__ = "Sean Mullan"
-__license__ = "mit"
-
 
 class BinaryConfusionMatrix:
     """2D array to represent and evaluate a 2-class confusion matrix.

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 import numpy as np
@@ -32,7 +34,7 @@ def test_MStddev():
     assert item._mean == 0
     assert item.mean() == 0
     assert item.stddev() == 0
-    assert str(item) == '0'
+    assert str(item) == "0"
     assert item() == item.stddev()
 
     item += 3
@@ -59,7 +61,7 @@ def test_MMeanArray():
     np.testing.assert_array_equal(item._mean, np.zeros([3, 3]))
     assert item.count == 0
     assert item.shape == (3, 3)
-    assert item.dtype == 'float'
+    assert item.dtype == "float"
     np.testing.assert_array_equal(item(), item.mean())
 
     item += np.ones([3, 3])
@@ -86,7 +88,7 @@ def test_MStddevArray():
     item = gouda.MStddevArray([3, 3])
     assert item.count == 0
     assert item.shape == (3, 3)
-    assert item.dtype == 'float'
+    assert item.dtype == "float"
     np.testing.assert_array_equal(item.stddev(), np.zeros([3, 3]))
     np.testing.assert_array_equal(item.mean(), np.zeros([3, 3]))
     np.testing.assert_array_equal(item.variance(), np.zeros([3, 3]))
@@ -178,7 +180,9 @@ def test_ParallelStats():
     np.testing.assert_allclose(stats2.ssd(), ((to_use2 - np.mean(to_use2)) ** 2).sum(), rtol=1e-10)
     np.testing.assert_allclose(stats2.std(), np.std(to_use2), atol=1e-10, rtol=0)
     np.testing.assert_allclose(stats2.var(), np.var(to_use2), atol=1e-10, rtol=0)
-    np.testing.assert_allclose(stats2.var(sample_variance=True), stats2.ssd() / (stats2.count() - 1), atol=1e-10, rtol=0)
+    np.testing.assert_allclose(
+        stats2.var(sample_variance=True), stats2.ssd() / (stats2.count() - 1), atol=1e-10, rtol=0
+    )
     np.testing.assert_allclose(stats2.min(), np.min(to_use2), atol=1e-10)
     np.testing.assert_allclose(stats2.max(), np.max(to_use2), atol=1e-10)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import warnings
 from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -13,10 +14,6 @@ from gouda import constants, data_methods, plotting
 from gouda.color_lists import find_color_rgb
 from gouda.goudapath import GPathLike
 from gouda.typing import ColorType, ImageArrayType
-
-__author__ = "Sean Mullan"
-__copyright__ = "Sean Mullan"
-__license__ = "mit"
 
 try:
     import cv2
@@ -268,7 +265,7 @@ def clean_grabCut_mask(mask: npt.NDArray) -> npt.NDArray:
 
 def crop_to_mask(
     image: ImageArrayType, mask: npt.NDArray, with_label: bool = False, smoothing: bool = True
-) -> npt.NDArray[np.uint8] | tuple[npt.NDArray[np.uint8], npt.NDArray[np.uint8]]:
+) -> Union[npt.NDArray[np.uint8], tuple[npt.NDArray[np.uint8], npt.NDArray[np.uint8]]]:
     """Crop input image to only be size of input mask.
 
     Parameters
@@ -310,7 +307,7 @@ def crop_to_mask(
 
 def get_bounds(
     mask: np.ndarray, bg_val: float = 0, as_slice: bool = False
-) -> list[tuple[int, int]] | tuple[slice, ...]:
+) -> Union[list[tuple[int, int]], tuple[slice, ...]]:
     """Get the corners of the bounding box/cube for the given binary label.
 
     Returns
@@ -332,7 +329,7 @@ def get_bounds(
 
 def crop_to_content(
     image: npt.NDArray, return_bounds: bool = False
-) -> npt.NDArray | tuple[npt.NDArray, list[tuple[int, int]]]:
+) -> Union[npt.NDArray, tuple[npt.NDArray, list[tuple[int, int]]]]:
     """Crop image to only be as large as the contained image excluding black space."""
     if return_bounds:
         bounds = get_bounds(image, bg_val=0, as_slice=False)
@@ -398,7 +395,7 @@ def padded_resize(
     Input image number of channels does not matter as long as the first two dimensions are x and y.
 
     """
-    if isinstance(image, GPathLike):
+    if isinstance(image, (str, os.PathLike)):
         image = imread(image, flag=constants.RGB)
     data_type = image.dtype
     if image.ndim == 2:
@@ -432,15 +429,15 @@ def padded_resize(
     return padded_image
 
 
-def adjust_gamma(image: ImageArrayType, gamma: float = 1.0) -> npt.NDArray[np.floating | np.integer]:
+def adjust_gamma(image: ImageArrayType, gamma: float = 1.0) -> npt.NDArray[Union[np.floating, np.integer]]:
     """Adjust the gamma of the image."""
     table = np.array([((i / 255.0) ** (1.0 / gamma)) * 255 for i in np.arange(0, 256)]).astype(np.uint8)
     return cv2.LUT(image, table)
 
 
 def polar_to_cartesian(
-    image: ImageArrayType, output_shape: Sequence[int] | None = None
-) -> npt.NDArray[np.floating | np.integer]:
+    image: ImageArrayType, output_shape: Optional[Sequence[int]] = None
+) -> npt.NDArray[Union[np.floating, np.integer]]:
     """Convert a square image with a polar object (circle/tube) to cartesian (unroll it).
 
     NOTE: output_shape uses numpy shape: [rows, columns]
@@ -461,7 +458,7 @@ def polar_to_cartesian(
 
 
 def get_mask_border(
-    mask: npt.NDArray, inside_border: bool = True, border_thickness: int = 2, kernel: str | int = "ellipse"
+    mask: npt.NDArray, inside_border: bool = True, border_thickness: int = 2, kernel: Union[str, int] = "ellipse"
 ) -> npt.NDArray:
     """Get the border of a boolean mask.
 
@@ -493,7 +490,7 @@ def get_mask_border(
 def add_mask(
     image: npt.NDArray,
     mask: npt.NDArray,
-    color: str | ColorType = "red",
+    color: Union[str, ColorType] = "red",
     opacity: float = 0.5,
     mask_threshold: float = 0.5,
 ) -> npt.NDArray:
@@ -535,7 +532,7 @@ def add_mask(
         scaler = np.iinfo(image.dtype).max
     elif isinstance(image.flat[0], np.floating):
         scaler = 1.0
-    elif isinstance(image.flat[0], bool | np.bool_):
+    elif isinstance(image.flat[0], (bool, np.bool_)):
         image = image.astype(np.float32)
         scaler = 1.0
     else:
@@ -571,7 +568,7 @@ def mask_by_triplet(
     pred: npt.NDArray[np.floating],
     lower_thresh: float = 0.3,
     upper_thresh: float = 0.75,
-    area_thresh: int | float = 2000,
+    area_thresh: Union[int, float] = 2000,
     fast: bool = True,
 ) -> npt.NDArray[np.bool_]:
     """Convert a probability mask into a binary mask using multiple thresholds.

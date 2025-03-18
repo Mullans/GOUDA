@@ -7,23 +7,24 @@ Testing
   1. Right click on commit in GitKraken and choose "Create tag here"
   2. Name tag vA.B.0 where A is the major version and B is the minor version
 4. Push that too (Right click on tag and choose push tag)
-5. `python setup.py sdist bdist_wheel`
+5. `python -m build`
+  1. DEPRECATED VERSION - `python setup.py sdist bdist_wheel`
 6. `twine upload dist/GOUDA-A.B.0*` (again A major, B minor)
 
 To update the docs:
 1. Raw files stored in GOUDA/docs
 2. file_methods/data_methods need explicit :members: and :noindex: so that they can both cite methods without redundancy
-3. Run sphinx-build -b html docs build
+3. Run `sphinx-build -b html docs build`
 4. All built html files will be in the build folder
 
 To generate package for Conda
-1. conda install conda-build conda-verify anaconda-client
-2. anaconda login --username smullan
+1. `conda install conda-build conda-verify anaconda-client`
+2. `anaconda login --username {username}`  # in my case, smullan
 3a. Update version in conda.recipe/meta.yaml
-3b. conda build --output-folder conda_build conda.recipe -c conda-forge
+3b. `conda build --output-folder conda_build conda.recipe -c conda-forge`
   * Alt. if there is no recipe: `python setup.py bdist_conda`
   * need to set version in recipe for now
-4. anaconda upload $LOCATION_OF_BUILD {-v version:0.5.5} {--label label} --package gouda
+4. `anaconda upload $LOCATION_OF_BUILD {-v version:0.5.5} {--label label} --package gouda`
 4ex. `anaconda upload conda_build/noarch/gouda-0.5.8-py_0.tar.bz2 --package gouda`
 * Optional. `conda build purge` to clear old packages
 

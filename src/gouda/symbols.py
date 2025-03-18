@@ -6,6 +6,7 @@ from __future__ import annotations
 import sys
 import unicodedata
 import warnings
+from typing import Union
 
 if not sys.stdout.encoding.lower().startswith("utf"):
     warnings.warn("Terminal does not support unicode. Some symbols may not display correctly.")
@@ -200,7 +201,7 @@ num2word = {
 letter2rank = {"A": "Ace", "J": "Jack", "Q": "Queen", "K": "King"}
 
 
-def get_card(suit: str, rank: str | int | float | None = None) -> str:
+def get_card(suit: str, rank: Union[str, int, float, None] = None) -> str:
     """Get the unicode for a given playing card.
 
     Parameters
@@ -228,7 +229,7 @@ def get_card(suit: str, rank: str | int | float | None = None) -> str:
         return "\u2205"
     suit = suit.title()
 
-    if isinstance(rank, int | float):
+    if isinstance(rank, (int, float)):
         rank = str(int(rank))
         rank = num2word.get(rank, rank)
     rank = str(rank).title()

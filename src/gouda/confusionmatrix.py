@@ -3,17 +3,13 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import Any, Optional, Union
 
 import colorama
 import numpy as np
 import numpy.typing as npt
 
 from gouda.symbols import underline
-
-__author__ = "Sean Mullan"
-__copyright__ = "Sean Mullan"
-__license__ = "mit"
 
 
 class ConfusionMatrix:
@@ -44,10 +40,10 @@ class ConfusionMatrix:
 
     def __init__(
         self,
-        predictions: np.ndarray | None = None,
-        labels: np.ndarray | None = None,
-        threshold: float | None = None,
-        num_classes: int | None = None,
+        predictions: Optional[npt.NDArray] = None,
+        labels: Optional[npt.NDArray] = None,
+        threshold: Optional[float] = None,
+        num_classes: Optional[int] = None,
         dtype: npt.DTypeLike = int,
     ) -> None:
         self.matrix: npt.NDArray[np.integer]
@@ -102,7 +98,7 @@ class ConfusionMatrix:
         """Number of classes represented in the confusion matrix."""
         return self._num_classes
 
-    def reset(self, num_classes: int | None = None, dtype: npt.DTypeLike | None = None) -> None:
+    def reset(self, num_classes: Optional[int] = None, dtype: Optional[npt.DTypeLike] = None) -> None:
         """Reset all matrix entries.
 
         Parameters
@@ -123,7 +119,7 @@ class ConfusionMatrix:
 
     # ignore - mypy bug if __iadd__ and __add__ have different signatures
     def __iadd__(  # type: ignore[misc]
-        self, data: tuple[bool | float | int | npt.ArrayLike, bool | float | int | npt.ArrayLike]
+        self, data: tuple[Union[bool, float, int, npt.ArrayLike], Union[bool, float, int, npt.ArrayLike]]
     ) -> ConfusionMatrix:
         """Add single datapoint (predicted, expected)."""
         self.add(data[0], data[1])
@@ -178,7 +174,7 @@ class ConfusionMatrix:
             else 0
         )
 
-    def specificity(self, class_index: int | None = None) -> npt.NDArray[np.floating]:
+    def specificity(self, class_index: Optional[int] = None) -> npt.NDArray[np.floating]:
         """Return the specificity of all classes or a single class.
 
         NOTE
@@ -215,7 +211,7 @@ class ConfusionMatrix:
             result = np.divide(tn, tn + fp, where=(tn + fp) > 0)
             return result
 
-    def sensitivity(self, class_index: int | None = None) -> list[float] | float:
+    def sensitivity(self, class_index: Optional[int] = None) -> Union[list[float], float]:
         """Return the sensitivity of all classes or a single class. AKA recall.
 
         Notes
@@ -234,7 +230,7 @@ class ConfusionMatrix:
                 else 0.0
             )
 
-    def precision(self, class_index: int | None = None) -> list[float] | float:
+    def precision(self, class_index: Optional[int] = None) -> Union[list[float], float]:
         """Return the precision of all classes or a single class.
 
         Notes
@@ -294,9 +290,9 @@ class ConfusionMatrix:
     @classmethod
     def from_array(
         cls,
-        predicted: npt.NDArray[np.integer | np.floating],
-        expected: npt.NDArray[np.integer | np.floating],
-        threshold: float | None = None,
+        predicted: npt.NDArray[Union[np.integer, np.floating]],
+        expected: npt.NDArray[Union[np.integer, np.floating]],
+        threshold: Optional[float] = None,
     ) -> ConfusionMatrix:
         """Create a confusion matrix from numpy arrays.
 
@@ -321,9 +317,9 @@ class ConfusionMatrix:
 
     def add_array(
         self,
-        predicted: npt.NDArray[np.integer | np.floating],
-        expected: npt.NDArray[np.integer | np.floating],
-        threshold: float | None = None,
+        predicted: npt.NDArray[Union[np.integer, np.floating]],
+        expected: npt.NDArray[Union[np.integer, np.floating]],
+        threshold: Optional[float] = None,
     ) -> None:
         """Add data to the confusion matrix as numpy arrays.
 
@@ -377,9 +373,9 @@ class ConfusionMatrix:
 
     def add(
         self,
-        predicted: bool | float | int | npt.ArrayLike,
-        expected: bool | float | int | np.number | npt.ArrayLike,
-        threshold: float | None = None,
+        predicted: Union[bool, float, int, npt.ArrayLike],
+        expected: Union[bool, float, int, np.number, npt.ArrayLike],
+        threshold: Optional[float] = None,
     ) -> None:
         """Add data to the Confusion Matrix.
 
@@ -404,7 +400,7 @@ class ConfusionMatrix:
             threshold = self.threshold
         predicted_class: int
         expected_class: int
-        if isinstance(predicted, float | np.floating):
+        if isinstance(predicted, (float, np.floating)):
             # Single value: prediction of True (class 1)
             if threshold is not None:
                 predicted_class = 1 if predicted > threshold else 0
@@ -415,17 +411,17 @@ class ConfusionMatrix:
                 predicted_class = int(np.round(predicted))
         elif isinstance(predicted, bool):
             predicted_class = 1 if predicted else 0
-        elif isinstance(predicted, int | np.integer):
+        elif isinstance(predicted, (int, np.integer)):
             # Single value: class label
             predicted_class = int(predicted)
-        elif isinstance(expected, float | int | bool | np.integer | np.floating) and isinstance(
-            predicted, list | tuple | np.ndarray
+        elif isinstance(expected, (float, int, bool, np.integer, np.floating)) and isinstance(
+            predicted, (list, tuple, np.ndarray)
         ):
             # Class probabilities with single expected label
             predicted_class = int(np.argmax(predicted))
         elif (
-            isinstance(predicted, list | tuple | np.ndarray)
-            and isinstance(expected, list | tuple | np.ndarray)
+            isinstance(predicted, (list, tuple, np.ndarray))
+            and isinstance(expected, (list, tuple, np.ndarray))
             and len(predicted) == len(expected)
         ):
             # Paired lists
@@ -434,7 +430,7 @@ class ConfusionMatrix:
             return
         else:
             raise ValueError("Unsupported input format")
-        if not isinstance(expected, float | int | bool | np.number):
+        if not isinstance(expected, (float, int, bool, np.number)):
             print(type(expected))
             raise ValueError("Only 1 expected value per prediction is supported")
         if isinstance(expected, bool):
@@ -460,7 +456,7 @@ class ConfusionMatrix:
         show_sensitivities: bool = True,
         show_accuracy: bool = True,
         return_string: bool = False,
-    ) -> str | None:
+    ) -> Optional[str]:
         """Format and print the confusion matrix.
 
         Parameters

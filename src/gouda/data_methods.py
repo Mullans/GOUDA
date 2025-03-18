@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -238,9 +238,9 @@ def rescale(
     data: npt.ArrayLike,
     output_min: float = 0,
     output_max: float = 1,
-    input_min: float | None = None,
-    input_max: float | None = None,
-    axis: ShapeType | None = None,
+    input_min: Optional[float] = None,
+    input_max: Optional[float] = None,
+    axis: Optional[ShapeType] = None,
 ) -> npt.NDArray[np.floating]:
     """Rescale data to have range [new_min, new_max] along axis or axes indicated.
 
@@ -266,7 +266,7 @@ def rescale(
 
     NOTE
     ----
-    For flexibility, there is no checking that input_min and input_max are actually the minimum and maximum values in data along axis. If they are not, the output values are rescaled as if they were and may lie outside of [output_min, output_max]. For enforced bounds, use `gouda.data_methods.clip`.
+    For flexibility, there is no checking that input_min and input_max are actually the minimum and maximum values in data along axis. If they are not, the output values are rescaled as if they were a[...]
     """
     data = np.asarray(data)
     if np.issubdtype(data.dtype, np.integer):
@@ -280,7 +280,9 @@ def rescale(
     return result
 
 
-def order_normalization(data: npt.ArrayLike, order: int = 2, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
+def order_normalization(
+    data: npt.ArrayLike, order: int = 2, axis: Optional[ShapeType] = None
+) -> npt.NDArray[np.floating]:
     """Normalize data by its matrix or vector norm.
 
     Parameters
@@ -344,7 +346,7 @@ def clip(
 def percentile_rescale(
     x: npt.ArrayLike,
     low_percentile: float = 0.5,
-    high_percentile: float | None = None,
+    high_percentile: Optional[float] = None,
     output_min: float = 0,
     output_max: float = 1,
 ) -> npt.NDArray[np.floating]:
@@ -378,7 +380,7 @@ def percentile_rescale(
 
 
 def percentile_normalize(
-    x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: float | None = None
+    x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: Optional[float] = None
 ) -> npt.NDArray[np.floating]:
     """Normalize data after clipping to a percentile value.
 
@@ -411,18 +413,22 @@ def percentile_normalize(
     return result
 
 
-def relu(data: NumberType | npt.ArrayLike) -> NumberType | npt.NDArray[np.number]:
+def relu(data: Union[NumberType, npt.ArrayLike]) -> Union[NumberType, npt.NDArray[np.number]]:
     """Return the rectified linear - max(data, 0)."""
     return np.maximum(data, 0)
 
 
-def sigmoid(x: NumberType | npt.NDArray[np.number], epsilon: float = 1e-7) -> NumberType | npt.NDArray[np.number]:
+def sigmoid(
+    x: Union[NumberType, npt.NDArray[np.number]], epsilon: float = 1e-7
+) -> Union[NumberType, npt.NDArray[np.number]]:
     """Return the sigmoid of the given value/array."""
-    result: NumberType | npt.NDArray[np.number] = (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)
+    result: Union[NumberType, npt.NDArray[np.number]] = (1.0 + epsilon) / (1.0 + np.exp(-x) + epsilon)
     return result
 
 
-def inv_sigmoid(x: NumberType | npt.NDArray[np.number], epsilon: float = 1e-7) -> NumberType | npt.NDArray[np.number]:
+def inv_sigmoid(
+    x: Union[NumberType, npt.NDArray[np.number]], epsilon: float = 1e-7
+) -> Union[NumberType, npt.NDArray[np.number]]:
     """Return the inverse of the sigmoid function for the given value/array."""
     if x > 1 or x < 0:
         raise ValueError("Inverse sigmoid input must be in range [0, 1]")
@@ -433,7 +439,7 @@ def inv_sigmoid(x: NumberType | npt.NDArray[np.number], epsilon: float = 1e-7) -
     return np.log(x / ((1 + epsilon) - ((1 + epsilon) * x)))
 
 
-def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
+def softmax(x: npt.ArrayLike, axis: Optional[ShapeType] = None) -> npt.NDArray[np.floating]:
     """Return the softmax of the array.
 
     Parameters
@@ -458,7 +464,7 @@ def softmax(x: npt.ArrayLike, axis: ShapeType | None = None) -> npt.NDArray[np.f
     return result
 
 
-def normalize(data: npt.ArrayLike, axis: ShapeType | None = None) -> npt.NDArray[np.floating]:
+def normalize(data: npt.ArrayLike, axis: Optional[ShapeType] = None) -> npt.NDArray[np.floating]:
     """Return data normalized to have zero mean and unit variance along axis or axes indicated.
 
     Parameters
@@ -591,7 +597,7 @@ def optimal_mcc_from_roc(
 
 def accuracy_curve(
     label: npt.ArrayLike, pred: npt.ArrayLike, return_peak: bool = False
-) -> tuple[FloatArrayType, FloatArrayType, float, float] | tuple[FloatArrayType, FloatArrayType]:
+) -> Union[tuple[FloatArrayType, FloatArrayType, float, float], tuple[FloatArrayType, FloatArrayType]]:
     """Get the accuracy values for each possible threshold in the predictions.
 
     Parameters
@@ -630,7 +636,9 @@ def accuracy_curve(
 
 
 def spec_at_sens(
-    label: npt.ArrayLike, pred: npt.ArrayLike, sensitivities: Sequence[float | np.floating] | FloatArrayType = (0.95,)
+    label: npt.ArrayLike,
+    pred: npt.ArrayLike,
+    sensitivities: Union[Sequence[Union[float, np.floating]], FloatArrayType] = (0.95,),
 ) -> list[np.floating]:
     """Get the peak specificity for each sensitivity.
 
@@ -648,7 +656,7 @@ def spec_at_sens(
     List[float]
         The list of specificities for the given sensitivities
     """
-    if isinstance(sensitivities, float | np.floating):
+    if isinstance(sensitivities, (float, np.floating)):
         sensitivities = [float(sensitivities)]
     fpr, tpr, thresholds = roc_curve(label, pred)
     specs: list[np.floating] = [np.max((1 - fpr)[tpr >= min_sens]) for min_sens in sensitivities]
@@ -740,7 +748,7 @@ def value_crossing(
     positive_crossing: bool = True,
     negative_crossing: bool = True,
     return_indices: bool = False,
-) -> int | npt.NDArray[np.int64]:
+) -> Union[int, npt.NDArray[np.int64]]:
     """Get the count of instances where a series crosses a value.
 
     Parameters
@@ -801,7 +809,7 @@ def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.floating]:
     return center_of_mass
 
 
-def max_signal(data: npt.ArrayLike, axis: ShapeType | None = None) -> np.number | npt.NDArray:
+def max_signal(data: npt.ArrayLike, axis: Optional[ShapeType] = None) -> Union[np.number, npt.NDArray]:
     """Return the signed value with the largest absolute value along the given axis.
 
     Parameters
@@ -827,7 +835,9 @@ def max_signal(data: npt.ArrayLike, axis: ShapeType | None = None) -> np.number 
         return result
 
 
-def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.integer, ...] | npt.NDArray[np.integer]:
+def argmax_signal(
+    data: npt.ArrayLike, axis: Optional[int] = None
+) -> Union[tuple[np.integer, ...], npt.NDArray[np.integer]]:
     """Return the index of the signed value with the largest absolute value along an axis.
 
     Parameters
@@ -886,7 +896,7 @@ def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
 
 
 def segment_line(
-    x1: float, x2: float, y1: float, y2: float, segment_size: float = 0.01, num_segments: int | None = None
+    x1: float, x2: float, y1: float, y2: float, segment_size: float = 0.01, num_segments: Optional[int] = None
 ) -> npt.NDArray[np.floating]:
     """Divide a line into smaller segments.
 

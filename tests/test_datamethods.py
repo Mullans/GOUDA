@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 import numpy as np
@@ -75,7 +77,14 @@ def test_normalize():
     np.testing.assert_equal(normed_2.std(axis=1), np.ones([10, 10]))
 
     normed_3 = gouda.normalize(test_data, axis=(0, 1))
-    np.testing.assert_array_almost_equal(normed_3.mean(axis=(0, 1)), np.zeros([10, ]))
+    np.testing.assert_array_almost_equal(
+        normed_3.mean(axis=(0, 1)),
+        np.zeros(
+            [
+                10,
+            ]
+        ),
+    )
     np.testing.assert_equal(normed_3.std(axis=(0, 1)), 1)
 
 
@@ -83,7 +92,9 @@ def test_rescale():
     test_data = np.arange(100).reshape([10, 10])
     scaled_1 = gouda.rescale(test_data, output_min=0, output_max=1, axis=1)
     assert scaled_1.max() == 1 and scaled_1.min() == 0
-    manual = (test_data - test_data.min(axis=1, keepdims=True)) / (test_data.max(axis=1, keepdims=True) - test_data.min(axis=1, keepdims=True))
+    manual = (test_data - test_data.min(axis=1, keepdims=True)) / (
+        test_data.max(axis=1, keepdims=True) - test_data.min(axis=1, keepdims=True)
+    )
     np.testing.assert_array_equal(scaled_1, manual)
     scaled_alt = gouda.rescale(test_data.astype(float), output_min=0, output_max=1, axis=1)
     np.testing.assert_array_equal(scaled_1, scaled_alt)
@@ -94,7 +105,7 @@ def test_rescale():
 
     # check for input min/max
     scaled = gouda.rescale(test_data, output_min=0, output_max=1, input_min=0, input_max=200)
-    assert scaled.min() == 0 and scaled.max() == 99. / 200.
+    assert scaled.min() == 0 and scaled.max() == 99.0 / 200.0
 
     # check for out-of-bounds
     scaled = gouda.rescale(test_data, output_min=0, output_max=1, input_min=99, input_max=100)
@@ -159,30 +170,30 @@ def test_prime_overlap():
 
 
 def test_flip_dict():
-    one2one_dict = {'a': 1, 'b': 2, 'c': 3}
-    many2one_dict = {'a': 1, 'b': 1, 'c': 2}
-    all2one_dict = {'a': 1, 'b': 1, 'c': 1}
+    one2one_dict = {"a": 1, "b": 2, "c": 3}
+    many2one_dict = {"a": 1, "b": 1, "c": 2}
+    all2one_dict = {"a": 1, "b": 1, "c": 1}
 
     flip1 = gouda.flip_dict(one2one_dict)
-    assert flip1 == {1: 'a', 2: 'b', 3: 'c'}
+    assert flip1 == {1: "a", 2: "b", 3: "c"}
 
     flip2 = gouda.flip_dict(one2one_dict, unique_items=True)
-    assert flip2 == {1: 'a', 2: 'b', 3: 'c'}
+    assert flip2 == {1: "a", 2: "b", 3: "c"}
 
     flip3 = gouda.flip_dict(one2one_dict, force_list_values=True)
-    assert flip3 == {1: ['a'], 2: ['b'], 3: ['c']}
+    assert flip3 == {1: ["a"], 2: ["b"], 3: ["c"]}
 
     flip4 = gouda.flip_dict(many2one_dict)
-    assert flip4 == {1: ['a', 'b'], 2: 'c'}
+    assert flip4 == {1: ["a", "b"], 2: "c"}
 
     flip5 = gouda.flip_dict(many2one_dict, unique_items=True)
-    assert flip5 == {1: 'b', 2: 'c'}
+    assert flip5 == {1: "b", 2: "c"}
 
     flip6 = gouda.flip_dict(many2one_dict, force_list_values=True)
-    assert flip6 == {1: ['a', 'b'], 2: ['c']}
+    assert flip6 == {1: ["a", "b"], 2: ["c"]}
 
     flip7 = gouda.flip_dict(all2one_dict)
-    assert flip7 == {1: ['a', 'b', 'c']}
+    assert flip7 == {1: ["a", "b", "c"]}
 
 
 def test_softmax():
@@ -393,16 +404,16 @@ def test_max_signal():
 def test_order_normalization():
     x = np.arange(100)
     check = gouda.order_normalization(x)
-    test = x / np.sqrt(np.sum(x ** 2))
+    test = x / np.sqrt(np.sum(x**2))
     np.testing.assert_array_equal(check, test)
 
     x = np.arange(100).reshape([10, 10])
     check = gouda.order_normalization(x, axis=0)
-    test = x / np.sqrt(np.sum(x ** 2, axis=0, keepdims=True))
+    test = x / np.sqrt(np.sum(x**2, axis=0, keepdims=True))
     np.testing.assert_array_equal(check, test)
 
     check = gouda.order_normalization(x, axis=1)
-    test = x / np.sqrt(np.sum(x ** 2, axis=1, keepdims=True))
+    test = x / np.sqrt(np.sum(x**2, axis=1, keepdims=True))
     np.testing.assert_array_equal(check, test)
 
     check = gouda.order_normalization(np.zeros([100]))
@@ -416,7 +427,9 @@ def test_line_dist():
     assert gouda.line_dist([0, 0], [1, 0]) == 1.0
 
     assert gouda.line_dist([0, 1], [4, 10]) == np.sqrt((0 - 1) ** 2 + (4 - 10) ** 2)
-    assert gouda.line_dist([0, 1, 2], [4, 10, 20]) == np.sqrt((0 - 1) ** 2 + (4 - 10) ** 2) + np.sqrt((2 - 1) ** 2 + (20 - 10) ** 2)
+    assert gouda.line_dist([0, 1, 2], [4, 10, 20]) == np.sqrt((0 - 1) ** 2 + (4 - 10) ** 2) + np.sqrt(
+        (2 - 1) ** 2 + (20 - 10) ** 2
+    )
 
     assert gouda.line_dist([0, 1, 2], [0, 0, 0]) == 2.0
     assert gouda.line_dist([0, 2, 1], [0, 0, 0]) == 3.0
@@ -466,44 +479,44 @@ def test_to_uint8():
     assert check[9, 0] == 0
     print(np.unique(check))
     np.testing.assert_array_equal(np.unique(check), [0, 127])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
 
     check = gouda.to_uint8(first, allow_rescale=True)
     assert check[0, 0] == 255
     assert check[9, 0] == 0
     np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
 
     second = np.zeros([10, 10], dtype=np.float32)
     second[:5] = 127.5
     check = gouda.to_uint8(second)
     np.testing.assert_array_equal(np.unique(check), [0, 127])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
 
     check = gouda.to_uint8(second, allow_rescale=True)
     np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
 
     third = np.zeros([10, 10], dtype=np.float32)
     third[:4] = -1
     third[6:] = 0.5
     check = gouda.to_uint8(third)
     np.testing.assert_array_equal(np.unique(check), [0, 127, 191])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
 
     check = gouda.to_uint8(third, allow_rescale=True)
     np.testing.assert_array_equal(np.unique(check), [0, 170, 255])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
 
     fourth = np.zeros([10, 10], dtype=np.float32)
     fourth[:5] = 1000
     with pytest.warns(UserWarning):
         check = gouda.to_uint8(fourth)
     np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
 
     fourth[5:] = -1000
     with pytest.warns(UserWarning):
         check = gouda.to_uint8(fourth)
     np.testing.assert_array_equal(np.unique(check), [0, 255])
-    assert check.dtype == 'uint8'
+    assert check.dtype == "uint8"
