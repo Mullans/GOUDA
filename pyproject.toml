@@ -37,17 +37,19 @@ dependencies = [
     "scipy",
     "matplotlib",
     "colorama",
-    "types-colorama",  # for mypy
-    "scipy-stubs; python_version >= '3.10'", # for mypy
+    "scipy",
     "typing-extensions; python_version < '3.10'",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "build",
     "pytest",
     "pytest-cov",
     "pre-commit",
-    "mypy"
+    "mypy",
+    "types-colorama",  # for mypy
+    "scipy-stubs; python_version >= '3.10'", # for mypy
 ]
 
 [project.urls]
