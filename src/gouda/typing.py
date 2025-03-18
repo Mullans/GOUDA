@@ -18,7 +18,7 @@ NumberType = Union[int, float, np.integer, np.floating]
 """Type for non-complex numbers (e.g. int, float, np.integer, np.floating)"""
 ImageArrayType = Union[npt.NDArray[np.uint8], npt.NDArray[np.uint16]]
 """Type for numpy image arrays (e.g. uint8 or uint16)"""
-ImageLikeType = Union[npt.ArrayLike, dict[str, str, int, float, npt.ArrayLike], None]
+ImageLikeType = Union[npt.ArrayLike, dict[str, Union[str, int, float, npt.ArrayLike]], None]
 """Typing for image-like objects used in :func:`gouda.display.print_grid`"""
-ColorType = Union[Sequence[float, int], npt.NDArray[np.integer], npt.NDArray[np.floating]]
+ColorType = Union[Sequence[float], Sequence[int], npt.NDArray[np.integer], npt.NDArray[np.floating]]
 """Type for full color values (e.g. str, RGB, RGBA, etc.)"""

@@ -9,7 +9,7 @@ import pathlib
 import re
 import warnings
 from collections.abc import Generator
-from typing import IO, Any, Optional, Union
+from typing import IO, Any, Optional, Union, cast
 
 from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
 
@@ -204,37 +204,29 @@ class GoudaPath(os.PathLike):
         sort: bool = False,
         as_iterator: bool = False,
     ) -> Union[list[str], list[GoudaPath], Generator[str, None, None], Generator[GoudaPath, None, None]]:
-        """Make a fast_glob call starting from the current path (matches basenames against pattern).
-
-        Parameters
-        ----------
-        pattern : str
-            Pattern to match with the glob
-        as_gouda : bool
-            Whether to return results as GoudaPath objects (the default is False)
-        basenames : bool
-            Whether to return only the basenames of results (the default is False)
-        recursive : bool
-            The setting for the glob recursive argument (the default is False)
-        sort : bool
-            Whether to sort the results using the sorted function (the default is False)
-        iter : bool
-            If True, return a generator instead of a list (the default is False)
-        """
+        """Make a fast_glob call starting from the current path (matches basenames against pattern)."""
         if not isinstance(pattern, re.Pattern):
             pattern = str(pattern)
 
-        def _search_gen() -> Union[Generator[str, None, None], Generator[GoudaPath, None, None]]:
-            for item in fast_glob(self.__path, pattern, basenames=basenames, sort=sort, recursive=recursive):
-                if as_gouda:
-                    yield GoudaPath(item, use_absolute=self.use_absolute)
-                else:
-                    yield item
+        if as_gouda:
 
-        if as_iterator:
-            return _search_gen()
+            def _search_gen_gp() -> Generator[GoudaPath, None, None]:
+                for item in fast_glob(self.__path, pattern, basenames=basenames, sort=sort, recursive=recursive):
+                    yield GoudaPath(item, use_absolute=self.use_absolute)
+
+            if as_iterator:
+                return _search_gen_gp()
+            else:
+                return list(_search_gen_gp())  # Now mypy knows this is list[GoudaPath]
         else:
-            return list(_search_gen())
+
+            def _search_gen_str() -> Generator[str, None, None]:
+                yield from fast_glob(self.__path, pattern, basenames=basenames, sort=sort, recursive=recursive)
+
+            if as_iterator:
+                return _search_gen_str()
+            else:
+                return list(_search_gen_str())  # Now mypy knows this is list[str]
 
     def globfirst(
         self,
@@ -305,9 +297,14 @@ class GoudaPath(os.PathLike):
         """
         if not self.is_dir():
             raise NotADirectoryError(f"Not a directory: {self.__path}")
-        return list(
+
+        result = list(
             self.iterdir(dirs_only=dirs_only, files_only=files_only, basenames=basenames, include_hidden=include_hidden)
         )
+        if basenames:
+            return cast(list[str], result)
+        else:
+            return cast(list[GoudaPath], result)
 
     def iterdir(
         self,

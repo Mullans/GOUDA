@@ -304,7 +304,8 @@ def squarify(
             else:
                 inner_list.append(images[i + j])
         outer_list.append(inner_list)
-    if as_array and isinstance(outer_list[0][0], npt.ArrayLike):
+    # TODO - does this work with PIL.Image.Image? torch.Tensor?
+    if as_array and hasattr(outer_list[0][0], "__array__"):
         rows: list[npt.ArrayLike] = [
             np.stack([np.asarray(item) for item in inner_list], axis=0) for inner_list in outer_list
         ]

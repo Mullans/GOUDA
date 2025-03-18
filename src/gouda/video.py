@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 from types import TracebackType
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import cv2
 import numpy as np
@@ -19,7 +19,7 @@ try:
 
     IPYTHON_AVAILABLE = True
 except ImportError:
-    Video = None
+    Video = None  # type: ignore
     IPYTHON_AVAILABLE = False
 
 
@@ -94,7 +94,7 @@ def show_video(
     file_name: Union[str, os.PathLike] = "temp.mp4",
     show: Optional[str] = "ipython",
     **kwargs: Any,  # noqa: ANN401
-) -> Optional[object]:
+) -> Optional[Any]:  # noqa: ANN401
     """Convert a series of frames to a video and display it.
 
     Parameters
@@ -176,7 +176,8 @@ def show_video(
     if show == "ipython":
         if not IPYTHON_AVAILABLE:
             raise ImportError("IPython is not available, cannot show video in a notebook")
-        return Video(str(file_name), height=player_height, width=player_width)
+        VideoClass = cast(type, Video)  # noqa: N806
+        return VideoClass(str(file_name), height=player_height, width=player_width)
     elif show == "opencv":
         raise NotImplementedError("Still working on this - use ipython for now")
     return None

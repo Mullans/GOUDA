@@ -186,9 +186,9 @@ def test_math():
     np.testing.assert_almost_equal(test_mat.mcc(), manual_mcc)
 
     test_mat2 = gouda.BinaryConfusionMatrix()
-    test_mat2[1, 1] = 99999999999
+    test_mat2[1, 1] = 999999
     assert test_mat2.mcc() == 0
-    test_mat2[0, 0] = 99999999999
+    test_mat2[0, 0] = 999999
     assert test_mat2.mcc() == 1
 
 

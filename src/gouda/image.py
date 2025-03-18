@@ -39,14 +39,16 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
     path = str(path)
     if not os.path.exists(path):
         raise ValueError(f"No file found at path '{path}'")
+    image: npt.NDArray
     if flag == constants.GRAYSCALE:
-        return cv2.imread(path, 0)
+        image = cv2.imread(path, 0)
     elif flag == constants.RGB:
-        return cv2.imread(path)[:, :, ::-1]
+        image = cv2.imread(path)[:, :, ::-1]
     elif flag == constants.UNCHANGED:
-        return cv2.imread(path, -1)
+        image = cv2.imread(path, -1)
     else:
-        return cv2.imread(path, 1)
+        image = cv2.imread(path, 1)
+    return image
 
 
 def imwrite(path: GPathLike, image: ImageArrayType, as_rgb: bool = True) -> None:
@@ -250,7 +252,7 @@ def clean_grabCut_mask(mask: npt.NDArray) -> npt.NDArray:
     up = cv2.pyrUp(remapped)
     for _ in range(15):
         up = cv2.medianBlur(up, 7)
-    down = cv2.pyrDown(up)
+    down: npt.NDArray = cv2.pyrDown(up)
     down = np.round(down)
     if temp.ndim == 3:
         down = down[:, :, np.newaxis]
@@ -292,14 +294,12 @@ def crop_to_mask(
     x0, x1 = x_range[0][0], x_range[0][-1]
     y0, y1 = y_range[0][0], y_range[0][-1]
     if smoothing:
-        smooth_mask = cv2.GaussianBlur(mask.astype(np.uint8) * 255.0, (5, 5), 0)
+        smooth_mask: npt.NDArray[np.uint8] = cv2.GaussianBlur((mask * 255.0).astype(np.uint8), (5, 5), 0)
         # mask[mask<0.8] = 0
         # mask[mask>=0.8] = 1
     else:
-        smooth_mask = mask.astype(np.uint8) * 255.0
-    masked_image: npt.NDArray[np.uint8] = cv2.bitwise_and(image, image, mask=smooth_mask.astype(np.uint8)).astype(
-        np.uint8
-    )
+        smooth_mask = (mask * 255.0).astype(np.uint8)
+    masked_image: npt.NDArray[np.uint8] = cv2.bitwise_and(image, image, mask=smooth_mask).astype(np.uint8)
     if with_label:
         return masked_image[x0:x1, y0:y1], mask[x0:x1, y0:y1]
     return masked_image[x0:x1, y0:y1]
@@ -368,7 +368,8 @@ def rotate(img: ImageArrayType, degrees: int = 90, allow_resize: bool = True) ->
     # Fixes a 1-pixel offset courtesy of: https://github.com/opencv/opencv/issues/4585#issuecomment-397895187
     mat[0, 2] += (mat[0, 0] + mat[0, 1] - 1) / 2
     mat[1, 2] += (mat[1, 0] + mat[1, 1] - 1) / 2
-    return cv2.warpAffine(img, mat, (new_width, new_height)).astype(img.dtype)
+    result: npt.NDArray = cv2.warpAffine(img, mat, (new_width, new_height)).astype(img.dtype)
+    return result
 
 
 def padded_resize(
@@ -409,6 +410,7 @@ def padded_resize(
         x, y = image.shape[:2]
     padx = int(y * (float(size[0]) / size[1])) - x
     pady = int(x * (float(size[1]) / size[0])) - y
+    padded_image: npt.NDArray
     if abs(padx) > 10 or abs(pady) > 10:
         padx = 10000 if padx < 0 else padx
         pady = 10000 if pady < 0 else pady
