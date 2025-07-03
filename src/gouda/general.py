@@ -186,3 +186,29 @@ def extract_method_kwargs(kwargs: dict, method: Callable, remove: bool = True) -
         for key in to_remove:
             del kwargs[key]
     return method_kwargs
+
+
+def iter_batch(iterable: Iterable, batch_size: int) -> Generator[tuple[Any, ...], None, None]:
+    """Iterate over an iterable object in batches of a target size.
+
+    Parameters
+    ----------
+    iterable : Iterable
+        The object to iterate over
+    batch_size : int
+        The size of the batches to iterate over
+
+    Notes
+    -----
+    If using Python 3.12+, use `itertools.batched` instead.
+    """
+    if batch_size <= 0:
+        raise ValueError("Batch size must be greater than 0")
+    batch = []
+    for item in iterable:
+        batch.append(item)
+        if len(batch) == batch_size:
+            yield tuple(batch)
+            batch = []
+    if batch:
+        yield tuple(batch)

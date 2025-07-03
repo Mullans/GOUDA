@@ -93,3 +93,110 @@ def test_len():
     result, result_len = gouda.match_len(a, b, c, count=4, pad="wrap")
     assert result_len == 4
     assert all([len(x) == 4 for x in result])
+
+
+def test_iter_batch():
+    """Test the iter_batch function with various input types and edge cases."""
+    
+    # Test with list input
+    data = [1, 2, 3, 4, 5, 6, 7, 8]
+    batches = list(gouda.iter_batch(data, 3))
+    expected = [(1, 2, 3), (4, 5, 6), (7, 8)]
+    assert batches == expected
+    
+    # Test with tuple input
+    data = (1, 2, 3, 4, 5)
+    batches = list(gouda.iter_batch(data, 2))
+    expected = [(1, 2), (3, 4), (5,)]
+    assert batches == expected
+    
+    # Test with string input (iterable of characters)
+    data = "abcdef"
+    batches = list(gouda.iter_batch(data, 2))
+    expected = [('a', 'b'), ('c', 'd'), ('e', 'f')]
+    assert batches == expected
+    
+    # Test with range input
+    data = range(10)
+    batches = list(gouda.iter_batch(data, 4))
+    expected = [(0, 1, 2, 3), (4, 5, 6, 7), (8, 9)]
+    assert batches == expected
+    
+    # Test with empty iterable
+    data = []
+    batches = list(gouda.iter_batch(data, 3))
+    expected = []
+    assert batches == expected
+    
+    # Test with single element
+    data = [42]
+    batches = list(gouda.iter_batch(data, 3))
+    expected = [(42,)]
+    assert batches == expected
+    
+    # Test with batch_size of 1
+    data = [1, 2, 3, 4]
+    batches = list(gouda.iter_batch(data, 1))
+    expected = [(1,), (2,), (3,), (4,)]
+    assert batches == expected
+    
+    # Test with batch_size larger than iterable
+    data = [1, 2, 3]
+    batches = list(gouda.iter_batch(data, 5))
+    expected = [(1, 2, 3)]
+    assert batches == expected
+    
+    # Test with batch_size equal to iterable length
+    data = [1, 2, 3, 4]
+    batches = list(gouda.iter_batch(data, 4))
+    expected = [(1, 2, 3, 4)]
+    assert batches == expected
+    
+    # Test with generator input
+    def gen():
+        yield 1
+        yield 2
+        yield 3
+        yield 4
+    
+    batches = list(gouda.iter_batch(gen(), 2))
+    expected = [(1, 2), (3, 4)]
+    assert batches == expected
+    
+    # Test that it returns tuples
+    data = [1, 2, 3, 4]
+    batches = list(gouda.iter_batch(data, 2))
+    for batch in batches:
+        assert isinstance(batch, tuple)
+    
+    # Test with mixed types
+    data = [1, "hello", 3.14, True, None]
+    batches = list(gouda.iter_batch(data, 2))
+    expected = [(1, "hello"), (3.14, True), (None,)]
+    assert batches == expected
+    
+    # Test that the function is a generator (doesn't consume all at once)
+    data = [1, 2, 3, 4, 5, 6]
+    batch_gen = gouda.iter_batch(data, 2)
+    
+    # Get first batch
+    first_batch = next(batch_gen)
+    assert first_batch == (1, 2)
+    
+    # Get second batch
+    second_batch = next(batch_gen)
+    assert second_batch == (3, 4)
+    
+    # Get remaining batches
+    remaining = list(batch_gen)
+    assert remaining == [(5, 6)]
+    
+    # Test with zero batch_size (should raise error)
+    data = [1, 2, 3]
+    with pytest.raises(ValueError):
+        list(gouda.iter_batch(data, 0))
+    
+    # Test with negative batch_size (should raise error)
+    data = [1, 2, 3]
+    with pytest.raises(ValueError):
+        list(gouda.iter_batch(data, -1))
