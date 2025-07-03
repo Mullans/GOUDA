@@ -70,3 +70,5 @@ ScratchFiles
 cov.xml
 
 scratch_path/
+
+uv.lock
