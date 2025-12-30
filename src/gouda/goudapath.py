@@ -90,21 +90,21 @@ class GoudaPath(os.PathLike):
 
     def __repr__(self) -> str:
         """Return the path as a string."""
-        return f"GoudaPath('{self.path}')"
+        return f'GoudaPath("{self.path}")'
 
     def __bytes__(self) -> bytes:
         """Return the path as a bytes object."""
         return self.abspath.encode()
 
-    def __truediv__(self, path: Union[str, GoudaPath, os.PathLike]) -> Union[GoudaPath, list[GoudaPath]]:
+    def __truediv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath | list[GoudaPath]:
         """Shortcut method for __call__ with a single child path and use_absolute set to False."""
         return self(path, use_absolute=False)
 
-    def __floordiv__(self, path: Union[str, GoudaPath, os.PathLike]) -> Union[GoudaPath, list[GoudaPath]]:
+    def __floordiv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath | list[GoudaPath]:
         """Shortcut method for __call__ with a single child path and use_absolute set to True."""
         return self(path, use_absolute=True)
 
-    def __add__(self, path: Union[str, GoudaPath, os.PathLike]) -> GoudaPath:
+    def __add__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
         """Append a path to the end of the current path.
 
         Note
@@ -501,23 +501,30 @@ class GoudaPath(os.PathLike):
         return GoudaPath(self.fullsplit()[0], self.fullsplit()[1] + ext, use_absolute=self.use_absolute)
 
     def as_posix(self) -> str:
-        """Return the string path with forward slashes."""
-        return (self.__path).replace(os.path.sep, "/")
+        """Return the string path with forward slashes (POSIX format).
+
+        Normalizes the path for the current OS first, then converts all
+        backslashes to forward slashes for cross-platform compatibility.
+        """
+        posix_path = os.path.normpath(self.__path).replace("\\", "/")
+        while "//" in posix_path:
+            posix_path = posix_path.replace("//", "/")
+        return posix_path
 
     def as_pathlib(self) -> pathlib.Path:
         """Return the path as a pathlib.Path object."""
         return pathlib.Path(self.__path)
 
-    def _opener(self, name: Union[str, GoudaPath, os.PathLike], flags: int, mode: int = 0o666) -> int:
+    def _opener(self, name: str | GoudaPath | os.PathLike, flags: int, mode: int = 0o666) -> int:
         return os.open(self, flags, mode)
 
     def open(
         self,
         mode: str = "r",
         buffering: int = -1,
-        encoding: Optional[str] = None,
-        errors: Optional[str] = None,
-        newline: Optional[str] = None,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
     ) -> IO:
         """Open the file using the given mode and buffering. See io.open for details."""
         return io.open(self, mode, buffering, encoding, errors, newline, opener=self._opener)  # noqa: UP020

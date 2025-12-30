@@ -77,8 +77,8 @@ def test_representations():
     assert str(test_abs) == os.path.abspath("absolute")
     assert str(test_rel) == "relative"
 
-    assert repr(test_abs) == "GoudaPath('{}')".format(os.path.abspath("absolute"))
-    assert repr(test_rel) == "GoudaPath('{}')".format("relative")
+    assert repr(test_abs) == 'GoudaPath("{}")'.format(os.path.abspath("absolute"))
+    assert repr(test_rel) == 'GoudaPath("{}")'.format("relative")
 
     assert os.fspath(test_abs) == os.path.abspath("absolute")
     assert os.fspath(test_rel) == os.fspath("relative")
@@ -383,7 +383,8 @@ def test_insert_compare():
 
     windows_test_path = gouda.GoudaPath(r"C:\\Windows\test\path.txt")
     windows_test_path._clear_cache()
-    assert windows_test_path.as_posix() == "C:/Windows/test/path.txt"
+    # assert windows_test_path.as_posix() == "C:/Windows/test/path.txt"
+    assert windows_test_path.as_posix() == pathlib.Path("C://Windows/test/path.txt").as_posix()
 
     assert gouda.GoudaPath.cwd() == os.getcwd()
     assert gouda.GoudaPath("~/test").expanduser() == os.path.normpath(os.path.expanduser("~/test"))
