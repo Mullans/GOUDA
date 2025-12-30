@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 from collections.abc import Callable
 from enum import Enum
-from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -41,7 +40,7 @@ class Deficiency(Enum):
     TRITAN = 2  # Tritanope
 
     @classmethod
-    def get(cls, value: Union[int, str, Deficiency]) -> Deficiency:
+    def get(cls, value: int | str | Deficiency) -> Deficiency:
         """Get the deficiency enum value from an int, str, or Deficiency enum value."""
         if isinstance(value, cls):
             return value
@@ -58,7 +57,7 @@ class Deficiency(Enum):
 
 
 # COLOR CONVERSIONS #################
-def sRGB2linearRGB(arr: npt.NDArray[Union[np.integer, np.floating]]) -> np.ndarray:
+def sRGB2linearRGB(arr: npt.NDArray[np.integer | np.floating]) -> np.ndarray:
     """Convert sRGB to linearRGB, removing the gamma correction.
 
     Parameters
@@ -82,7 +81,7 @@ def sRGB2linearRGB(arr: npt.NDArray[Union[np.integer, np.floating]]) -> np.ndarr
     return out
 
 
-def linearRGB2sRGB(arr: npt.NDArray[Union[np.integer, np.floating]]) -> npt.NDArray[Union[np.float32, np.uint8]]:
+def linearRGB2sRGB(arr: npt.NDArray[np.integer | np.floating]) -> npt.NDArray[np.float32 | np.uint8]:
     """Convert linearRGB to sRGB, applying the gamma correction.
 
     Parameters
@@ -274,7 +273,7 @@ class CVDSimulator:
         return (np.clip(cvd_float, 0.0, 1.0) * 255.0).astype(np.uint8)
 
     def simulate_cvd_image(
-        self, image: npt.NDArray[Union[np.integer, np.floating]], deficiency: Deficiency, severity: float = 1.0
+        self, image: npt.NDArray[np.integer | np.floating], deficiency: Deficiency, severity: float = 1.0
     ) -> npt.NDArray[np.uint8]:
         """Simulate the appearance of an image for the given color vision deficiency.
 
@@ -357,8 +356,8 @@ class CVDSimulator:
 def get_color_distance(
     color1: ColorType,
     color2: ColorType,
-    dist_type: Union[str, Deficiency] = "euclidean",
-    colorblind_simulator: Optional[CVDSimulator] = None,
+    dist_type: str | Deficiency = "euclidean",
+    colorblind_simulator: CVDSimulator | None = None,
     from_rgb: bool = False,
 ) -> float:
     """Compute the distance between two CIE L*a*b* colors.
@@ -553,13 +552,13 @@ def colorblind_distance(
 
 def generate_palette(
     num_colors: int,
-    check_color: Optional[Callable[[ColorType], bool]] = None,
+    check_color: Callable[[ColorType], bool] | None = None,
     force_mode: bool = True,
     quality: int = 50,
     ultra_precision: bool = False,
-    distance_type: Union[str, Deficiency] = "compromise",
+    distance_type: str | Deficiency = "compromise",
     as_rgb: bool = True,
-    seed: Union[None, int, np.random.Generator] = None,
+    seed: int | np.random.Generator | None = None,
 ) -> list[ColorType]:
     """Generate a perceptually differentiable color palette.
 

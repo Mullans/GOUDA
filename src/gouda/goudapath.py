@@ -9,7 +9,7 @@ import pathlib
 import re
 import warnings
 from collections.abc import Generator
-from typing import IO, Any, Optional, Union, cast
+from typing import IO, Any, cast
 
 from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
 
@@ -34,7 +34,7 @@ class GoudaPath(os.PathLike):
     __slots__ = ("__path", "_hash", "_parsed_parts", "_parts_normcase_cached", "use_absolute")
 
     def __init__(
-        self, *path: Union[str, GoudaPath, os.PathLike], use_absolute: bool = False, ensure_dir: bool = False
+        self, *path: str | GoudaPath | os.PathLike, use_absolute: bool = False, ensure_dir: bool = False
     ) -> None:
         if len(path) == 1 and isinstance(path[0], GoudaPath):
             full_path = path[0].path
@@ -54,8 +54,8 @@ class GoudaPath(os.PathLike):
             self.ensure_dir()
 
     def __call__(
-        self, *path_args: Union[str, GoudaPath, os.PathLike], use_absolute: Optional[bool] = None
-    ) -> Union[GoudaPath, list[GoudaPath]]:
+        self, *path_args: str | GoudaPath | os.PathLike, use_absolute: bool | None = None
+    ) -> GoudaPath | list[GoudaPath]:
         """Add to the current path.
 
         Parameters
@@ -149,7 +149,7 @@ class GoudaPath(os.PathLike):
         """Check if the current path contains a value in its hierarchy."""
         return value in self.__path
 
-    def __fspath__(self) -> Union[str, bytes]:
+    def __fspath__(self) -> str | bytes:
         """Return the path as a string or bytes object."""
         # Note: fspath is always absolute path - is that the best behavior?
         return os.fspath(self.__path)
@@ -164,12 +164,12 @@ class GoudaPath(os.PathLike):
 
     def glob(
         self,
-        pattern: Union[str, GoudaPath, os.PathLike],
+        pattern: str | GoudaPath | os.PathLike,
         as_gouda: bool = True,
         basenames: bool = False,
         recursive: bool = False,
         sort: bool = False,
-    ) -> Union[list[str], list[GoudaPath]]:
+    ) -> list[str] | list[GoudaPath]:
         """Make a glob call starting from the current path.
 
         Parameters
@@ -197,13 +197,13 @@ class GoudaPath(os.PathLike):
 
     def search(
         self,
-        pattern: Union[str, GoudaPath, os.PathLike, re.Pattern],
+        pattern: str | GoudaPath | os.PathLike | re.Pattern,
         as_gouda: bool = True,
         basenames: bool = False,
         recursive: bool = False,
         sort: bool = False,
         as_iterator: bool = False,
-    ) -> Union[list[str], list[GoudaPath], Generator[str, None, None], Generator[GoudaPath, None, None]]:
+    ) -> list[str] | list[GoudaPath] | Generator[str, None, None] | Generator[GoudaPath, None, None]:
         """Make a fast_glob call starting from the current path (matches basenames against pattern)."""
         if not isinstance(pattern, re.Pattern):
             pattern = str(pattern)
@@ -230,11 +230,11 @@ class GoudaPath(os.PathLike):
 
     def globfirst(
         self,
-        pattern: Union[str, GoudaPath, os.PathLike],
+        pattern: str | GoudaPath | os.PathLike,
         as_gouda: bool = True,
         basename: bool = False,
         recursive: bool = False,
-    ) -> Union[str, GoudaPath, None]:
+    ) -> str | GoudaPath | None:
         """Make a glob call starting from the current path and return only the first result in glob order.
 
         Parameters
@@ -275,7 +275,7 @@ class GoudaPath(os.PathLike):
         files_only: bool = False,
         basenames: bool = False,
         include_hidden: bool = False,
-    ) -> Union[list[str], list[GoudaPath]]:
+    ) -> list[str] | list[GoudaPath]:
         """If the path is a directory, get the child paths contained by it.
 
         Parameters
@@ -312,7 +312,7 @@ class GoudaPath(os.PathLike):
         files_only: bool = False,
         basenames: bool = False,
         include_hidden: bool = False,
-    ) -> Union[Generator[str, None, None], Generator[GoudaPath, None, None]]:
+    ) -> Generator[str, None, None] | Generator[GoudaPath, None, None]:
         """If the path is a directory, iterate through the child paths contained by it.
 
         Parameters
@@ -349,7 +349,7 @@ class GoudaPath(os.PathLike):
         recursive: bool = False,
         fast_check: bool = True,
         is_iterator: bool = False,
-    ) -> Union[list[str], Generator[str, None, None]]:
+    ) -> list[str] | Generator[str, None, None]:
         """Return all images contained in the directory of the path.
 
         Parameters
@@ -385,7 +385,7 @@ class GoudaPath(os.PathLike):
         """Returns the relative path if use_absolute is False, otherwise returns the absolute path."""
         return self.__path
 
-    def __update_path(self, *args: Union[str, GoudaPath, os.PathLike]) -> None:
+    def __update_path(self, *args: str | GoudaPath | os.PathLike) -> None:
         self.__path = os.path.join(*args)
         self._clear_cache()
 
@@ -439,7 +439,7 @@ class GoudaPath(os.PathLike):
         """Replace part of the path with a new string."""
         return GoudaPath(self.__path.replace(old, new), use_absolute=self.use_absolute)
 
-    def rstrip(self, chars: Optional[str] = None) -> GoudaPath:
+    def rstrip(self, chars: str | None = None) -> GoudaPath:
         """Remove leading and trailing characters from the path.
 
         Parameters
@@ -528,7 +528,7 @@ class GoudaPath(os.PathLike):
             data: bytes = f.read()
             return data
 
-    def read_text(self, encoding: Optional[str] = None, errors: Optional[str] = None) -> str:
+    def read_text(self, encoding: str | None = None, errors: str | None = None) -> str:
         """Read the file as text."""
         with self.open(mode="r", encoding=encoding, errors=errors) as f:
             data: str = f.read()
@@ -540,7 +540,7 @@ class GoudaPath(os.PathLike):
         with self.open(mode="wb") as f:
             return f.write(view)
 
-    def write_text(self, data: str, encoding: Optional[str] = None, errors: Optional[str] = None) -> int:
+    def write_text(self, data: str, encoding: str | None = None, errors: str | None = None) -> int:
         """Write text to the file."""
         if not isinstance(data, str):
             raise TypeError(f"data must be str, not {type(data).__name__}")
@@ -618,28 +618,28 @@ class GoudaPath(os.PathLike):
             return self._cparts == _get_path_parts_normcase(other)
         return self.__path == str(other)
 
-    def __lt__(self, other: Union[str, GoudaPath, os.PathLike]) -> bool:
+    def __lt__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is less than the other path."""
         if isinstance(other, (GoudaPath, pathlib.Path)):
             return self._cparts < _get_path_parts_normcase(other)
         else:
             return self.__path < str(other)
 
-    def __le__(self, other: Union[str, GoudaPath, os.PathLike]) -> bool:
+    def __le__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is less than or equal to the other path."""
         if isinstance(other, (GoudaPath, pathlib.Path)):
             return self._cparts <= _get_path_parts_normcase(other)
         else:
             return self.__path <= str(other)
 
-    def __gt__(self, other: Union[str, GoudaPath, os.PathLike]) -> bool:
+    def __gt__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is greater than the other path."""
         if isinstance(other, (GoudaPath, pathlib.Path)):
             return self._cparts > _get_path_parts_normcase(other)
         else:
             return self.__path > str(other)
 
-    def __ge__(self, other: Union[str, GoudaPath, os.PathLike]) -> bool:
+    def __ge__(self, other: str | GoudaPath | os.PathLike) -> bool:
         """Check if the path is greater than or equal to the other path."""
         if isinstance(other, (GoudaPath, pathlib.Path)):
             return self._cparts >= _get_path_parts_normcase(other)
@@ -647,7 +647,7 @@ class GoudaPath(os.PathLike):
             return self.__path >= str(other)
 
 
-def _get_path_parts_normcase(other: Union[GoudaPath, pathlib.Path]) -> tuple[str, ...]:
+def _get_path_parts_normcase(other: GoudaPath | pathlib.Path) -> tuple[str, ...]:
     result: tuple[str, ...]
     if hasattr(other, "_cparts"):  # Python 3.9
         result = other._cparts
@@ -658,4 +658,4 @@ def _get_path_parts_normcase(other: Union[GoudaPath, pathlib.Path]) -> tuple[str
     return result
 
 
-GPathLike = Union[str, GoudaPath, os.PathLike]
+GPathLike = str | GoudaPath | os.PathLike

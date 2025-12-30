@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 from types import TracebackType
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 import cv2
 import numpy as np
@@ -28,15 +28,15 @@ class VideoWriter:
 
     def __init__(
         self,
-        out_path: Union[str, os.PathLike],
+        out_path: str | os.PathLike,
         fps: int = 10,
         codec: str = "MJPG",
-        output_shape: Optional[tuple[int, int]] = None,
+        output_shape: tuple[int, int] | None = None,
         interpolator: int = cv2.INTER_LINEAR,
     ) -> None:
         self.out_path = out_path
         self.output_shape = output_shape  # assumes (height, width)
-        self.writer: Optional[cv2.VideoWriter] = None
+        self.writer: cv2.VideoWriter | None = None
         self.fps = fps
         self.codec = codec
         self.interpolator = interpolator
@@ -46,9 +46,9 @@ class VideoWriter:
 
     def __exit__(  # noqa: D105
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         if self.writer is not None:
             self.writer.release()
@@ -86,15 +86,15 @@ class VideoWriter:
 
 
 def show_video(
-    data: Union[Sequence[npt.ArrayLike], npt.NDArray],
+    data: Sequence[npt.ArrayLike] | npt.NDArray,
     player_width: int = 500,
     player_height: int = 300,
-    frame_height: Optional[int] = None,
-    frame_width: Optional[int] = None,
-    file_name: Union[str, os.PathLike] = "temp.mp4",
-    show: Optional[str] = "ipython",
+    frame_height: int | None = None,
+    frame_width: int | None = None,
+    file_name: str | os.PathLike = "temp.mp4",
+    show: str | None = "ipython",
     **kwargs: Any,  # noqa: ANN401
-) -> Optional[Any]:  # noqa: ANN401
+) -> Any | None:  # noqa: ANN401
     """Convert a series of frames to a video and display it.
 
     Parameters

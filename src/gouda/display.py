@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,14 +18,14 @@ from gouda.typing import ImageLikeType
 def print_grid(
     *input_images: Any,  # noqa: ANN401 # Using Any for input_images to avoid complex nested types
     figsize: tuple[int, int] = (8, 8),
-    file_name: Union[str, os.PathLike, None] = None,
+    file_name: str | os.PathLike | None = None,
     do_squarify: bool = False,
     show: bool = True,
     return_grid_shape: bool = False,
     return_fig: bool = False,
     cmap: str = "gray",
     **kwargs: Any,  # noqa: ANN401
-) -> Union[Figure, tuple[int, int], tuple[Figure, tuple[int, int]], None]:
+) -> Figure | tuple[int, int] | tuple[Figure, tuple[int, int]] | None:
     """Print out images as a grid.
 
     Parameters
@@ -195,10 +195,10 @@ def print_grid(
 def print_image(
     image: npt.NDArray,
     figsize: tuple[float, float] = (8.0, 6.5),
-    file_name: Union[str, os.PathLike, None] = None,
+    file_name: str | os.PathLike | None = None,
     show: bool = True,
     allow_interpolation: bool = False,
-    imshow_args: Union[dict[str, Any], None] = None,
+    imshow_args: dict[str, Any] | None = None,
     **kwargs: Any,  # noqa: ANN401
 ) -> None:
     """Similar to pyplot.imshow, but with axes and margins for a single image.
@@ -253,11 +253,11 @@ def print_image(
 
 
 def squarify(
-    image: Union[npt.NDArray, Sequence[npt.NDArray]],
+    image: npt.NDArray | Sequence[npt.NDArray],
     primary_axis: int = 0,
-    num_cols: Optional[int] = None,
+    num_cols: int | None = None,
     as_array: bool = False,
-) -> Union[npt.NDArray, list[list[ImageLikeType]]]:
+) -> npt.NDArray | list[list[ImageLikeType]]:
     """Reshape a list/array of images into nested elements with the same numbers of rows and columns.
 
     Parameters
@@ -283,7 +283,7 @@ def squarify(
         # images = np.split(image, image.shape[axis], axis=axis)
         # images = [item for item in images]
         images = []
-        axis_slice: list[Union[slice, int]] = [slice(None) for _ in range(image.ndim)]
+        axis_slice: list[slice | int] = [slice(None) for _ in range(image.ndim)]
         num_images = image.shape[primary_axis]
         for idx in range(num_images):
             axis_slice[primary_axis] = idx
