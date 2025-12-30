@@ -196,7 +196,7 @@ class ConfusionMatrix:
                 ]
             )
             fp = np.array([self.matrix[i, :].sum() - self.matrix[i, i].sum() for i in range(self._num_classes)])
-            result = np.divide(tn, tn + fp, where=(tn + fp) > 0)
+            result = np.divide(tn, tn + fp, where=(tn + fp) > 0, out=np.zeros_like(tn, dtype=float))
             return result
 
         else:
@@ -208,10 +208,10 @@ class ConfusionMatrix:
                 ]
             )
             fp = self.matrix[class_index, :].sum() - self.matrix[class_index, class_index].sum()
-            result = np.divide(tn, tn + fp, where=(tn + fp) > 0)
+            result = tn / (tn + fp) if (tn + fp) > 0 else 0.0
             return result
 
-    def sensitivity(self, class_index: Optional[int] = None) -> Union[list[float], float]:
+    def sensitivity(self, class_index: int | None = None) -> list[float] | float:
         """Return the sensitivity of all classes or a single class. AKA recall.
 
         Notes
