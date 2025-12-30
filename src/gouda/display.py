@@ -180,7 +180,7 @@ def print_grid(
     if show:  # pragma: no cover
         # Check manually
         plt.show()
-    else:
+    elif not return_fig:
         plt.close(fig)
     if return_fig and return_grid_shape:
         return (fig, (rows, cols))
