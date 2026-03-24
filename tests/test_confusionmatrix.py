@@ -279,3 +279,59 @@ def test_ConfusionMatrix_precision_mcc():
     mat3 = gouda.ConfusionMatrix.from_array(np.array([1, 2, 3]), np.array([1, 2, 3]))
     with pytest.raises(ValueError):
         mat3.mcc()
+
+
+def test_ConfusionMatrix_precision_zero_denominator():
+    # Classes 1 and 2 have no predicted instances — precision must return 0
+    mat = gouda.ConfusionMatrix(num_classes=3)
+    mat.add(0, 0)
+    mat.add(0, 1)  # predicted 0, expected 1
+    mat.add(0, 2)  # predicted 0, expected 2
+    precs = mat.precision()
+    assert precs[0] == pytest.approx(1 / 3)  # 1 TP out of 3 predicted as class 0
+    assert precs[1] == 0
+    assert precs[2] == 0
+    assert mat.precision(1) == 0
+    assert mat.precision(2) == 0
+
+
+def test_ConfusionMatrix_sensitivity_zero_denominator():
+    # Classes 1 and 2 have no actual samples — sensitivity must return 0
+    mat = gouda.ConfusionMatrix(num_classes=3)
+    mat.add(0, 0)
+    mat.add(1, 0)  # predicted 1, expected 0
+    mat.add(2, 0)  # predicted 2, expected 0
+    sens = mat.sensitivity()
+    assert sens[0] == pytest.approx(1 / 3)
+    assert sens[1] == 0
+    assert sens[2] == 0
+    assert mat.sensitivity(1) == 0
+    assert mat.sensitivity(2) == 0
+
+
+def test_ConfusionMatrix_matrix_expansion():
+    # Adding a sample from a class outside the current matrix size must expand it
+    mat = gouda.ConfusionMatrix(num_classes=2)
+    mat.add(0, 0)
+    assert mat.num_classes == 2
+
+    mat.add(3, 3)
+    assert mat.num_classes == 4
+    assert mat.shape == (4, 4)
+    assert mat[0, 0] == 1
+    assert mat[3, 3] == 1
+    # Previously empty cells must still be zero
+    assert mat[0, 3] == 0
+    assert mat[3, 0] == 0
+
+
+def test_ConfusionMatrix_add_float_threshold():
+    # add() must use threshold when classifying float predictions
+    mat = gouda.ConfusionMatrix(num_classes=2, threshold=0.6)
+    mat.add(0.5, 0)  # 0.5 is not > 0.6, predicted class 0 — correct (TN)
+    mat.add(0.7, 1)  # 0.7 > 0.6,  predicted class 1 — correct (TP)
+    mat.add(0.4, 1)  # 0.4 is not > 0.6, predicted class 0 — wrong  (FN)
+    assert mat[0, 0] == 1  # TN
+    assert mat[1, 1] == 1  # TP
+    assert mat[1, 0] == 1  # FN
+    assert mat.count() == 3

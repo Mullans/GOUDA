@@ -12,7 +12,7 @@ from gouda import image as gimage
 from gouda.plotting import parse_color
 
 
-def test_imwrite_imread():
+def test_imwrite_imread(scratch_path):
     with pytest.raises(ValueError):
         gimage.imread("alskdfjalsdjf/asdf.png")
 
@@ -22,45 +22,39 @@ def test_imwrite_imread():
     image_test *= 255
 
     assert image_test[:, :, 2].sum() == 0
-    gimage.imwrite(GoudaPath("ScratchFiles/test_RGB.png"), image_test)
-    gimage.imwrite("ScratchFiles/test_BGR.png", image_test, as_rgb=False)
-    gimage.imwrite("ScratchFiles/test_singleChannel.png", image_test[:, :, :1])
-    gimage.imwrite("ScratchFiles/test_2D.png", image_test[:, :, 0])
-    gimage.imwrite("ScratchFiles/test_uint16.png", image_test.astype(np.uint16))
+    gimage.imwrite(GoudaPath(scratch_path / "test_RGB.png"), image_test)
+    gimage.imwrite(scratch_path / "test_BGR.png", image_test, as_rgb=False)
+    gimage.imwrite(scratch_path / "test_singleChannel.png", image_test[:, :, :1])
+    gimage.imwrite(scratch_path / "test_2D.png", image_test[:, :, 0])
+    gimage.imwrite(scratch_path / "test_uint16.png", image_test.astype(np.uint16))
     with pytest.raises(ValueError):
-        assert gimage.imwrite("ScratchFiles/failure.png", image_test[:, :, :2])
+        assert gimage.imwrite(scratch_path / "failure.png", image_test[:, :, :2])
 
-    assert os.path.isfile("ScratchFiles/test_RGB.png")
-    assert os.path.isfile("ScratchFiles/test_BGR.png")
-    assert os.path.isfile("ScratchFiles/test_singleChannel.png")
-    assert os.path.isfile("ScratchFiles/test_2D.png")
-    assert os.path.isfile("ScratchFiles/test_uint16.png")
-    assert not os.path.isfile("ScratchFiles/failure.png")
+    assert os.path.isfile(scratch_path / "test_RGB.png")
+    assert os.path.isfile(scratch_path / "test_BGR.png")
+    assert os.path.isfile(scratch_path / "test_singleChannel.png")
+    assert os.path.isfile(scratch_path / "test_2D.png")
+    assert os.path.isfile(scratch_path / "test_uint16.png")
+    assert not os.path.isfile(scratch_path / "failure.png")
 
-    image_test_in_1 = gimage.imread(GoudaPath("ScratchFiles/test_RGB.png"), flag=RGB)
-    image_test_in_2 = gimage.imread("ScratchFiles/test_RGB.png", flag=None)
-    image_test_in_3 = gimage.imread("ScratchFiles/test_BGR.png", flag=RGB)
-    image_test_in_4 = gimage.imread("ScratchFiles/test_BGR.png", flag=None)
+    image_test_in_1 = gimage.imread(GoudaPath(scratch_path / "test_RGB.png"), flag=RGB)
+    image_test_in_2 = gimage.imread(scratch_path / "test_RGB.png", flag=None)
+    image_test_in_3 = gimage.imread(scratch_path / "test_BGR.png", flag=RGB)
+    image_test_in_4 = gimage.imread(scratch_path / "test_BGR.png", flag=None)
     np.testing.assert_array_equal(image_test_in_1, image_test_in_4)
     np.testing.assert_array_equal(image_test_in_2, image_test_in_3)
 
-    image_test_in_5 = gimage.imread("ScratchFiles/test_singleChannel.png")
-    image_test_in_6 = gimage.imread("ScratchFiles/test_singleChannel.png")
+    image_test_in_5 = gimage.imread(scratch_path / "test_singleChannel.png")
+    image_test_in_6 = gimage.imread(scratch_path / "test_singleChannel.png")
 
     np.testing.assert_array_equal(image_test_in_5, image_test_in_6)
 
-    image_test_in_7 = gimage.imread("ScratchFiles/test_uint16.png", flag=UNCHANGED)
+    image_test_in_7 = gimage.imread(scratch_path / "test_uint16.png", flag=UNCHANGED)
     assert image_test_in_7.dtype == np.uint16
 
-    image_test_in_8 = gimage.imread("ScratchFiles/test_RGB.png", flag=GRAYSCALE)
+    image_test_in_8 = gimage.imread(scratch_path / "test_RGB.png", flag=GRAYSCALE)
     assert image_test_in_8.shape == (100, 100)
     np.testing.assert_allclose(image_test_in_8, cv2.cvtColor(image_test, cv2.COLOR_RGB2GRAY), rtol=0, atol=1)
-
-    os.remove("ScratchFiles/test_RGB.png")
-    os.remove("ScratchFiles/test_BGR.png")
-    os.remove("ScratchFiles/test_singleChannel.png")
-    os.remove("ScratchFiles/test_2D.png")
-    os.remove("ScratchFiles/test_uint16.png")
 
 
 def test_stack_label():
@@ -265,15 +259,14 @@ def test_rotate_allow_resize():
     assert rotated_2.shape == (100, 50, 3)
 
 
-def test_padded_resize():
+def test_padded_resize(scratch_path):
     image_test = np.ones([50, 50, 3], dtype=np.uint8)
-    gimage.imwrite("ScratchFiles/test.png", image_test)
+    gimage.imwrite(scratch_path / "test.png", image_test)
     pad_test = gimage.padded_resize(image_test, size=[50, 50])
-    pad_test_file = gimage.padded_resize("ScratchFiles/test.png", size=[50, 50])
+    pad_test_file = gimage.padded_resize(scratch_path / "test.png", size=[50, 50])
     assert pad_test.shape == (50, 50, 3)
     np.testing.assert_array_equal(image_test, pad_test)
     np.testing.assert_array_equal(pad_test_file, pad_test)
-    os.remove("ScratchFiles/test.png")
 
     pad_test_2 = gimage.padded_resize(image_test, size=[50, 75])
     assert pad_test_2.shape == (50, 75, 3)

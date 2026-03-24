@@ -5,12 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "GOUDA"
 dynamic = ["version"]
-authors = [
-    {name = "Sean Mullan"}
-]
+authors = [{ name = "Sean Mullan" }]
 description = "Good Old Utilities for Data Analysis!"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 keywords = ["utilities"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -47,8 +45,8 @@ dev = [
     "pytest-cov",
     "pre-commit",
     "mypy",
-    "types-colorama",  # for mypy
-    "scipy-stubs; python_version >= '3.10'", # for mypy
+    "types-colorama",   # for mypy
+    "scipy-stubs",      # for mypy
     "ruff>=0.12.2",
     "tox>=4.32.0",
     "tox-uv>=1.29.0",
@@ -73,26 +71,11 @@ local-scheme = "no-local-version"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "--cov gouda --cov-report term-missing --cov-report html --cov-report xml:cov.xml --verbose -x"
-testpaths = [
-    "tests",
-]
-norecursedirs = [
-    "dist",
-    "build",
-    "docs",
-    ".tox/",
-    ".tox-wsl/",
-]
+testpaths = ["tests"]
+norecursedirs = ["dist", "build", "docs", ".tox/", ".tox-wsl/"]
 
 [tool.ruff]
-exclude = [
-    "dist",
-    "build",
-    ".tox",
-    ".venv",
-    "docs",
-    "gouda/_version.py",
-]
+exclude = ["dist", "build", ".tox", ".venv", "docs", "gouda/_version.py"]
 line-length = 120
 indent-width = 4
 target-version = "py310"
@@ -101,24 +84,44 @@ extend-exclude = ["ignore_*"]
 
 [tool.ruff.lint]
 select = [
-    "E4", "E7", "E9", "F", "B",
-    "W", #"I",
-    "ANN", "A", "C4", "FA", "PIE", "PT", "Q", "SIM", "I", "NPY", "N", "PERF", "D", "UP",
-    "PLC", "PLE", "FURB", "RUF",
+    "E4",
+    "E7",
+    "E9",
+    "F",
+    "B",
+    "W",
+    "I",
+    "ANN",
+    "A",
+    "C4",
+    "FA",
+    "PIE",
+    "PT",
+    "Q",
+    "SIM",
+    "I",
+    "NPY",
+    "N",
+    "PERF",
+    "D",
+    "UP",
+    "PLC",
+    "PLE",
+    "FURB",
+    "RUF",
     # "RET"  # Tried and removed
-    ]
+]
 ignore = [
-    "E501", "B028", # Unnecessary
-    "D203", # Contradicts other rules
-    "SIM105", "N802", "UP015", # Counter-productive
-    "B905", "UP007", "UP038"  # Remove when 3.9 no longer supported
+    "E501",   # Unnecessary
+    "B028",   # Unnecessary
+    "D203",   # Contradicts other rules
+    "SIM105", # Counter-productive
+    "N802",   # Counter-productive
+    "UP015",  # Counter-productive
 ]
 fixable = ["ALL"]
 unfixable = []
-exclude = [
-    "binaryconfusionmatrix.py",
-    "tests/*"
-]
+exclude = ["binaryconfusionmatrix.py", "tests/*"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
@@ -138,9 +141,11 @@ docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "F403"]
-"symbols.py" = ["N816"]  # Fix at some point - low priority
+"symbols.py" = [
+    "N816", # Allow mixed-case constants in symbols.py for readability
+]
 
-[tool.mypy]  # https://mypy.readthedocs.io/en/stable/config_file.html#example-pyproject-toml
+[tool.mypy] # https://mypy.readthedocs.io/en/stable/config_file.html#example-pyproject-toml
 python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
@@ -154,6 +159,4 @@ exclude = [
     ".*plotting.py$",
 ]
 
-plugins = [
-    "numpy.typing.mypy_plugin",
-]
+plugins = ["numpy.typing.mypy_plugin"]

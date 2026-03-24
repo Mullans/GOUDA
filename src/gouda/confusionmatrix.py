@@ -247,7 +247,7 @@ class ConfusionMatrix:
         else:
             return (
                 self.matrix[class_index, class_index] / self.matrix[:, class_index].sum()
-                if self.matrix[class_index, :].sum() > 0
+                if self.matrix[:, class_index].sum() > 0
                 else 0
             )
 

@@ -215,3 +215,79 @@ def test_save_load(scratch_path):
 
     test_mat2 = gouda.BinaryConfusionMatrix.load(scratch_path / "test_mat.txt")
     np.testing.assert_array_equal(test_mat.matrix, test_mat2.matrix)
+
+
+def test_save_load_preserves_metadata(scratch_path):
+    test_mat = gouda.BinaryConfusionMatrix(
+        threshold=0.8,
+        pos_label="Cat",
+        neg_label="Dog",
+        title="TestTitle",
+    )
+    test_mat[0, 0] = 10
+    test_mat[1, 1] = 5
+    test_mat.save(scratch_path / "test_meta.txt")
+
+    loaded = gouda.BinaryConfusionMatrix.load(scratch_path / "test_meta.txt")
+    assert loaded.threshold == 0.8
+    assert loaded.pos_label == "Cat"
+    assert loaded.neg_label == "Dog"
+    assert loaded.title == "TestTitle"
+    np.testing.assert_array_equal(loaded.matrix, test_mat.matrix)
+
+
+def test_copy():
+    test_mat = gouda.BinaryConfusionMatrix(threshold=0.7, dtype=np.uint8)
+    test_mat[0, 0] = 2
+    test_mat[0, 1] = 3
+    test_mat[1, 0] = 1
+    test_mat[1, 1] = 4
+
+    copied = test_mat.copy()
+    np.testing.assert_array_equal(copied.matrix, test_mat.matrix)
+    assert copied.threshold == test_mat.threshold
+    assert copied.dtype == test_mat.dtype
+
+    # Modifying the copy must not affect the original
+    copied[0, 0] = 99
+    assert test_mat[0, 0] == 2
+
+
+def test_count():
+    test_mat = gouda.BinaryConfusionMatrix()
+    assert test_mat.count() == 0
+
+    test_mat.add(np.array([[1, 0, 1], [1, 0, 0]]))
+    assert test_mat.count() == 3
+
+    test_mat.add(np.array([[1, 1], [0, 0]]))
+    assert test_mat.count() == 5
+
+
+def test_add_matrix_with_ndarray():
+    test_mat = gouda.BinaryConfusionMatrix()
+    test_mat[0, 0] = 1
+    test_mat[1, 1] = 2
+
+    extra = np.array([[3, 0], [0, 4]])
+    test_mat.add_matrix(extra)
+    np.testing.assert_array_equal(test_mat.matrix, np.array([[4, 0], [0, 6]]))
+
+
+def test_precision_zero_denominator():
+    # All predictions are negative — no positives ever predicted
+    test_mat = gouda.BinaryConfusionMatrix()
+    test_mat.add(np.array([[0, 0, 0], [1, 1, 1]]))  # predict all negative
+    assert test_mat.false_positive == 0
+    assert test_mat.true_positive == 0
+    assert test_mat.precision() == 0
+
+
+def test_threshold_boundary():
+    # Values exactly at threshold must be classified as positive (>= threshold)
+    test_mat = gouda.BinaryConfusionMatrix(threshold=0.5)
+    test_mat.add(predictions=[0.5, 0.4], labels=[1, 1])
+    # 0.5 >= 0.5 → positive → TP
+    # 0.4 < 0.5  → negative → FN
+    assert test_mat.true_positive == 1
+    assert test_mat.false_negative == 1
