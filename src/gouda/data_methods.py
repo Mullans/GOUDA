@@ -40,15 +40,17 @@ def to_uint8(x: npt.ArrayLike, allow_rescale: bool = False) -> npt.NDArray[np.ui
         x = rescale(x, 0, 255)  # rescale to [0, 255] for any input range
     elif x.dtype == np.uint8:
         return x.copy()
-    elif x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
-        pass
-    elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:  # input range [-1, 1]
-        x = (x * 127.5) + 127.5
-    elif x.min() >= 0 and x.max() <= 1:  # input range [0, 1]
-        x = x * 255.0
     else:
-        warnings.warn("Cannot determine input range. Rescaling to [0, 1]")
-        x = rescale(x, 0, 255)
+        x_min, x_max = x.min(), x.max()
+        if x_max > 1 and x_max <= 255 and x_min >= 0:  # input range [0, 255]
+            pass
+        elif x_min < 0 and x_min >= -1 and x_max <= 1:  # input range [-1, 1]
+            x = (x * 127.5) + 127.5
+        elif x_min >= 0 and x_max <= 1:  # input range [0, 1]
+            x = x * 255.0
+        else:
+            warnings.warn("Cannot determine input range. Rescaling to [0, 1]")
+            x = rescale(x, 0, 255)
     return x.astype(np.uint8)
 
 
@@ -79,12 +81,8 @@ def arr_sample(arr: npt.NDArray, rate: float) -> npt.NDArray:
     """
     if arr.ndim != 1:
         raise ValueError("Only 1d arrays can be sampled from.")
-    i = 0.0
-    out = []
-    while i < arr.shape[0]:
-        out.append(arr[np.floor(i).astype(int)])
-        i += rate
-    return np.array(out)
+    indices = np.floor(np.arange(0, arr.shape[0], rate)).astype(int)
+    return arr[indices]
 
 
 def factors(x: int) -> set[int]:
@@ -791,15 +789,16 @@ def value_crossing(
 
 def center_of_mass(input_arr: npt.ArrayLike) -> npt.NDArray[np.floating]:
     """Find the continuous index of the center of mass for the input n-dimensional array."""
-    input_arr = np.asarray(input_arr)
-    flat_mass = np.reshape(input_arr, [-1, 1])
-    total_mass = np.sum(flat_mass)
+    input_arr = np.asarray(input_arr, dtype=float)
+    total_mass = input_arr.sum()
     if total_mass == 0:
         raise ValueError("Cannot find the center if the total mass is 0")
-    grids = np.meshgrid(*[np.arange(axis_length) for axis_length in input_arr.shape], indexing="ij")
-    coords = np.stack([np.reshape(grid, [-1]) for grid in grids], axis=-1)
-
-    center_of_mass: npt.NDArray[np.floating] = np.sum(flat_mass * coords, axis=0) / total_mass
+    result = np.empty(input_arr.ndim)
+    for i in range(input_arr.ndim):
+        axes = tuple(j for j in range(input_arr.ndim) if j != i)
+        marginal = input_arr.sum(axis=axes)
+        result[i] = np.dot(np.arange(input_arr.shape[i], dtype=float), marginal) / total_mass
+    center_of_mass: npt.NDArray[np.floating] = result
     return center_of_mass
 
 
@@ -879,13 +878,11 @@ def benjamini_hochberg(p_vals: npt.NDArray[np.floating], alpha: float = 0.05) ->
     p_vals = np.asarray(p_vals)
     rank = np.argsort(p_vals)
     p_vals = p_vals[rank]
-    reject = np.zeros(p_vals.size, dtype=bool)
     scalar = alpha / p_vals.size
-    for idx in range(p_vals.size):
-        if p_vals[idx] <= (idx + 1) * scalar:
-            reject[rank[idx]] = True
-        else:
-            break
+    passes = p_vals <= (np.arange(1, p_vals.size + 1) * scalar)
+    n_reject = int(np.cumprod(passes).sum())
+    reject = np.zeros(p_vals.size, dtype=bool)
+    reject[rank[:n_reject]] = True
     return reject
 
 
@@ -955,6 +952,5 @@ def line_dist(x: npt.ArrayLike, y: npt.ArrayLike) -> float:
             f"x and y must be 1D iterables of values along a line but found shapes {x.shape} and {y.shape}"
         )
 
-    dists = np.sqrt((x[1:] - x[:-1]) ** 2 + (y[1:] - y[:-1]) ** 2)
-    result: float = np.sum(dists)
+    result: float = np.sum(np.hypot(np.diff(x), np.diff(y)))
     return result
