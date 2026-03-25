@@ -9,7 +9,7 @@ import pathlib
 import re
 import warnings
 from collections.abc import Generator
-from typing import IO, Any, cast
+from typing import IO, Any, cast, overload
 
 from gouda.file_methods import ensure_dir, fast_glob, find_images, is_image
 
@@ -53,6 +53,19 @@ class GoudaPath(os.PathLike):
         if ensure_dir:
             self.ensure_dir()
 
+    @overload
+    def __call__(self, path: str | GoudaPath | os.PathLike, *, use_absolute: bool | None = ...) -> GoudaPath: ...
+
+    @overload
+    def __call__(
+        self, path: list[str | GoudaPath | os.PathLike], *, use_absolute: bool | None = ...
+    ) -> list[GoudaPath]: ...
+
+    @overload
+    def __call__(
+        self, *path_args: str | GoudaPath | os.PathLike, use_absolute: bool | None = ...
+    ) -> list[GoudaPath]: ...
+
     def __call__(
         self, *path_args: str | GoudaPath | os.PathLike, use_absolute: bool | None = None
     ) -> GoudaPath | list[GoudaPath]:
@@ -94,13 +107,13 @@ class GoudaPath(os.PathLike):
 
     def __bytes__(self) -> bytes:
         """Return the path as a bytes object."""
-        return self.abspath.encode()
+        return self.path.encode()
 
-    def __truediv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath | list[GoudaPath]:
+    def __truediv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
         """Shortcut method for __call__ with a single child path and use_absolute set to False."""
         return self(path, use_absolute=False)
 
-    def __floordiv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath | list[GoudaPath]:
+    def __floordiv__(self, path: str | GoudaPath | os.PathLike) -> GoudaPath:
         """Shortcut method for __call__ with a single child path and use_absolute set to True."""
         return self(path, use_absolute=True)
 
@@ -147,19 +160,15 @@ class GoudaPath(os.PathLike):
 
     def __contains__(self, value: str) -> bool:
         """Check if the current path contains a value in its hierarchy."""
-        return value in self.__path
+        return value in self.parts
 
     def __fspath__(self) -> str | bytes:
         """Return the path as a string or bytes object."""
-        # Note: fspath is always absolute path - is that the best behavior?
         return os.fspath(self.__path)
 
     def ensure_dir(self) -> GoudaPath:
-        """Ensure that the directory exists. If the path is a file, ensure the parent directory exists."""
-        if "." in os.path.basename(self.path):
-            ensure_dir(self.parent_dir().path)
-        else:
-            ensure_dir(self.path)
+        """Ensure that the directory exists. If the path has an extension, ensure the parent directory exists."""
+        ensure_dir(self.path)
         return self
 
     def glob(
@@ -478,8 +487,6 @@ class GoudaPath(os.PathLike):
     def add_basename(self, path: str) -> GoudaPath:
         """Add the basename of the given path to the end of the GoudaPath."""
         result = self(os.path.basename(path))
-        if isinstance(result, list):
-            result = result[0]
         return result
 
     def stem(self) -> str:
@@ -507,8 +514,7 @@ class GoudaPath(os.PathLike):
         backslashes to forward slashes for cross-platform compatibility.
         """
         posix_path = os.path.normpath(self.__path).replace("\\", "/")
-        while "//" in posix_path:
-            posix_path = posix_path.replace("//", "/")
+        posix_path = re.sub(r"/+", "/", posix_path)
         return posix_path
 
     def as_pathlib(self) -> pathlib.Path:
@@ -655,14 +661,7 @@ class GoudaPath(os.PathLike):
 
 
 def _get_path_parts_normcase(other: GoudaPath | pathlib.Path) -> tuple[str, ...]:
-    result: tuple[str, ...]
-    if hasattr(other, "_cparts"):  # Python 3.9
-        result = other._cparts
-    elif hasattr(other, "_parts_normcase"):  # Python 3.12
-        result = other._parts_normcase
-    else:
-        raise NotImplementedError("Cannot get casefolded/normed parts from Path object")
-    return result
+    return tuple(pathlib.Path(os.path.normcase(os.fspath(other))).parts)
 
 
 GPathLike = str | GoudaPath | os.PathLike

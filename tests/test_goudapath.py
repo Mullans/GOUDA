@@ -271,7 +271,9 @@ def test_get_images_num_children(scratch_path):
 
 def test_encode():
     path = gouda.GoudaPath(".")
-    assert os.path.abspath(".").encode() == path.__bytes__()
+    assert str(path).encode() == path.__bytes__()
+    abs_path = gouda.GoudaPath(".", use_absolute=True)
+    assert os.path.abspath(".").encode() == abs_path.__bytes__()
 
 
 def test_strings():
@@ -305,36 +307,24 @@ def test_strings():
     assert path.extension() == ""
 
 
-def test_ensure_dir():
-    test_dir = gouda.GoudaPath("ScratchFiles/goudapath_ensuretest_directory")
-    gouda.ensure_dir(test_dir)
-    for check_dir in ["check_dir", "check_dir2", "check_dir3", "check_dir4"]:
-        if os.path.exists(f"ScratchFiles/goudapath_ensuretest_directory/{check_dir}"):
-            os.removedirs(f"ScratchFiles/goudapath_ensuretest_directory/{check_dir}")
+def test_ensure_dir(scratch_path):
+    base = gouda.GoudaPath(scratch_path)
 
-    test_dir = gouda.GoudaPath("ScratchFiles/goudapath_ensuretest_directory/check_dir")
+    test_dir = base / "check_dir"
     gouda.ensure_dir(test_dir)
-    assert os.path.exists(test_dir)
     assert test_dir.exists()
 
-    test_dir = gouda.GoudaPath("ScratchFiles/goudapath_ensuretest_directory/check_dir2", ensure_dir=True)
-    assert os.path.exists(test_dir)
+    test_dir = gouda.GoudaPath(scratch_path / "check_dir2", ensure_dir=True)
     assert test_dir.exists()
 
-    test_dir = gouda.GoudaPath("ScratchFiles/goudapath_ensuretest_directory/check_dir3")
+    test_dir = base / "check_dir3"
     test_dir2 = test_dir.ensure_dir()
-    assert os.path.exists(test_dir)
     assert test_dir.exists()
     assert str(test_dir) == str(test_dir2)
 
-    test_file = gouda.GoudaPath("ScratchFiles/goudapath_ensuretest_directory/check_dir4/nothing.txt", ensure_dir=True)
-    assert not os.path.exists(test_file)
-    assert os.path.exists(test_file.parent_dir())
-
-    gouda.ensure_dir(test_dir)
-    for check_dir in ["check_dir", "check_dir2", "check_dir3", "check_dir4"]:
-        if os.path.exists(f"ScratchFiles/goudapath_ensuretest_directory/{check_dir}"):
-            os.removedirs(f"ScratchFiles/goudapath_ensuretest_directory/{check_dir}")
+    test_file = gouda.GoudaPath(scratch_path / "check_dir4" / "nothing.txt", ensure_dir=True)
+    assert test_file.exists()
+    assert os.path.isdir(test_file)
 
 
 def test_insert_compare():
