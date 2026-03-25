@@ -50,6 +50,7 @@ def test_print_grid():
     image_0c = np.random.randint(0, 255, size=[100, 100])
     image_1c = np.random.randint(0, 255, size=[100, 100, 1])
     image_3c = np.random.randint(0, 255, size=[100, 100, 3])
+    image_4c = np.random.randint(0, 255, size=[100, 100, 4])
 
     # [x, y], [x, y, 1], [x, y, 3]
     assert display.print_grid(image_0c, show=False, return_grid_shape=True) == (1, 1)
@@ -125,6 +126,30 @@ def test_print_grid():
     ) == (2, 2)
     plt.close()
 
+    # [x, y, 4], [cols, x, y, 4], [rows, cols, x, y, 4]
+    assert display.print_grid(image_4c, show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(image_4c[np.newaxis], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(np.stack([image_4c, image_4c], axis=0), show=False, return_grid_shape=True) == (1, 2)
+    plt.close()
+    assert display.print_grid(image_4c[np.newaxis, np.newaxis], show=False, return_grid_shape=True) == (1, 1)
+    plt.close()
+    assert display.print_grid(
+        np.stack([image_4c, image_4c], axis=0)[np.newaxis], show=False, return_grid_shape=True
+    ) == (1, 2)
+    plt.close()
+    assert display.print_grid(
+        np.stack([image_4c[np.newaxis], image_4c[np.newaxis]], axis=0), show=False, return_grid_shape=True
+    ) == (2, 1)
+    plt.close()
+    assert display.print_grid(
+        np.stack([np.stack([image_4c, image_4c], axis=0), np.stack([image_4c, image_4c], axis=0)]),
+        show=False,
+        return_grid_shape=True,
+    ) == (2, 2)
+    plt.close()
+
     test_image = {"image": image_3c}
     assert display.print_grid(test_image, show=False, return_grid_shape=True, suptitle="test_sup") == (1, 1)
     test_image = {"image": image_1c}
@@ -134,6 +159,7 @@ def test_print_grid():
     plt.close()
 
     display.print_grid(np.ones([10, 10], dtype=bool), show=False)
+    display.print_grid({"image": np.ones([10, 10], dtype=bool)}, show=False)
     with pytest.raises(ValueError):
         assert display.print_grid([])
 
@@ -210,13 +236,16 @@ def test_squarify():
     assert result[-1, -1].sum() == 0
 
     test = [np.random.randint(0, 255, size=[200, 200]) for i in range(8)]
-    result = display.squarify(test, primary_axis=2, as_array=True)
+    result = display.squarify(test, as_array=True)
     assert result.shape == (3, 3, 200, 200)
     assert result[-1, -1].sum() == 0
 
     test = [np.random.randint(0, 255, size=[200, 200]) for i in range(8)]
-    result = display.squarify(test, primary_axis=2, as_array=False)
+    result = display.squarify(test, as_array=False)
     assert len(result) == 3
     for item in result:
         assert len(item) == len(result)
     assert result[-1][-1] is None
+
+    with pytest.raises(ValueError):
+        display.squarify(test, primary_axis=2, as_array=False)

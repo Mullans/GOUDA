@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+import warnings
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Literal, overload
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +26,7 @@ def print_grid(
     return_fig: bool = False,
     cmap: str = "gray",
     **kwargs: Any,  # noqa: ANN401
-) -> Figure | tuple[int, int] | tuple[Figure, tuple[int, int]] | None:
+) -> Figure | tuple[float, float] | tuple[Figure, tuple[float, float]] | None:
     """Print out images as a grid.
 
     Parameters
@@ -38,10 +39,12 @@ def print_grid(
         File to save image to
     do_squarify : bool
         If True, runs :py:meth:`gouda.display.squarify` on the images before displaying
+    num_cols: int | None
+        The number of columns to use (takes priority over do_squarify if both are provided), by default None
     show : bool
         Whether to show the grid or not (the default is True)
     return_grid_shape : bool
-        Whether to return the (height, width) of the grid or not
+        Whether to return the (rows, cols) of the grid or not
     return_fig : bool
         Whether to return the figure object or not
     cmap : str
@@ -80,10 +83,10 @@ def print_grid(
     # Use type: ignore to tell mypy to skip checking this line
     images: Any = input_images[0] if len(input_images) == 1 else input_images
 
-    if do_squarify:
+    if do_squarify or isinstance(squarify_kwargs.get("num_cols", None), int):
         # Use type: ignore to bypass the type check for the squarify function call
         images = squarify(images, **squarify_kwargs)  # type: ignore
-    if not isinstance(images, (list, tuple, np.ndarray, str, dict)):
+    if not isinstance(images, (list, tuple, np.ndarray, dict)):
         try:
             images = np.asarray(images)
         except ValueError:
@@ -105,25 +108,20 @@ def print_grid(
             to_show = [images]
     elif isinstance(images, np.ndarray):
         # input as array
-        while images.shape[0] == 1:
-            images = np.squeeze(images, axis=0)
+        if images.ndim < 2:
+            raise ValueError(f"Invalid array shape: {images.shape}")
         if images.shape[-1] == 1:
             images = np.squeeze(images, axis=-1)
-        ndim = images.ndim
-        if images.shape[-1] == 3:
-            ndim -= 1
-        if ndim == 2:
-            # single image
-            rows = 1
-            cols = 1
+        has_channels = images.ndim > 2 and images.shape[-1] in (3, 4)
+        ndim = images.ndim - int(has_channels)
+        if ndim == 2:  # single image
+            rows, cols = 1, 1
             to_show = [[images]]
-        elif ndim == 3:
-            rows = 1
-            cols = images.shape[0]
+        elif ndim == 3:  # single row
+            rows, cols = 1, images.shape[0]
             to_show = [[images[i] for i in range(images.shape[0])]]
-        elif ndim == 4:
-            rows = images.shape[0]
-            cols = images.shape[1]
+        elif ndim == 4:  # matrix
+            rows, cols = images.shape[0], images.shape[1]
             to_show = [[images[i, j] for j in range(images.shape[1])] for i in range(images.shape[0])]
         else:
             raise ValueError(f"Invalid array shape: {images.shape}")
@@ -148,11 +146,8 @@ def print_grid(
             ax = fig.add_subplot(gs[row, col])
 
             if isinstance(image, dict):
-                image_dict = image
+                image_dict = {**image_kwargs, **image}
                 image = np.squeeze(image_dict["image"])
-                for key in image_kwargs:
-                    if key not in image_dict:
-                        image_dict[key] = image_kwargs[key]
                 imshow_kwargs = extract_method_kwargs(image_dict, plt.imshow)
                 if image.dtype == bool:
                     image = image.astype(np.uint8)
@@ -165,23 +160,26 @@ def print_grid(
                     ax.set_ylabel(image_dict["ylabel"])
             else:
                 image = np.squeeze(image)
+                if image.dtype == bool:
+                    image = image.astype(np.uint8)
                 plt.imshow(image, **image_kwargs)
-            # ax.set_axis_off()
             plt.setp(ax.spines.values(), visible=False)
             ax.xaxis.set_major_locator(plt.NullLocator())
             ax.yaxis.set_major_locator(plt.NullLocator())
-    plt.subplots_adjust(left=kwargs["left"], bottom=kwargs["bottom"], right=kwargs["right"], top=kwargs["top"])
     if "suptitle" in kwargs:
         plt.suptitle(kwargs["suptitle"])
     if all(kwargs[key] is None for key in defaults):
         fig.tight_layout()
+    else:
+        plt.subplots_adjust(**{key: kwargs[key] for key in defaults if kwargs[key] is not None})
     if file_name is not None:
         plt.savefig(file_name, dpi=fig.dpi)
     if show:  # pragma: no cover
         # Check manually
         plt.show()
-    elif not return_fig:
+    if not return_fig:
         plt.close(fig)
+
     if return_fig and return_grid_shape:
         return (fig, (rows, cols))
     elif return_fig:
@@ -252,6 +250,24 @@ def print_image(
         plt.show()
 
 
+@overload
+def squarify(
+    image: npt.NDArray | Sequence[npt.NDArray],
+    primary_axis: int = ...,
+    num_cols: int | None = ...,
+    as_array: Literal[False] = ...,
+) -> list[list[ImageLikeType]]: ...
+
+
+@overload
+def squarify(
+    image: npt.NDArray | Sequence[npt.NDArray],
+    primary_axis: int = ...,
+    num_cols: int | None = ...,
+    as_array: Literal[True] = ...,
+) -> npt.NDArray: ...
+
+
 def squarify(
     image: npt.NDArray | Sequence[npt.NDArray],
     primary_axis: int = 0,
@@ -264,7 +280,7 @@ def squarify(
     ----------
     image: list | numpy.ndarray
         The list/array of images to reshape
-    axis: int
+    primary_axis: int
         If the image is an array, the axis to split it along (the default is 0)
     num_cols: int | None, optional
         If provided, the number of columns to use in the reshaped array (the default is None)
@@ -277,11 +293,11 @@ def squarify(
     If as_array is True, this assumes that all images have the same shape.
     """
     if isinstance(image, (tuple, list)):
+        if primary_axis != 0:
+            raise ValueError("primary_axis must be 0 for list input")
         num_images = len(image)
         images = list(image)
     elif isinstance(image, np.ndarray):
-        # images = np.split(image, image.shape[axis], axis=axis)
-        # images = [item for item in images]
         images = []
         axis_slice: list[slice | int] = [slice(None) for _ in range(image.ndim)]
         num_images = image.shape[primary_axis]
@@ -289,9 +305,11 @@ def squarify(
             axis_slice[primary_axis] = idx
             images.append(image[tuple(axis_slice)])
     else:
-        raise ValueError("Unknown image type: {type(image)}")
+        raise ValueError(f"Unknown image type: {type(image)}")
     if num_cols is None:
         num_cols = int(np.ceil(np.sqrt(num_images)))
+    if num_cols <= 0:
+        raise ValueError("num_cols must be a positive integer")
     outer_list: list[list[ImageLikeType]] = []
     for i in range(0, num_images, num_cols):
         inner_list = []
@@ -304,11 +322,12 @@ def squarify(
             else:
                 inner_list.append(images[i + j])
         outer_list.append(inner_list)
-    # TODO - does this work with PIL.Image.Image? torch.Tensor?
     if as_array and hasattr(outer_list[0][0], "__array__"):
         rows: list[npt.ArrayLike] = [
             np.stack([np.asarray(item) for item in inner_list], axis=0) for inner_list in outer_list
         ]
         result_array: npt.NDArray = np.stack(rows, axis=0)
         return result_array
+    elif as_array:
+        raise ValueError("Cannot convert to array because images do not have __array__ method")
     return outer_list
