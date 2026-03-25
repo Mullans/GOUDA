@@ -161,7 +161,7 @@ def test_ConfusionMatrix_specificity():
     specs = mat1.specificity()
     for i in range(3):
         assert specs[i] == mat1.specificity(i)
-    np.testing.assert_array_equal(specs, np.array([5 / 7, 1, 5 / 7]))
+    np.testing.assert_array_almost_equal(specs, np.array([5 / 6, 2 / 3, 5 / 6]))
 
 
 def test_ConfusionMatrix_sensitivity():
@@ -323,6 +323,55 @@ def test_ConfusionMatrix_matrix_expansion():
     # Previously empty cells must still be zero
     assert mat[0, 3] == 0
     assert mat[3, 0] == 0
+
+
+def test_ConfusionMatrix_save_load(scratch_path):
+    predictions = [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    labels = [0, 1, 2, 0, 1, 2, 0, 1, 2]
+    mat = gouda.ConfusionMatrix(predictions=predictions, labels=labels)
+    mat.save(scratch_path / "confmat.txt")
+
+    mat2 = gouda.ConfusionMatrix.load(scratch_path / "confmat.txt")
+    np.testing.assert_array_equal(mat.matrix, mat2.matrix)
+    assert mat2.num_classes == mat.num_classes
+    assert mat2.dtype == mat.dtype
+
+
+def test_ConfusionMatrix_save_load_preserves_dtype(scratch_path):
+    mat = gouda.ConfusionMatrix(num_classes=3, dtype=np.uint16)
+    mat[0, 0] = 5
+    mat[1, 1] = 10
+    mat[2, 2] = 15
+    mat.save(scratch_path / "confmat_dtype.txt")
+
+    mat2 = gouda.ConfusionMatrix.load(scratch_path / "confmat_dtype.txt")
+    np.testing.assert_array_equal(mat.matrix, mat2.matrix)
+    assert mat2.dtype == np.dtype("uint16")
+
+
+def test_ConfusionMatrix_save_file_format(scratch_path):
+    mat = gouda.ConfusionMatrix(num_classes=2, dtype=np.int32)
+    mat[0, 0] = 1
+    mat[0, 1] = 2
+    mat[1, 0] = 3
+    mat[1, 1] = 4
+    path = scratch_path / "confmat_format.txt"
+    mat.save(path)
+
+    lines = path.read_text().splitlines()
+    assert lines[0] == "NumClasses: 2"
+    assert lines[1] == "Datatype: int32"
+    assert lines[2] == "1,2"
+    assert lines[3] == "3,4"
+
+
+def test_ConfusionMatrix_save_load_empty(scratch_path):
+    mat = gouda.ConfusionMatrix(num_classes=4)
+    mat.save(scratch_path / "confmat_empty.txt")
+
+    mat2 = gouda.ConfusionMatrix.load(scratch_path / "confmat_empty.txt")
+    np.testing.assert_array_equal(mat2.matrix, np.zeros((4, 4)))
+    assert mat2.num_classes == 4
 
 
 def test_ConfusionMatrix_add_float_threshold():

@@ -6,12 +6,14 @@ import warnings
 
 import colorama
 import numpy as np
+import numpy.typing as npt
 
+from gouda.confusionmatrix import ConfusionMatrix
 from gouda.data_methods import num_digits
 from gouda.symbols import underline
 
 
-class BinaryConfusionMatrix:
+class BinaryConfusionMatrix(ConfusionMatrix):
     """2D array to represent and evaluate a 2-class confusion matrix.
 
     Parameters
@@ -43,57 +45,45 @@ class BinaryConfusionMatrix:
         neg_label="False",
         title="BinaryConfusionMatrix",
     ):
-        self.threshold = threshold
-        self.reset(dtype)
-        if predictions is not None:
-            self.add(predictions, labels)
+        super().__init__(num_classes=2, dtype=dtype, threshold=threshold)
         self.pos_label = pos_label
         self.neg_label = neg_label
         self.title = title
+        if predictions is not None:
+            self.add(predictions, labels)
 
-    @property
-    def dtype(self):
-        """The datatype of the values stored in the confusion matrix
-
-        :getter: Return the datatype
-        :setter: Re-cast the data in the matrix to a new type
-        :type: numpy.dtype
-        """
-        return self.__matrix.dtype
-
-    @dtype.setter
-    def dtype(self, dtype):
-        self.__matrix = self.__matrix.astype(dtype)
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
 
     @property
     def false_negative(self):
         """The count of incorrectly predicted negative values"""
-        return self.__matrix[1, 0]
+        return self.matrix[1, 0]
 
     @property
     def false_positive(self):
         """The count of incorrectly predicted positive values"""
-        return self.__matrix[0, 1]
-
-    @property
-    def matrix(self):
-        return self.__matrix
+        return self.matrix[0, 1]
 
     @property
     def true_negative(self):
         """The count of correctly predicted negative values"""
-        return self.__matrix[0, 0]
+        return self.matrix[0, 0]
 
     @property
     def true_positive(self):
         """The count of correctly predicted positive values"""
-        return self.__matrix[1, 1]
+        return self.matrix[1, 1]
+
+    # ------------------------------------------------------------------
+    # Dunder methods
+    # ------------------------------------------------------------------
 
     def __array__(self, dtype=None):
         if dtype is None:
-            return self.__matrix
-        else:
-            return self.__matrix.astype(dtype)
+            return self.matrix
+        return self.matrix.astype(dtype)
 
     def __add__(self, data):
         """Create a new matrix that is the sum of the current one and a new one"""
@@ -104,10 +94,6 @@ class BinaryConfusionMatrix:
             new_matrix.add(data)
         return new_matrix
 
-    def __getitem__(self, key):
-        """Get items from the matrix - Indexing is [expected_class, predicted_class]"""
-        return self.__matrix[key]
-
     def __iadd__(self, data):
         """Add to the current matrix"""
         if isinstance(data, BinaryConfusionMatrix):
@@ -116,25 +102,20 @@ class BinaryConfusionMatrix:
             self.add(data)
         return self
 
-    def __setitem__(self, index, value):
-        """Manually set a matrix value"""
-        self.__matrix[index] = value
-
-    def __str__(self):
-        return str(self.__matrix)
-
     def __repr__(self):
-        digits = max([num_digits(item) for item in np.nditer(self.__matrix)])
+        digits = max([num_digits(item) for item in np.nditer(self.matrix)])
         row_str = "{:" + str(digits) + "d}, {:" + str(digits) + "d}"
         spacer = " " * 22
         format_string = "BinaryConfusionMatrix([" + row_str + "]\n" + spacer + "[" + row_str + "])"
-        return format_string.format(*self.__matrix.flatten())
+        return format_string.format(*self.matrix.flatten())
 
-    def accuracy(self):
-        """The accuracy of the samples"""
-        if self.__matrix.sum() == 0:
-            return 0
-        return (self.__matrix[0, 0] + self.__matrix[1, 1]) / self.__matrix.sum()
+    # ------------------------------------------------------------------
+    # Public methods
+    # ------------------------------------------------------------------
+
+    def reset(self, num_classes=None, dtype=None):
+        """Reset all matrix entries to 0"""
+        super().reset(num_classes=2, dtype=dtype)
 
     def add(self, predictions, labels=None):
         """Add a set of predictions and labels to the matrix
@@ -173,44 +154,39 @@ class BinaryConfusionMatrix:
             raise ValueError("Predictions and labels must have the same length/shape")
         labels = np.reshape(labels, [-1])
         predictions = np.reshape(predictions, [-1])
-        # merged = np.stack([labels, predictions])
-        # points, counts = np.unique(merged, axis=1, return_counts=True)
-        # for i in range(points.shape[1]):
-        #     self.__matrix[points[0, i], points[1, i]] += counts[i]
         tp = np.logical_and(labels, predictions).sum()
         tn = np.logical_and(1 - labels, 1 - predictions).sum()
         fp = predictions.sum() - tp
         fn = (1 - predictions).sum() - tn
-        self.__matrix += np.array([[tn, fp], [fn, tp]])
+        self.matrix += np.array([[tn, fp], [fn, tp]])
 
     def add_matrix(self, binary_matrix):
         """Add another matrix or 2x2 array to the current matrix"""
         if isinstance(binary_matrix, BinaryConfusionMatrix):
-            self.__matrix += binary_matrix.matrix
+            self.matrix += binary_matrix.matrix
         elif isinstance(binary_matrix, np.ndarray):
-            self.__matrix += binary_matrix
+            self.matrix += binary_matrix
         else:
             raise ValueError("Unknown matrix type {} cannot be added as a matrix".format(type(binary_matrix)))
 
     def copy(self):
         """Create a copy of the current matrix"""
-        new_mat = BinaryConfusionMatrix(threshold=self.threshold, dtype=self.dtype)
-        new_mat[0, 0] = self.__matrix[0, 0]
-        new_mat[0, 1] = self.__matrix[0, 1]
-        new_mat[1, 0] = self.__matrix[1, 0]
-        new_mat[1, 1] = self.__matrix[1, 1]
+        new_mat = BinaryConfusionMatrix(
+            threshold=self.threshold,
+            dtype=self.dtype,
+            pos_label=self.pos_label,
+            neg_label=self.neg_label,
+            title=self.title,
+        )
+        new_mat.matrix[:] = self.matrix
         return new_mat
-
-    def count(self):
-        """Return the number of items currently in the matrix"""
-        return self.__matrix.sum()
 
     def mcc(self):
         """Return the Matthews correlation coefficient"""
-        tp = self.__matrix[1, 1]
-        tn = self.__matrix[0, 0]
-        fp = self.__matrix[0, 1]
-        fn = self.__matrix[1, 0]
+        tp = self.matrix[1, 1]
+        tn = self.matrix[0, 0]
+        fp = self.matrix[0, 1]
+        fn = self.matrix[1, 0]
         with warnings.catch_warnings(record=False):
             warnings.filterwarnings("error")
             try:
@@ -233,66 +209,62 @@ class BinaryConfusionMatrix:
 
     def precision(self):
         """Return the precision for the true or 1 class [TP / (TP + FP)]"""
-        if self.__matrix[:, 1].sum() == 0:
+        if self.matrix[:, 1].sum() == 0:
             return 0
-        return self.__matrix[1, 1] / self.__matrix[:, 1].sum()
+        return self.matrix[1, 1] / self.matrix[:, 1].sum()
 
     def sensitivity(self):
         """Return the sensitivity for the true or 1 class [TP / (TP + FN)]"""
-        if self.__matrix[1].sum() == 0:
+        if self.matrix[1].sum() == 0:
             return 0
-        return self.__matrix[1, 1] / self.__matrix[1].sum()
+        return self.matrix[1, 1] / self.matrix[1].sum()
 
     def specificity(self):
         """Return the specificity for the true or 1 class [TN / (TN + FP)]"""
-        if self.__matrix[0].sum() == 0:
+        if self.matrix[0].sum() == 0:
             return 0
-        return self.__matrix[0, 0] / self.__matrix[0].sum()
+        return self.matrix[0, 0] / self.matrix[0].sum()
 
     def zero_rule(self):
         """Return the accuracy for guessing the majority class"""
-        if self.__matrix.sum() == 0:
+        if self.matrix.sum() == 0:
             return 0
-        return np.max(self.__matrix.sum(axis=1) / self.__matrix.sum())
-
-    def reset(self, dtype=None):
-        """Reset all matrix entries to 0"""
-        if dtype is None:
-            dtype = self.__matrix.dtype
-        self.__matrix = np.zeros([2, 2], dtype=dtype)
+        return np.max(self.matrix.sum(axis=1) / self.matrix.sum())
 
     def save(self, path, title=None):
         """Save the current binary confusion matrix to a text file"""
         title = self.title if title is None else title
         with open(path, "w", encoding="utf-8") as f:
-            f.write(title + "\n")
-            f.write("Threshold: {}\n".format(self.threshold))
-            f.write("Datatype: {}\n".format(str(self.dtype)))
-            f.write(self.print(return_string=True))
+            f.write(f"Title: {title}\n")
+            f.write(f"Threshold: {self.threshold}\n")
+            f.write(f"PosLabel: {self.pos_label}\n")
+            f.write(f"NegLabel: {self.neg_label}\n")
+            f.write(f"NumClasses: {self._num_classes}\n")
+            f.write(f"Datatype: {self.matrix.dtype}\n")
+            for row in self.matrix:
+                f.write(",".join(str(v) for v in row) + "\n")
 
     @staticmethod
     def load(path):
         """Load a binary confusion matrix that was saved as a text file."""
-        with open(path, "r") as f:
-            title = f.readline().strip()
-            threshold = float(f.readline()[11:].strip())
-            datatype = np.dtype(f.readline()[10:].strip())
-            f.readline()
-            next_line = f.readline()
-            _, neg_label, pos_label = next_line.split("|")
-            neg_label = neg_label.strip()
-            pos_label = pos_label.strip()
-            next_line = f.readline().split("|")
-            tn = int(next_line[1].strip())
-            fp = int(next_line[2].strip())
-            next_line = f.readline().split("|")
-            fn = int(next_line[1].strip())
-            tp = int(next_line[2].strip())
-        new_matrix = BinaryConfusionMatrix(
-            threshold=threshold, pos_label=pos_label, neg_label=neg_label, dtype=datatype, title=title
-        )
-        new_matrix.add_matrix(np.array([[tn, fp], [fn, tp]]))
-        return new_matrix
+        with open(path, encoding="utf-8") as f:
+            title = f.readline().split(": ", 1)[1].strip()
+            threshold = float(f.readline().split(": ", 1)[1].strip())
+            pos_label = f.readline().split(": ", 1)[1].strip()
+            neg_label = f.readline().split(": ", 1)[1].strip()
+            num_classes = int(f.readline().split(": ", 1)[1].strip())
+            dtype = np.dtype(f.readline().split(": ", 1)[1].strip())
+            mat = BinaryConfusionMatrix(
+                threshold=threshold,
+                pos_label=pos_label,
+                neg_label=neg_label,
+                title=title,
+                dtype=dtype,
+            )
+            for i in range(num_classes):
+                row = [int(v) for v in f.readline().split(",")]
+                mat.matrix[i] = row
+        return mat
 
     def print(
         self,
@@ -343,10 +315,10 @@ class BinaryConfusionMatrix:
         if neg_label is None:
             neg_label = self.neg_label
 
-        if self.__matrix.max() == 0:
+        if self.matrix.max() == 0:
             item_width = 1
         else:
-            item_width = np.ceil(np.log10(self.__matrix.max())).astype(int)
+            item_width = np.ceil(np.log10(self.matrix.max())).astype(int)
         if as_label:
             item_width = max(item_width, len(pos_label), len(neg_label))
         item_width = str(item_width)
@@ -371,12 +343,12 @@ class BinaryConfusionMatrix:
         line_string_1 += colorama.Fore.GREEN + " {:" + item_width + "d} " + colorama.Style.RESET_ALL + "|"
         # FP
         line_string_1 += " {:" + item_width + "d} |"
-        line_string_1 = line_string_1.format(*self.__matrix[0]) + "\n"
+        line_string_1 = line_string_1.format(*self.matrix[0]) + "\n"
         # FN
         line_string_2 += " {:" + item_width + "d} |"
         # TP
         line_string_2 += colorama.Fore.GREEN + " {:" + item_width + "d} " + colorama.Style.RESET_ALL + "|"
-        line_string_2 = line_string_2.format(*self.__matrix[1])
+        line_string_2 = line_string_2.format(*self.matrix[1])
         line_string_2 = underline(line_string_2) + "\n"
 
         confusion_string += leading_space + line_string_1 + leading_space + line_string_2

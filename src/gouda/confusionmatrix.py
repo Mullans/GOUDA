@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import warnings
 from typing import Any
 
@@ -195,7 +196,7 @@ class ConfusionMatrix:
                     for i in range(self._num_classes)
                 ]
             )
-            fp = np.array([self.matrix[i, :].sum() - self.matrix[i, i].sum() for i in range(self._num_classes)])
+            fp = np.array([self.matrix[:, i].sum() - self.matrix[i, i] for i in range(self._num_classes)])
             result = np.divide(tn, tn + fp, where=(tn + fp) > 0, out=np.zeros_like(tn, dtype=float))
             return result
 
@@ -207,7 +208,7 @@ class ConfusionMatrix:
                     if j != class_index
                 ]
             )
-            fp = self.matrix[class_index, :].sum() - self.matrix[class_index, class_index].sum()
+            fp = self.matrix[:, class_index].sum() - self.matrix[class_index, class_index]
             result = tn / (tn + fp) if (tn + fp) > 0 else 0.0
             return result
 
@@ -425,7 +426,7 @@ class ConfusionMatrix:
             and len(predicted) == len(expected)
         ):
             # Paired lists
-            for x, y in zip(predicted, expected):
+            for x, y in zip(predicted, expected, strict=True):
                 self.add(x, y, threshold=threshold)
             return
         else:
@@ -521,3 +522,41 @@ class ConfusionMatrix:
             return confusion_string
         else:
             return None
+
+    def save(self, path: str | os.PathLike) -> None:
+        """Save the confusion matrix to a text file.
+
+        Parameters
+        ----------
+        path : str | os.PathLike
+            Path to write the file to.
+        """
+        outstring = f"NumClasses: {self._num_classes}\nDatatype: {self.matrix.dtype}\n"
+        for row in self.matrix:
+            outstring += ",".join(str(v) for v in row) + "\n"
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(outstring)
+
+    @classmethod
+    def load(cls, path: str | os.PathLike) -> ConfusionMatrix:
+        """Load a confusion matrix from a text file saved by :meth:`save`.
+
+        Parameters
+        ----------
+        path : str | os.PathLike
+            Path to the saved file.
+
+        Returns
+        -------
+        ConfusionMatrix
+            The loaded confusion matrix.
+        """
+        with open(path, encoding="utf-8") as f:
+            conf_string = f.readlines()
+        num_classes = int(conf_string[0].split(": ", 1)[1].strip())
+        dtype = np.dtype(conf_string[1].split(": ", 1)[1].strip())
+        mat = cls(num_classes=num_classes, dtype=dtype)
+        for i in range(num_classes):
+            row = [int(v) for v in conf_string[i + 2].split(",")]
+            mat.matrix[i] = row
+        return mat

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import warnings
 from collections.abc import Sequence
 from typing import Any, Literal, overload
 
