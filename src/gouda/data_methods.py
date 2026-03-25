@@ -39,7 +39,7 @@ def to_uint8(x: npt.ArrayLike, allow_rescale: bool = False) -> npt.NDArray[np.ui
     if allow_rescale:
         x = rescale(x, 0, 255)  # rescale to [0, 255] for any input range
     elif x.dtype == np.uint8:
-        return x
+        return x.copy()
     elif x.max() > 1 and x.max() <= 255 and x.min() >= 0:  # input range [0, 255]
         pass
     elif x.min() < 0 and x.min() >= -1 and x.max() <= 1:  # input range [-1, 1]
@@ -181,7 +181,7 @@ def prime_factors(x: int) -> list[int]:
     Raises
     ------
     ValueError
-        If x is 0 or
+        If x is 0 or not an integer value
     """
     if x == 0 or x % 1 != 0:
         raise ValueError("Factors can only be found with non-zero integers")
@@ -224,7 +224,7 @@ def prime_overlap(x: int, y: int) -> list[int]:
     fact_x = prime_factors(x)
     fact_y = prime_factors(y)
     overlap = []
-    for _ in range(len(fact_x)):  # pragma: no branch
+    for _ in range(len(fact_x)):
         item = fact_x.pop()
         if item in fact_y:
             overlap.append(item)
@@ -264,8 +264,8 @@ def rescale(
     FloatArrayType
         Rescaled array
 
-    NOTE
-    ----
+    Notes
+    -----
     For flexibility, there is no checking that input_min and input_max are actually the minimum and maximum values in data along axis. If they are not, the output values are rescaled as if they were a[...]
     """
     data = np.asarray(data)
@@ -391,13 +391,13 @@ def percentile_normalize(
     high_percentile : Optional[float], optional
         The upper percentile to clip the input to - uses `100 - low_percentile` if None, by default None
 
-    Note
-    ----
+    Notes
+    -----
     A percentile of 0.5 is the value at the bottom 0.5% of the data NOT the value at the bottom 50%.
 
     Returns
     -------
-    npt.NDArray[np.float_]
+    npt.NDArray[np.floating]
         The normalized output array
     """
     x = np.asarray(x)
@@ -424,11 +424,11 @@ def sigmoid(x: NumberType | npt.NDArray[np.number], epsilon: float = 1e-7) -> Nu
 
 def inv_sigmoid(x: NumberType | npt.NDArray[np.number], epsilon: float = 1e-7) -> NumberType | npt.NDArray[np.number]:
     """Return the inverse of the sigmoid function for the given value/array."""
-    if x > 1 or x < 0:
+    if np.any(x > 1) or np.any(x < 0):
         raise ValueError("Inverse sigmoid input must be in range [0, 1]")
-    elif x == 0:
+    elif np.ndim(x) == 0 and x == 0:
         return -np.inf
-    elif x == 1:
+    elif np.ndim(x) == 0 and x == 1:
         return np.inf
     return np.log(x / ((1 + epsilon) - ((1 + epsilon) * x)))
 
@@ -523,8 +523,8 @@ def roc_curve(
     fps = np.concatenate((np.array([0]), fps))
     thresh = np.concatenate((np.array([1]), thresh))
     if as_rates:
-        fpr = fps / fps[-1]
-        tpr = tps / tps[-1]
+        fpr = fps / fps[-1] if fps[-1] != 0 else np.zeros_like(fps, dtype=float)
+        tpr = tps / tps[-1] if tps[-1] != 0 else np.zeros_like(tps, dtype=float)
         return fpr, tpr, thresh
     else:
         return fps, tps, thresh
@@ -850,25 +850,27 @@ def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.inte
     else:
         max_idx = np.argmax(data, axis=axis)
         min_idx = np.argmin(data, axis=axis)
-        return np.where(np.abs(data.flat[min_idx]) > data.flat[max_idx], min_idx, max_idx)
+        max_vals = np.take_along_axis(data, np.expand_dims(max_idx, axis=axis), axis=axis).squeeze(axis=axis)
+        min_vals = np.take_along_axis(data, np.expand_dims(min_idx, axis=axis), axis=axis).squeeze(axis=axis)
+        return np.where(np.abs(min_vals) > max_vals, min_idx, max_idx)
 
 
-def benjamini_hochberg(p_vals: np.ndarray, alpha: float = 0.05) -> np.ndarray:
+def benjamini_hochberg(p_vals: npt.NDArray[np.floating], alpha: float = 0.05) -> npt.NDArray[np.bool_]:
     """Perform the Benjamini-Hochberg procedure for multiple hypothesis testing.
 
     Parameters
     ----------
-    p_vals : np.ndarray
+    p_vals : npt.NDArray[np.floating]
         An array of p-values to check
     alpha : float, optional
         The baseline significance level, by default 0.05
 
     Returns
     -------
-    np.ndarray
+    npt.NDArray[np.bool_]
         list of booleans, True if the null hypothesis can be rejected
 
-    Note
+    Notes
     ----
     See `Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing <https://www.jstor.org/stable/2346101>`_ for more information
     Or the Wikipedia page: https://en.wikipedia.org/wiki/False_discovery_rate#Benjamini%E2%80%93Hochberg_procedure
@@ -896,11 +898,11 @@ def segment_line(
     ----------
     x1 : float
         X value of the first point
-    x2 : _type_
+    x2 : float
         X value of the second point
-    y1 : _type_
+    y1 : float
         Y value of the first point
-    y2 : _type_
+    y2 : float
         Y value of the second point
     segment_size : float, optional
         Approximate size of each output segment. If greater than the line length, returns a single segment. By default 0.01
