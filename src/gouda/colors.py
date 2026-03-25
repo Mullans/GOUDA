@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import copy
 from collections.abc import Callable
 from enum import Enum
 
 import numpy as np
 import numpy.typing as npt
+from scipy.spatial.distance import cdist
 
 from gouda.typing import ColorType
 
@@ -162,7 +162,7 @@ def _rgb_xyz(r: float) -> float:
 
 
 def _xyz_rgb(r: float) -> float:
-    result = 12.92 * r if r <= 0.00304 else 1.055 * np.power(r, 1 / 2.4) - 0.055
+    result = 12.92 * r if r <= 0.0031308 else 1.055 * np.power(r, 1 / 2.4) - 0.055
     return 255 * result
 
 
@@ -462,9 +462,7 @@ def cmc_distance(lab_color1: ColorType, lab_color2: ColorType, lightness: int = 
     delta_a = a1 - a2
     delta_b = b1 - b2
     delta_h = np.sqrt(delta_a**2 + delta_b**2 - delta_c**2)
-    h1 = np.arctan2(b1, a1) * (180 / np.pi)
-    while h1 < 0:
-        h1 += 360
+    h1 = np.arctan2(b1, a1) * (180 / np.pi) % 360
     f = np.sqrt(c1**4 / (c1**4 + 1900))
     t = 0.56 + np.abs(0.2 * np.cos(h1 + 168)) if (164 <= h1 <= 345) else 0.36 + np.abs(0.4 * np.cos(h1 + 35))
     s_l = 0.511 if lab_color1[0] < 16 else (0.040975 * l1 / (1 + 0.01765 * l1))
@@ -489,34 +487,17 @@ def compromise_distance(color1: ColorType, color2: ColorType, colorblind_simulat
     float
         The distance between the colors
     """
-    distances = []
-    coeffs = []
-    distances.append(cmc_distance(color1, color2, 2, 1))
-    coeffs.append(1000)
+    distances = [cmc_distance(color1, color2, 2, 1)]
+    coeffs = [1000]
     rgb_color1 = lab2rgb(color1)
     rgb_color2 = lab2rgb(color2)
-    for deficiency in Deficiency:
+    for deficiency, c in zip(Deficiency, [100, 500, 1], strict=True):
         cvd_color1 = colorblind_simulator.simulate_cvd_color(rgb_color1, deficiency)
         cvd_color2 = colorblind_simulator.simulate_cvd_color(rgb_color2, deficiency)
-        lab_color1 = rgb2lab(cvd_color1)
-        lab_color2 = rgb2lab(cvd_color2)
-        if lab_color1 is None or lab_color2 is None:
-            if deficiency == Deficiency.PROTAN:
-                c = 100
-            elif deficiency == Deficiency.DEUTAN:
-                c = 500
-            elif deficiency == Deficiency.TRITAN:
-                c = 1
-            else:
-                raise ValueError("Impossible situation")
-            distances.append(cmc_distance(lab_color1, lab_color2, 2, 1))
-            coeffs.append(c)
-    total: float = 0.0
-    count: int = 0
-    for idx, dist in enumerate(distances):
-        total += coeffs[idx] * dist
-        count += coeffs[idx]
-    return total / count
+        distances.append(cmc_distance(np.asarray(rgb2lab(cvd_color1)), np.asarray(rgb2lab(cvd_color2)), 2, 1))
+        coeffs.append(c)
+    total: float = sum(coeff * dist for coeff, dist in zip(coeffs, distances, strict=True))
+    return total / sum(coeffs)
 
 
 def colorblind_distance(
@@ -601,9 +582,19 @@ def generate_palette(
     def check_lab(x: ColorType) -> bool:
         return validate_lab(x) and check_color(x)
 
+    # Resolve distance_type once to avoid repeated string parsing / KeyError raises in hot loops
+    if isinstance(distance_type, str):
+        distance_type = distance_type.lower()
+        try:
+            distance_type = Deficiency.get(distance_type)
+        except ValueError:
+            pass
+
+    _uses_cvd = distance_type == "compromise" or isinstance(distance_type, Deficiency)
+
     if force_mode:  # force vector mode
         colors: list[ColorType] = []
-        vectors: dict[int, dict[str, float]] = {}
+        vectors = np.zeros((num_colors, 3))  # shape (n, 3); replaces dict-of-dicts
         for _ in range(num_colors):
             color: ColorType = [
                 100 * random.random(),
@@ -618,8 +609,17 @@ def generate_palette(
         speed: float = 100.0
         steps: int = quality * 20
         for _ in range(steps):
-            for i in range(len(colors)):
-                vectors[i] = {"dl": 0.0, "da": 0.0, "db": 0.0}
+            # Per-step: precompute RGB and CVD-lab for each color via batched simulate_cvd_image.
+            # Avoids O(n²) redundant lab2rgb + CVD calls inside the pair loop.
+            if _uses_cvd:
+                _rgb_cache = [lab2rgb(c) for c in colors]
+                _cvd_lab_cache: dict[Deficiency, list[npt.NDArray[np.floating]]] = {}
+                for _deficiency in Deficiency:
+                    _batch = np.array(_rgb_cache).reshape(num_colors, 1, 3)
+                    _cvd_batch = colorblind_simulator.simulate_cvd_image(_batch, _deficiency).reshape(num_colors, 3)
+                    _cvd_lab_cache[_deficiency] = [np.asarray(rgb2lab(_cvd_batch[k])) for k in range(num_colors)]
+
+            vectors.fill(0.0)
             for i in range(len(colors)):
                 color_a = colors[i]
                 for j in range(i):
@@ -629,36 +629,36 @@ def generate_palette(
                     da = color_a[1] - color_b[1]
                     db = color_a[2] - color_b[2]
                     try:
-                        d = get_color_distance(color_a, color_b, distance_type, colorblind_simulator)
+                        if distance_type == "compromise":
+                            d_total = 1000.0 * cmc_distance(color_a, color_b, 2, 1)
+                            for _def, _c in zip(Deficiency, [100, 500, 1], strict=True):
+                                d_total += _c * cmc_distance(_cvd_lab_cache[_def][i], _cvd_lab_cache[_def][j], 2, 1)
+                            d = d_total / 1601.0
+                        elif isinstance(distance_type, Deficiency):
+                            d = cmc_distance(_cvd_lab_cache[distance_type][i], _cvd_lab_cache[distance_type][j], 2, 1)
+                        else:
+                            d = get_color_distance(color_a, color_b, distance_type, colorblind_simulator)
                     except TypeError:
                         print(color_a, color_b)
                         raise
                     if d > 0:
                         force: float = repulsion / (d**2)
-                        vectors[i]["dl"] += dl * force / d
-                        vectors[i]["da"] += da * force / d
-                        vectors[i]["db"] += db * force / d
-
-                        vectors[j]["dl"] += -dl * force / d
-                        vectors[j]["da"] += -da * force / d
-                        vectors[j]["db"] += -db * force / d
+                        fdi = force / d
+                        vectors[i, 0] += dl * fdi
+                        vectors[i, 1] += da * fdi
+                        vectors[i, 2] += db * fdi
+                        vectors[j, 0] -= dl * fdi
+                        vectors[j, 1] -= da * fdi
+                        vectors[j, 2] -= db * fdi
                     else:
-                        vectors[j]["dl"] += 2 - 4 * random.random()
-                        vectors[j]["da"] += 2 - 4 * random.random()
-                        vectors[j]["db"] += 2 - 4 * random.random()
+                        vectors[j] += random.uniform(-2.0, 2.0, size=3)
 
             for i in range(len(colors)):
                 color = colors[i]
-                displacement = speed * np.sqrt(
-                    np.power(vectors[i]["dl"], 2) + np.power(vectors[i]["da"], 2) + np.power(vectors[i]["db"], 2)
-                )
+                displacement = speed * float(np.linalg.norm(vectors[i]))
                 if displacement > 0:
                     ratio = speed * min(0.1, displacement) / displacement
-                    candidate_lab = [
-                        color[0] + vectors[i]["dl"] * ratio,
-                        color[1] + vectors[i]["da"] * ratio,
-                        color[2] + vectors[i]["db"] * ratio,
-                    ]
+                    candidate_lab = (np.asarray(color, dtype=float) + vectors[i] * ratio).tolist()
                     if check_lab(candidate_lab):
                         colors[i] = candidate_lab
     else:
@@ -672,72 +672,110 @@ def generate_palette(
             k_means.append(lab)
 
         color_samples: list[ColorType] = []
-        samples_closest = []
         if ultra_precision:
             for light in range(101):
                 for a in range(-100, 101, 5):
                     for b in range(-100, 101, 5):
                         if check_color([light, a, b]):
-                            color_samples.append([light, a, b])
-                            samples_closest.append(-1)
+                            color_samples.append([light, a, b])  # noqa: PERF401
         else:
             for light in range(0, 101, 5):
                 for a in range(-100, 101, 10):
                     for b in range(-100, 101, 10):
                         if check_color([light, a, b]):
-                            color_samples.append([light, a, b])
-                            samples_closest.append(-1)
+                            color_samples.append([light, a, b])  # noqa: PERF401
+
+        samples_arr = np.array(color_samples)  # (M, 3) — fixed throughout all steps
+
+        # Precompute CVD-lab for color_samples once (samples never change between steps)
+        if _uses_cvd:
+            _samples_cvd_lab: dict[Deficiency, list[npt.NDArray[np.floating]]] = {}
+            for _deficiency in Deficiency:
+                _batch = samples_arr.reshape(len(color_samples), 1, 3).astype(np.float32)
+                _cvd_batch = colorblind_simulator.simulate_cvd_image(_batch, _deficiency).reshape(len(color_samples), 3)
+                _samples_cvd_lab[_deficiency] = [np.asarray(rgb2lab(_cvd_batch[k])) for k in range(len(color_samples))]
+
+        samples_closest = np.full(len(color_samples), -1, dtype=np.intp)
 
         steps = quality
         while steps > 0:
             steps -= 1
-            for i in range(len(color_samples)):
-                lab_color = color_samples[i]
-                min_distance = np.inf
-                for j in range(len(k_means)):
-                    k_mean = k_means[j]
-                    distance = get_color_distance(lab_color, k_mean, distance_type, colorblind_simulator)
-                    if distance < min_distance:
-                        min_distance = distance
-                        samples_closest[i] = j
 
-            free_color_samples = copy.deepcopy(color_samples)
-            for j in range(len(k_means)):
-                count = 0
-                candidate_kmean = [0.0, 0.0, 0.0]
+            # Sample assignment: find nearest k-mean for each color sample
+            if distance_type == "euclidean":
+                kmeans_arr = np.array(k_means)
+                dist_matrix = cdist(samples_arr, kmeans_arr)  # (M, k), default euclidean
+                samples_closest = np.argmin(dist_matrix, axis=1)
+            elif distance_type == "compromise":
+                # Precompute CVD-lab for k_means this step (k_means change each step)
+                _km_rgb = [lab2rgb(c) for c in k_means]
+                _km_cvd_lab: dict[Deficiency, list[npt.NDArray[np.floating]]] = {}
+                for _deficiency in Deficiency:
+                    _batch = np.array(_km_rgb).reshape(num_colors, 1, 3)
+                    _cvd_batch = colorblind_simulator.simulate_cvd_image(_batch, _deficiency).reshape(num_colors, 3)
+                    _km_cvd_lab[_deficiency] = [np.asarray(rgb2lab(_cvd_batch[k])) for k in range(num_colors)]
                 for i in range(len(color_samples)):
-                    if samples_closest[i] == j:
-                        count += 1
-                        candidate_kmean[0] += color_samples[i][0]
-                        candidate_kmean[1] += color_samples[i][1]
-                        candidate_kmean[2] += color_samples[i][2]
-                if count != 0:
-                    candidate_kmean[0] /= count
-                    candidate_kmean[1] /= count
-                    candidate_kmean[2] /= count
-                if count != 0 and check_color(
-                    candidate_kmean
-                ):  # and candidate_kmean  # Is this an existance check? Why?
-                    k_means[j] = candidate_kmean
-                else:
-                    if len(free_color_samples) > 0:
-                        min_distance = np.inf
-                        closest = -1
-                        for i in range(len(color_samples)):
-                            distance = get_color_distance(
-                                color_samples[1], candidate_kmean, distance_type, colorblind_simulator
-                            )
-                            if distance < min_distance:
-                                min_distance = distance
-                                closest = i
-                        if closest >= 0:
-                            k_means[j] = color_samples[closest]
-                free_color_samples = list(
-                    filter(
-                        lambda x: x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2],
-                        free_color_samples,
-                    )
-                )
+                    min_distance = np.inf
+                    for j in range(len(k_means)):
+                        d_total = 1000.0 * cmc_distance(color_samples[i], k_means[j], 2, 1)
+                        for _def, _c in zip(Deficiency, [100, 500, 1], strict=True):
+                            d_total += _c * cmc_distance(_samples_cvd_lab[_def][i], _km_cvd_lab[_def][j], 2, 1)
+                        distance = d_total / 1601.0
+                        if distance < min_distance:
+                            min_distance = distance
+                            samples_closest[i] = j
+            elif isinstance(distance_type, Deficiency):
+                _km_rgb = [lab2rgb(c) for c in k_means]
+                _deficiency = distance_type
+                _batch = np.array(_km_rgb).reshape(num_colors, 1, 3)
+                _cvd_batch = colorblind_simulator.simulate_cvd_image(_batch, _deficiency).reshape(num_colors, 3)
+                _km_cvd_lab_single = [np.asarray(rgb2lab(_cvd_batch[k])) for k in range(num_colors)]
+                for i in range(len(color_samples)):
+                    min_distance = np.inf
+                    for j in range(len(k_means)):
+                        distance = cmc_distance(_samples_cvd_lab[_deficiency][i], _km_cvd_lab_single[j], 2, 1)
+                        if distance < min_distance:
+                            min_distance = distance
+                            samples_closest[i] = j
+            else:
+                for i in range(len(color_samples)):
+                    lab_color = color_samples[i]
+                    min_distance = np.inf
+                    for j in range(len(k_means)):
+                        distance = get_color_distance(lab_color, k_means[j], distance_type, colorblind_simulator)
+                        if distance < min_distance:
+                            min_distance = distance
+                            samples_closest[i] = j
+
+            # Centroid update: vectorized mean per cluster
+            free_color_samples = list(color_samples)
+            for j in range(len(k_means)):
+                mask = samples_closest == j
+                if mask.any():
+                    candidate_kmean = samples_arr[mask].mean(axis=0).tolist()
+                    if check_color(candidate_kmean):
+                        k_means[j] = candidate_kmean
+                        free_color_samples = [
+                            x for x in free_color_samples
+                            if x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2]
+                        ]
+                        continue
+                if len(free_color_samples) > 0:
+                    min_distance = np.inf
+                    closest = -1
+                    for i in range(len(color_samples)):
+                        distance = get_color_distance(
+                            color_samples[i], k_means[j], distance_type, colorblind_simulator
+                        )
+                        if distance < min_distance:
+                            min_distance = distance
+                            closest = i
+                    if closest >= 0:
+                        k_means[j] = color_samples[closest]
+                free_color_samples = [
+                    x for x in free_color_samples
+                    if x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2]
+                ]
         colors = k_means
     if as_rgb:
         colors = [lab2rgb(color) for color in colors]
