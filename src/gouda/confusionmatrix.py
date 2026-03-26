@@ -474,8 +474,8 @@ class ConfusionMatrix:
         """
         specificities: npt.NDArray[np.floating] = self.specificity()
         sensitivities: npt.NDArray[np.floating] = self.sensitivity()
-        if not isinstance(sensitivities, list):
-            raise ValueError("Sensitivity must be a list")
+        if not isinstance(sensitivities, np.ndarray):
+            raise ValueError("Sensitivity must be an array")
         expected_string = "\u2193" + " Expected"
         predicted_string = "\u2192" + "  Predicted"
         leading_space = "            "
