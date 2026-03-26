@@ -39,7 +39,7 @@ def to_uint8(x: npt.ArrayLike, allow_rescale: bool = False) -> npt.NDArray[np.ui
     if allow_rescale:
         x = rescale(x, 0, 255)  # rescale to [0, 255] for any input range
     elif x.dtype == np.uint8:
-        return x.copy()
+        return np.array(x, dtype=np.uint8)
     else:
         x_min, x_max = x.min(), x.max()
         if x_max > 1 and x_max <= 255 and x_min >= 0:  # input range [0, 255]
@@ -650,7 +650,7 @@ def spec_at_sens(
     """
     if isinstance(sensitivities, (float, np.floating)):
         sensitivities = [float(sensitivities)]
-    fpr, tpr, thresholds = roc_curve(label, pred)
+    fpr, tpr, _thresholds = roc_curve(label, pred)
     specs: list[np.floating] = [np.max((1 - fpr)[tpr >= min_sens]) for min_sens in sensitivities]
     return specs
 
@@ -703,7 +703,7 @@ def dice_coef(label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 0.5
     float
         The Dice coefficient
     """
-    tp, fp, tn, fn = get_confusion_stats(label, pred, threshold)
+    tp, fp, _tn, fn = get_confusion_stats(label, pred, threshold)
     denom = tp * 2 + fp + fn
     if denom == 0:
         return 0
@@ -727,7 +727,7 @@ def jaccard_coef(label: LabelArrayType, pred: npt.ArrayLike, threshold: float = 
     float
         The Jaccard coefficient
     """
-    tp, fp, tn, fn = get_confusion_stats(label, pred, threshold)
+    tp, fp, _tn, fn = get_confusion_stats(label, pred, threshold)
     denom = tp + fn + fp
     if denom == 0:
         return 0
@@ -870,7 +870,7 @@ def benjamini_hochberg(p_vals: npt.NDArray[np.floating], alpha: float = 0.05) ->
         list of booleans, True if the null hypothesis can be rejected
 
     Notes
-    ----
+    -----
     See `Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing <https://www.jstor.org/stable/2346101>`_ for more information
     Or the Wikipedia page: https://en.wikipedia.org/wiki/False_discovery_rate#Benjamini%E2%80%93Hochberg_procedure
     """
