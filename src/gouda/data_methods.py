@@ -82,7 +82,8 @@ def arr_sample(arr: npt.NDArray, rate: float) -> npt.NDArray:
     if arr.ndim != 1:
         raise ValueError("Only 1d arrays can be sampled from.")
     indices = np.floor(np.arange(0, arr.shape[0], rate)).astype(int)
-    return arr[indices]
+    result: npt.NDArray = arr[indices]
+    return result
 
 
 def factors(x: int) -> set[int]:
@@ -306,21 +307,27 @@ def order_normalization(data: npt.ArrayLike, order: int = 2, axis: ShapeType | N
 
 
 def clip(
-    data: npt.ArrayLike, output_min: float = 0, output_max: float = 1, input_min: float = 0, input_max: float = 255
+    data: npt.ArrayLike,
+    output_min: float | npt.NDArray[np.floating] = 0,
+    output_max: float | npt.NDArray[np.floating] = 1,
+    input_min: float | npt.NDArray[np.floating] = 0,
+    input_max: float | npt.NDArray[np.floating] = 255,
 ) -> npt.NDArray[np.floating]:
     """Clip an array to a given range, then rescale the clipped array from the input range to the output range.
+
+    The min/max values given will be broadcast against `data` in normal "numpy" fashion.
 
     Parameters
     ----------
     data : npt.ArrayLike
         The data to rescale
-    output_min : float, optional
+    output_min : float | npt.NDArray[np.floating], optional
         The minimum value for the output data, by default 0
-    output_max : float, optional
+    output_max : float | npt.NDArray[np.floating], optional
         The maximum value for the output data, by default 1
-    input_min : float, optional
+    input_min : float | npt.NDArray[np.floating], optional
         The lower value to clip the input data to, by default 0
-    input_max : float, optional
+    input_max : float | npt.NDArray[np.floating], optional
         The upper value to clip the input data to, by default 255
 
     Returns
@@ -331,9 +338,9 @@ def clip(
     data = np.clip(data, input_min, input_max)
     input_range = input_max - input_min
     output_range = output_max - output_min
-    if input_range == 0:
-        return np.zeros_like(data) + output_min
-    scaler = output_range / input_range
+    input_mask = input_range == 0
+    input_range = np.where(input_mask, 1.0, input_range)
+    scaler = np.where(input_mask, 0.0, output_range / input_range)
     bias = -input_min * scaler + output_min
     result: npt.NDArray[np.floating] = np.multiply(data, scaler) + bias
     return result
@@ -343,8 +350,9 @@ def percentile_rescale(
     x: npt.ArrayLike,
     low_percentile: float = 0.5,
     high_percentile: float | None = None,
-    output_min: float = 0,
-    output_max: float = 1,
+    output_min: float | npt.NDArray[np.floating] = 0,
+    output_max: float | npt.NDArray[np.floating] = 1,
+    axis: int | None = None,
 ) -> npt.NDArray[np.floating]:
     """Clip an array to given percentiles, then rescale it to an output range.
 
@@ -356,10 +364,12 @@ def percentile_rescale(
         The lower percentile to clip the input to, by default 0.5
     high_percentile : Optional[float], optional
         The upper percentile to clip the input to - uses `100 - low_percentile` if None, by default None
-    output_min : float, optional
+    output_min : float | npt.NDArray[np.floating], optional
         The minimum value for the output data, by default 0
-    output_max : float, optional
+    output_max : float | npt.NDArray[np.floating], optional
         The maximum value for the output data, by default 1
+    axis: int | None, optional
+        If given, the index of the axis to normalize along, by default None
 
     Returns
     -------
@@ -370,13 +380,13 @@ def percentile_rescale(
     if high_percentile is None:
         high_percentile = 100 - low_percentile
     low_percentile, high_percentile = sorted([low_percentile, high_percentile])
-    low_val, high_val = np.percentile(x, (low_percentile, high_percentile))
+    low_val, high_val = np.percentile(x, (low_percentile, high_percentile), axis=axis, keepdims=True)
     result: npt.NDArray[np.floating] = clip(x, output_min, output_max, low_val, high_val)
     return result
 
 
 def percentile_normalize(
-    x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: float | None = None
+    x: npt.ArrayLike, low_percentile: float = 0.5, high_percentile: float | None = None, axis: int | None = None
 ) -> npt.NDArray[np.floating]:
     """Normalize data after clipping to a percentile value.
 
@@ -388,6 +398,8 @@ def percentile_normalize(
         The lower percentile to clip data to, by default 0.5
     high_percentile : Optional[float], optional
         The upper percentile to clip the input to - uses `100 - low_percentile` if None, by default None
+    axis: int | None, optional
+        If given, the index of the axis to normalize along, by default None
 
     Notes
     -----
@@ -398,14 +410,19 @@ def percentile_normalize(
     npt.NDArray[np.floating]
         The normalized output array
     """
-    x = np.asarray(x)
+    x_arr: npt.NDArray[np.floating] = np.asarray(x)
     if high_percentile is None:
         high_percentile = 100 - low_percentile
     low_percentile, high_percentile = sorted([low_percentile, high_percentile])
-    low_val, high_val = np.percentile(x, (low_percentile, high_percentile))
-    x = np.clip(x, low_val, high_val)
-    std_vals = np.std(x)
-    result: npt.NDArray = np.divide(x - np.mean(x), std_vals, where=std_vals > 0, out=np.zeros_like(x))
+    low_val, high_val = np.percentile(x_arr, (low_percentile, high_percentile), axis=axis, keepdims=True)
+    x_arr = np.clip(x_arr, low_val, high_val)
+    std_vals: float = np.std(x_arr, axis=axis, keepdims=True)
+    result: npt.NDArray[np.floating] = np.divide(
+        x_arr - np.mean(x_arr, axis=axis, keepdims=True),
+        std_vals,
+        where=std_vals > 0,
+        out=np.zeros_like(x_arr, dtype=float),
+    )
     return result
 
 
@@ -851,7 +868,8 @@ def argmax_signal(data: npt.ArrayLike, axis: int | None = None) -> tuple[np.inte
         min_idx = np.argmin(data, axis=axis)
         max_vals = np.take_along_axis(data, np.expand_dims(max_idx, axis=axis), axis=axis).squeeze(axis=axis)
         min_vals = np.take_along_axis(data, np.expand_dims(min_idx, axis=axis), axis=axis).squeeze(axis=axis)
-        return np.where(np.abs(min_vals) > max_vals, min_idx, max_idx)
+        result: npt.NDArray[np.integer] = np.where(np.abs(min_vals) > max_vals, min_idx, max_idx)
+        return result
 
 
 def benjamini_hochberg(p_vals: npt.NDArray[np.floating], alpha: float = 0.05) -> npt.NDArray[np.bool_]:
