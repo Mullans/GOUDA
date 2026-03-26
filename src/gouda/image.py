@@ -38,15 +38,21 @@ def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
     path = str(path)
     if not os.path.exists(path):
         raise ValueError(f"No file found at path '{path}'")
-    image: npt.NDArray
+    elif not os.access(path, os.R_OK):
+        raise ValueError(f"File at path '{path}' is not readable")
+    image: npt.NDArray | None
     if flag == constants.GRAYSCALE:
         image = cv2.imread(path, 0)
     elif flag == constants.RGB:
-        image = cv2.imread(path)[:, :, ::-1]
+        image = cv2.imread(path)
+        if image is not None:
+            image = image[:, :, ::-1]
     elif flag == constants.UNCHANGED:
         image = cv2.imread(path, -1)
     else:
         image = cv2.imread(path, 1)
+    if image is None:
+        raise ValueError(f"OpenCV could not read the image at path '{path}'")
     return image
 
 
@@ -557,7 +563,7 @@ def fast_label(item: npt.NDArray) -> npt.NDArray:
     requires scipy, which is not a main requirement of the rest of GOUDA
     """
     # mypy can't find this for some reason
-    from scipy.ndimage._measurements import _ni_label  # type: ignore[attr-defined]
+    from scipy.ndimage._measurements import _ni_label  # type: ignore[attr-defined]  # noqa: PLC0415
 
     label_dest = np.empty(item.shape, dtype=np.uint16)
     structure = np.ones([3] * len(item.shape), dtype=bool)
@@ -600,7 +606,7 @@ def mask_by_triplet(
     requires scikit-image which is not a requirement of the rest of GOUDA
     """
     # TODO - Add tests
-    import skimage.measure
+    import skimage.measure  # noqa: PLC0415
 
     if 0.0 >= area_thresh > 1.0:
         area_thresh = pred.size * area_thresh
@@ -621,7 +627,7 @@ def mask_by_triplet(
         bases = skimage.measure.label(flat_pred > lower_thresh)
         indices, counts = np.unique(peaks, return_counts=True)
         obj_mask = np.zeros(mask_shape, dtype=bool)
-        for idx, count in zip(indices[1:], counts[1:]):
+        for idx, count in zip(indices[1:], counts[1:], strict=True):
             if count > area_thresh:
                 obj_mask[peaks == idx] = True
         final_mask = np.zeros(mask_shape, dtype=bool)
