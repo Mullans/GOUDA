@@ -54,11 +54,11 @@ class GoudaPath(os.PathLike):
             self.ensure_dir()
 
     @overload
-    def __call__(self, path: str | GoudaPath | os.PathLike, *, use_absolute: bool | None = ...) -> GoudaPath: ...
+    def __call__(self, path: str | GoudaPath | os.PathLike, /, *, use_absolute: bool | None = ...) -> GoudaPath: ...
 
     @overload
     def __call__(
-        self, path: list[str | GoudaPath | os.PathLike], *, use_absolute: bool | None = ...
+        self, path: list[str | GoudaPath | os.PathLike], /, *, use_absolute: bool | None = ...
     ) -> list[GoudaPath]: ...
 
     @overload
@@ -67,7 +67,9 @@ class GoudaPath(os.PathLike):
     ) -> list[GoudaPath]: ...
 
     def __call__(
-        self, *path_args: str | GoudaPath | os.PathLike, use_absolute: bool | None = None
+        self,
+        *path_args: str | GoudaPath | os.PathLike | list[str | GoudaPath | os.PathLike],
+        use_absolute: bool | None = None,
     ) -> GoudaPath | list[GoudaPath]:
         """Add to the current path.
 
@@ -90,10 +92,10 @@ class GoudaPath(os.PathLike):
         unwrapped_path_args = path_args[0] if isinstance(path_args[0], list) and len(path_args) == 1 else path_args
 
         if len(unwrapped_path_args) == 1:
-            return GoudaPath(os.path.join(self.path, unwrapped_path_args[0]), use_absolute=use_absolute)
+            return GoudaPath(os.path.join(self.path, str(unwrapped_path_args[0])), use_absolute=use_absolute)
         else:
             return [
-                GoudaPath(os.path.join(self.path, unwrapped_path_args[i]), use_absolute=use_absolute)
+                GoudaPath(os.path.join(self.path, str(unwrapped_path_args[i])), use_absolute=use_absolute)
                 for i in range(len(unwrapped_path_args))
             ]
 

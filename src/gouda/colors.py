@@ -756,7 +756,8 @@ def generate_palette(
                     if check_color(candidate_kmean):
                         k_means[j] = candidate_kmean
                         free_color_samples = [
-                            x for x in free_color_samples
+                            x
+                            for x in free_color_samples
                             if x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2]
                         ]
                         continue
@@ -764,16 +765,15 @@ def generate_palette(
                     min_distance = np.inf
                     closest = -1
                     for i in range(len(color_samples)):
-                        distance = get_color_distance(
-                            color_samples[i], k_means[j], distance_type, colorblind_simulator
-                        )
+                        distance = get_color_distance(color_samples[i], k_means[j], distance_type, colorblind_simulator)
                         if distance < min_distance:
                             min_distance = distance
                             closest = i
                     if closest >= 0:
                         k_means[j] = color_samples[closest]
                 free_color_samples = [
-                    x for x in free_color_samples
+                    x
+                    for x in free_color_samples
                     if x[0] != k_means[j][0] or x[1] != k_means[j][1] or x[2] != k_means[j][2]
                 ]
         colors = k_means
