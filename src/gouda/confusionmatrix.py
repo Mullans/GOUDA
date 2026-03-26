@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import warnings
-from typing import Any
+from typing import Any, overload
 
 import colorama
 import numpy as np
@@ -175,44 +175,37 @@ class ConfusionMatrix:
             else 0
         )
 
-    def specificity(self, class_index: int | None = None) -> npt.NDArray[np.floating]:
+    @overload
+    def specificity(self, class_index: None = None) -> npt.NDArray[np.floating]: ...
+
+    @overload
+    def specificity(self, class_index: int) -> float: ...
+
+    def specificity(self, class_index: int | None = None) -> npt.NDArray[np.floating] | float:
         """Return the specificity of all classes or a single class.
 
         NOTE
         ----
         specificity = (true negative) / (true negative + false positive) for each class.
         """
-        result: npt.NDArray[np.floating]
+        diag = np.diag(self.matrix)
+        col_sums = self.matrix.sum(axis=0)
+        tn_arr = self.matrix.sum() - self.matrix.sum(axis=1) - col_sums + diag
+        fp_arr = col_sums - diag
+        result_arr: npt.NDArray[np.floating] = np.divide(
+            tn_arr, tn_arr + fp_arr, where=(tn_arr + fp_arr) > 0, out=np.zeros_like(tn_arr, dtype=float)
+        )
         if class_index is None:
-            tn = np.array(
-                [
-                    sum(
-                        [
-                            self.matrix[j, :i].sum() + self.matrix[j, i + 1 :].sum()
-                            for j in range(self._num_classes)
-                            if j != i
-                        ]
-                    )
-                    for i in range(self._num_classes)
-                ]
-            )
-            fp = np.array([self.matrix[:, i].sum() - self.matrix[i, i] for i in range(self._num_classes)])
-            result = np.divide(tn, tn + fp, where=(tn + fp) > 0, out=np.zeros_like(tn, dtype=float))
-            return result
+            return result_arr
+        return float(result_arr[class_index])
 
-        else:
-            tn = sum(
-                [
-                    self.matrix[j, :class_index].sum() + self.matrix[j, class_index + 1 :].sum()
-                    for j in range(self._num_classes)
-                    if j != class_index
-                ]
-            )
-            fp = self.matrix[:, class_index].sum() - self.matrix[class_index, class_index]
-            result = tn / (tn + fp) if (tn + fp) > 0 else 0.0
-            return result
+    @overload
+    def sensitivity(self, class_index: None = None) -> npt.NDArray[np.floating]: ...
 
-    def sensitivity(self, class_index: int | None = None) -> list[float] | float:
+    @overload
+    def sensitivity(self, class_index: int) -> float: ...
+
+    def sensitivity(self, class_index: int | None = None) -> npt.NDArray[np.floating] | float:
         """Return the sensitivity of all classes or a single class. AKA recall.
 
         Notes
@@ -220,10 +213,12 @@ class ConfusionMatrix:
         sensitivity = (true positive) / (true positive + false negative) for each class.
         """
         if class_index is None:
-            return [
-                self.matrix[i, i] / self.matrix[i, :].sum() if self.matrix[i, :].sum() > 0 else 0
-                for i in range(self._num_classes)
-            ]
+            return np.array(
+                [
+                    self.matrix[i, i] / self.matrix[i, :].sum() if self.matrix[i, :].sum() > 0 else 0
+                    for i in range(self._num_classes)
+                ]
+            )
         else:
             return (
                 self.matrix[class_index, class_index] / self.matrix[class_index, :].sum()
@@ -231,7 +226,7 @@ class ConfusionMatrix:
                 else 0.0
             )
 
-    def precision(self, class_index: int | None = None) -> list[float] | float:
+    def precision(self, class_index: int | None = None) -> npt.NDArray[np.floating] | float:
         """Return the precision of all classes or a single class.
 
         Notes
@@ -241,10 +236,12 @@ class ConfusionMatrix:
         if self.matrix is None:
             raise RuntimeError("Matrix has not been initialized")
         if class_index is None:
-            return [
-                self.matrix[i, i] / self.matrix[:, i].sum() if self.matrix[:, i].sum() > 0 else 0
-                for i in range(self._num_classes)
-            ]
+            return np.array(
+                [
+                    self.matrix[i, i] / self.matrix[:, i].sum() if self.matrix[:, i].sum() > 0 else 0
+                    for i in range(self._num_classes)
+                ]
+            )
         else:
             return (
                 self.matrix[class_index, class_index] / self.matrix[:, class_index].sum()
@@ -475,8 +472,8 @@ class ConfusionMatrix:
             Confusion matrix formatted for plain-text printing if return_string is True.
 
         """
-        specificities = self.specificity()
-        sensitivities = self.sensitivity()
+        specificities: npt.NDArray[np.floating] = self.specificity()
+        sensitivities: npt.NDArray[np.floating] = self.sensitivity()
         if not isinstance(sensitivities, list):
             raise ValueError("Sensitivity must be a list")
         expected_string = "\u2193" + " Expected"
