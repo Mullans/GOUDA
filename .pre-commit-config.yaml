@@ -1,11 +1,13 @@
-exclude: '^docs/conf.py|conda.recipe/meta.yaml|plotting.py'
+exclude: '^docs/|^conda.recipe/|^htmlcov/'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.2.3
+  rev: v6.0.0
   hooks:
   - id: trailing-whitespace
   - id: check-added-large-files
+    args: ['--maxkb=500', '--enforce-all']
+    exclude: '^uv\.lock$'
   - id: check-ast
   - id: check-json
   - id: check-merge-conflict
@@ -18,7 +20,7 @@ repos:
     args: ['--fix=no']
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.0
+  rev: v0.15.8
   hooks:
     - id: ruff
       types_or: [ python, pyi]
@@ -26,9 +28,15 @@ repos:
     - id: ruff-format
       types_or: [ python, pyi]
 
-# - repo: https://github.com/pre-commit/mirrors-mypy
-#   rev: v1.15.0
-#   hooks:
-#   - id: mypy
-#     additional_dependencies:
-#       - 'numpy'
+- repo: https://github.com/astral-sh/uv-pre-commit
+  # uv version.
+  rev: 0.11.2
+  hooks:
+    - id: uv-lock
+
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.19.1
+  hooks:
+  - id: mypy
+    additional_dependencies:
+      - 'numpy'

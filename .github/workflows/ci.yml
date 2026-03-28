@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
+      - name: Ruff lint
+        run: uv run ruff check src/
+      - name: Ruff format check
+        run: uv run ruff format --check src/
+
+  typecheck:
+    name: Type Check (mypy)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # non-blocking until plotting.py is cleaned up
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
+      - name: Run mypy
+        run: uv run mypy src/gouda/
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        include:
+          - python-version: "3.12"
+            coverage: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
+      - name: Run tests
+        if: ${{ !matrix.coverage }}
+        run: uv run pytest tests/ -x
+      - name: Run tests with coverage
+        if: ${{ matrix.coverage }}
+        run: uv run pytest tests/ --cov gouda --cov-report term-missing --cov-report xml:cov.xml -x
+      - name: Upload coverage
+        if: ${{ matrix.coverage }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: cov.xml

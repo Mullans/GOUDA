@@ -14,6 +14,7 @@ __pycache__/*
 */.ipynb_checkpoints/*
 
 # Project files
+.vscode/
 .ropeproject
 .project
 .pydevproject
@@ -34,6 +35,7 @@ htmlcov/*
 .tox-wsl/
 junit.xml
 coverage.xml
+cov.xml
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -53,11 +55,9 @@ conda_build
 .venv*/
 
 ignore_*
-
 src/gouda/deprecated.py
 
 .ipynb_checkpoints/
-
 *.ipynb
 
 # Test generated files
@@ -67,11 +67,5 @@ test3_arrayzip.npz
 goudapath_test_directory
 test_*.png
 ScratchFiles
-
-.vscode/
-
-cov.xml
-
 scratch_path/
-
-uv.lock
+CLAUDE.md
