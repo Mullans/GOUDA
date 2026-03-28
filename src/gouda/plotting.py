@@ -6,13 +6,10 @@ from collections.abc import Sequence
 from typing import Literal, cast
 
 import matplotlib as mpl
-import matplotlib.colors
-import matplotlib.collections
-import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from matplotlib.patches import PathPatch
+from matplotlib.patches import ArrowStyle, FancyArrowPatch, PathPatch
 from matplotlib.path import Path
 
 from gouda.color_lists import find_color_hex
@@ -24,8 +21,6 @@ from gouda.typing import ColorType
 def parse_color(
     color: str | int | float | ColorType,
     cmap: str | mpl.colors.Colormap | None = None,
-    float_cmap: str = "viridis",
-    int_cmap: str = "Set1",
 ) -> tuple[float, float, float]:
     """Convert the input to a rgb color.
 
@@ -33,11 +28,12 @@ def parse_color(
     ----
     Recognizes all formats that can be used with matplotlib in addition to rgb/rgba tuples as strings [ie. '(0.1, 0.2, 0.5)'] and single values.
     Single values will be mapped to the given matplotlib colormap. Ints will wrap-around and floats will be clipped to [0, 1].
+    cmap defaults to "Set1" for integers and "viridis" for floats
 
     TODO - add lookup to get hexcodes from colors.py
     """
     if isinstance(color, str):  # If the color is a string, try to find the named color as a hexcode
-        check = find_color_hex(color)
+        check = find_color_hex(color, on_err="pass")
         if check is not None:
             color = check
     try:
@@ -61,7 +57,8 @@ def parse_color(
         # return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)
     elif isinstance(color, (float, np.floating, int, np.integer)):
         if cmap is None:
-            color_map = mpl.colormaps.get_cmap("viridis")
+            cmap_str = "Set1" if isinstance(color, (int, np.integer)) else "viridis"
+            color_map = mpl.colormaps.get_cmap(cmap_str)
         elif isinstance(cmap, str):
             color_map = mpl.colormaps.get_cmap(cmap)
         elif isinstance(cmap, mpl.colors.Colormap):
@@ -274,7 +271,7 @@ def colorplot(
         (all_segments[:, 1, 0] - all_segments[:, 0, 0]) ** 2 + (all_segments[:, 1, 1] - all_segments[:, 0, 1]) ** 2
     )
     segment_dists = rescale(np.cumsum(segment_dists), start_val, end_val)
-    lc = matplotlib.collections.LineCollection(
+    lc = mpl.collections.LineCollection(
         all_segments,  # type: ignore # need mpl typing
         array=segment_dists,
         cmap=cmap,
@@ -337,17 +334,20 @@ def plot_joint_arrow(
     arrow_kwargs = {"mutation_scale": mutation_scale}
     arrowstyle_str = "simple"
     style_scale = linewidth / mutation_scale
-    arrowstyle = matplotlib.patches.ArrowStyle(
+    if headlength is None:
+        headlength = headwidth
+
+    arrowstyle = ArrowStyle(
         arrowstyle_str, tail_width=style_scale, head_width=style_scale * headwidth, head_length=style_scale * headlength
     )
 
     points = np.column_stack([x, y])
     points[-1] = (points[-2] + points[-1]) / 2  # only go halfway so it doesn't overlap arrowhead
     path = mpl.path.Path(points, [mpl.path.Path.MOVETO] + [mpl.path.Path.LINETO] * (len(points) - 1))
-    patch = mpl.patches.PathPatch(path, facecolor="none", edgecolor=color, lw=linewidth, label=None, **line_kwargs)
+    patch = PathPatch(path, facecolor="none", edgecolor=color, lw=linewidth, label=None, **line_kwargs)
     ax.add_patch(patch)
 
-    arrow = mpl.patches.FancyArrowPatch(
+    arrow = FancyArrowPatch(
         (x[-2], y[-2]),
         (x[-1], y[-1]),
         color=color,
