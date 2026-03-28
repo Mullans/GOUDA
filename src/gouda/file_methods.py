@@ -282,7 +282,7 @@ def save_json(
 def create_image_checker() -> Callable[[str | os.PathLike], bool]:  # fmt: skip
     """Create the :meth:`gouda.is_image` method that can be used to check if a file is an image based on available libraries."""
     if importlib.util.find_spec("PIL.Image"):
-        import PIL.Image
+        import PIL.Image  # noqa: PLC0415
 
         def is_image(path: str | os.PathLike) -> bool:
             """Check if the path is an image file."""
@@ -295,7 +295,7 @@ def create_image_checker() -> Callable[[str | os.PathLike], bool]:  # fmt: skip
             except PIL.UnidentifiedImageError:
                 return False
     elif importlib.util.find_spec("puremagic"):
-        import puremagic
+        import puremagic  # noqa: PLC0415
 
         def is_image(path: str | os.PathLike) -> bool:
             """Check if the path is an image file."""
@@ -305,7 +305,7 @@ def create_image_checker() -> Callable[[str | os.PathLike], bool]:  # fmt: skip
             result: bool = puremagic.magic_file(path)[0].mime_type.startswith("image/")
             return result
     elif importlib.util.find_spec("imghdr"):
-        import imghdr
+        import imghdr  # noqa: PLC0415
 
         def is_image(path: str | os.PathLike) -> bool:
             """Check if the path is an image file."""

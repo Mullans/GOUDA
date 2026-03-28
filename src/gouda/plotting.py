@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, cast
 
 import matplotlib as mpl
+import matplotlib.colors
+import matplotlib.collections
+import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -18,7 +21,12 @@ from gouda.general import is_iter
 from gouda.typing import ColorType
 
 
-def parse_color(color: ColorType, float_cmap: str = "viridis", int_cmap: str = "Set1") -> tuple[float, float, float]:
+def parse_color(
+    color: str | int | float | ColorType,
+    cmap: str | mpl.colors.Colormap | None = None,
+    float_cmap: str = "viridis",
+    int_cmap: str = "Set1",
+) -> tuple[float, float, float]:
     """Convert the input to a rgb color.
 
     NOTE
@@ -35,26 +43,37 @@ def parse_color(color: ColorType, float_cmap: str = "viridis", int_cmap: str = "
     try:
         return mpl.colors.to_rgb(color)  # type: ignore  # NOTE - same as to_rgba[:3]
     except ValueError:
-        if isinstance(color, str):
-            # Format is comma- and/or space-separated values
-            bad_chars = str.maketrans(dict.fromkeys("()[]", ""))
-            color.translate(bad_chars)
-            if ", " in color:
-                divided = color.split(", ")
-            elif "," in color:
-                divided = color.split(",")
-            else:
-                divided = color.split(" ")
-            rgb = np.array(divided).astype(np.float32)
-            return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
-        elif isinstance(color, float):
-            return mpl.colormaps.get_cmap(float_cmap)
-        elif isinstance(color, int):
-            return mpl.colormaps.get_cmap(int_cmap)(color % 9)
+        pass
+
+    if isinstance(color, str):
+        # Format is comma- and/or space-separated values
+        bad_chars = str.maketrans(dict.fromkeys("()[]", ""))
+        color.translate(bad_chars)
+        if ", " in color:
+            divided = color.split(", ")
+        elif "," in color:
+            divided = color.split(",")
         else:
-            # Format is any array-like set of values
-            rgb = np.array(color).astype(np.float32)
-            return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)  # type: ignore
+            divided = color.split(" ")
+        rgb = np.array(divided).astype(float)
+        rgb = rgb / 255.0 if rgb.max() > 1.0 else rgb
+        return tuple(rgb.astype(float).tolist()[:3])
+        # return mpl.colors.to_rgb(rgb / 255 if rgb.max() > 1.0 else rgb)
+    elif isinstance(color, (float, np.floating, int, np.integer)):
+        if cmap is None:
+            color_map = mpl.colormaps.get_cmap("viridis")
+        elif isinstance(cmap, str):
+            color_map = mpl.colormaps.get_cmap(cmap)
+        elif isinstance(cmap, mpl.colors.Colormap):
+            color_map = cmap
+        else:
+            raise ValueError("cmap must be a string or matplotlib colormap")
+        return cast(tuple[float, float, float], color_map(color % color_map.N)[:3])
+    else:
+        # Format is any array-like set of values
+        rgb = np.array(color).astype(float)
+        rgb = rgb / 255.0 if rgb.max() > 1.0 else rgb
+        return tuple(rgb.astype(float).tolist()[:3])
 
 
 def plot_accuracy_curve(
@@ -168,7 +187,7 @@ def annotate_arrows(
     # best_mid = [0, None]
     x_start, y_start = start_point
     y_start = y_start + y_spacing
-    max_y = 0
+    max_y = 0.0
     for i in range(len(end_points)):
         x_end, y_end = end_points[i]
         y_end = y_end + y_spacing
@@ -244,24 +263,28 @@ def colorplot(
     if step_as_percent:
         step_size = line_dist(x, y) * step_size
 
-    all_segments = []
+    segment_list = []
     for idx in range(len(x) - 1):
         x1, x2 = x[idx : idx + 2]
         y1, y2 = y[idx : idx + 2]
-        segments = segment_line(x1, x2, y1, y2, step_size=step_size)
-        all_segments.append(segments)
-    all_segments = np.concatenate(all_segments, axis=0)
+        segments = segment_line(x1, x2, y1, y2, segment_size=step_size)
+        segment_list.append(segments)
+    all_segments = np.concatenate(segment_list, axis=0)
     segment_dists = np.sqrt(
         (all_segments[:, 1, 0] - all_segments[:, 0, 0]) ** 2 + (all_segments[:, 1, 1] - all_segments[:, 0, 1]) ** 2
     )
     segment_dists = rescale(np.cumsum(segment_dists), start_val, end_val)
-    lc = mpl.collections.LineCollection(
-        all_segments, array=segment_dists, cmap=cmap, norm=mpl.colors.Normalize(vmin=0, vmax=1), **kwargs
+    lc = matplotlib.collections.LineCollection(
+        all_segments,  # type: ignore # need mpl typing
+        array=segment_dists,
+        cmap=cmap,
+        norm=mpl.colors.Normalize(vmin=0, vmax=1),
+        **kwargs,  # type: ignore # need mpl typing
     )
     ax.add_collection(lc)
     if ax.get_autoscale_on():
         ax.autoscale()
-    return ax, lc
+    return ax
 
 
 def plot_joint_arrow(
@@ -310,12 +333,12 @@ def plot_joint_arrow(
 
     linewidth = mpl.rcParams["lines.linewidth"] if linewidth is None else linewidth
     mutation_scale = mpl.rcParams["font.size"]
-    line_kwargs = {}
+    line_kwargs: dict = {}
     arrow_kwargs = {"mutation_scale": mutation_scale}
-    arrowstyle = "simple"
+    arrowstyle_str = "simple"
     style_scale = linewidth / mutation_scale
-    arrowstyle = mpl.patches.ArrowStyle(
-        arrowstyle, tail_width=style_scale, head_width=style_scale * headwidth, head_length=style_scale * headlength
+    arrowstyle = matplotlib.patches.ArrowStyle(
+        arrowstyle_str, tail_width=style_scale, head_width=style_scale * headwidth, head_length=style_scale * headlength
     )
 
     points = np.column_stack([x, y])
@@ -325,8 +348,8 @@ def plot_joint_arrow(
     ax.add_patch(patch)
 
     arrow = mpl.patches.FancyArrowPatch(
-        [x[-2], y[-2]],
-        [x[-1], y[-1]],
+        (x[-2], y[-2]),
+        (x[-1], y[-1]),
         color=color,
         label=label,
         lw=0,

@@ -369,6 +369,23 @@ def test_percentile_norm():
     np.testing.assert_array_equal(perc_norm2, reg_norm)
 
 
+def test_percentile_norm_axis():
+    rng = np.random.default_rng(0)
+    x = rng.random((4, 100))
+
+    # axis=1: each row normalized independently
+    result = gouda.percentile_normalize(x, low_percentile=0, high_percentile=100, axis=1)
+    assert result.shape == x.shape
+    for i in range(x.shape[0]):
+        expected = (x[i] - x[i].mean()) / x[i].std()
+        np.testing.assert_array_almost_equal(result[i], expected)
+
+    # axis=None should match the default (whole-array) behavior
+    result_none = gouda.percentile_normalize(x, low_percentile=0, high_percentile=100, axis=None)
+    result_default = gouda.percentile_normalize(x, low_percentile=0, high_percentile=100)
+    np.testing.assert_array_equal(result_none, result_default)
+
+
 def test_percentile_rescale():
     x = np.arange(100)
     check = gouda.percentile_rescale(x, low_percentile=5)
@@ -388,6 +405,28 @@ def test_percentile_rescale():
     low, high = np.percentile(x, [0.5, 99.5])
     test = gouda.rescale(np.clip(x, low, high))
     np.testing.assert_array_almost_equal(check, test)
+
+
+def test_percentile_rescale_axis():
+    rng = np.random.default_rng(0)
+    x = rng.random((4, 100))
+
+    # axis=1: each row rescaled independently to [0, 1]
+    result = gouda.percentile_rescale(x, low_percentile=0, high_percentile=100, axis=1)
+    assert result.shape == x.shape
+    np.testing.assert_array_almost_equal(result.min(axis=1), np.zeros(4))
+    np.testing.assert_array_almost_equal(result.max(axis=1), np.ones(4))
+
+    # axis=0: each column rescaled independently
+    result_ax0 = gouda.percentile_rescale(x, low_percentile=0, high_percentile=100, axis=0)
+    assert result_ax0.shape == x.shape
+    np.testing.assert_array_almost_equal(result_ax0.min(axis=0), np.zeros(100))
+    np.testing.assert_array_almost_equal(result_ax0.max(axis=0), np.ones(100))
+
+    # axis=None should match the default (whole-array) behavior
+    result_none = gouda.percentile_rescale(x, low_percentile=0.5, axis=None)
+    result_default = gouda.percentile_rescale(x, low_percentile=0.5)
+    np.testing.assert_array_equal(result_none, result_default)
 
 
 def test_max_signal():

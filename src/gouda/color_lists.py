@@ -8,6 +8,7 @@ from gouda.typing import ColorType
 COLOR_NOTE = """Aquamarine, Black, Blue, Brown, Fuchsia, Gold, Green, Indigo, Lavender, Magenta, Maroon, Orange, Orchid, Plum, Red, Salmon, Silver, Tan, White, Yellow are found in both html and crayon colors"""
 
 
+# TODO - merge with `plotting.parse_color`
 def find_color_rgb(color: str | ColorType) -> tuple[float, float, float]:
     """Convert a color string or tuple to a tuple of floats."""
     cleaned_color: str | tuple[float, float, float] | tuple[int, int, int]

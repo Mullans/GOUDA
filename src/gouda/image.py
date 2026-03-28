@@ -161,7 +161,7 @@ def split_signs(
     positive = np.clip(mask, 0, np.inf)
     negative_image = np.dstack([negative * neg_channel for neg_channel in plotting.parse_color(negative_color)])
     positive_image = np.dstack([positive * pos_channel for pos_channel in plotting.parse_color(positive_color)])
-    new_mask = negative_image + positive_image
+    new_mask: npt.NDArray = negative_image + positive_image
     return new_mask
 
 
@@ -299,7 +299,9 @@ def crop_to_mask(
     x0, x1 = x_range[0][0], x_range[0][-1]
     y0, y1 = y_range[0][0], y_range[0][-1]
     if smoothing:
-        smooth_mask: npt.NDArray[np.uint8] = cv2.GaussianBlur((mask * 255.0).astype(np.uint8), (5, 5), 0)
+        smooth_mask: npt.NDArray[np.uint8] = cv2.GaussianBlur((mask * 255.0).astype(np.uint8), (5, 5), 0).astype(
+            np.uint8
+        )
         # mask[mask<0.8] = 0
         # mask[mask>=0.8] = 1
     else:
