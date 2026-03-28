@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-import sys
-
 import matplotlib
-import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
 matplotlib.use("Agg")
 
-import gouda.plotting as plotting
 from gouda.plotting import annotate_arrows, colorplot, parse_color, plot_accuracy_curve, plot_joint_arrow, quick_line
 
 
