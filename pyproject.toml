@@ -36,6 +36,7 @@ dependencies = [
     "matplotlib",
     "colorama",
     "typing-extensions",
+    "scikit-image",
 ]
 [dependency-groups]
 dev = [
