@@ -1,9 +1,10 @@
 """Methods to work with image masks."""
 
+from typing import Literal, overload
+
 import cv2
 import numpy as np
 import numpy.typing as npt
-import scipy.ndimage as nd
 
 from gouda.color_lists import find_color_rgb
 from gouda.typing import ColorType, ImageArrayType
@@ -124,6 +125,14 @@ def crop_to_mask(
     return masked_image[x0:x1, y0:y1]
 
 
+@overload
+def get_bounds(mask: np.ndarray, bg_val: float = ..., as_slice: Literal[False] = ...) -> list[tuple[int, int]]: ...
+
+
+@overload
+def get_bounds(mask: np.ndarray, bg_val: float = ..., as_slice: Literal[True] = ...) -> tuple[slice, ...]: ...
+
+
 def get_bounds(
     mask: np.ndarray, bg_val: float = 0, as_slice: bool = False
 ) -> list[tuple[int, int]] | tuple[slice, ...]:
@@ -151,9 +160,7 @@ def crop_to_content(
 ) -> npt.NDArray | tuple[npt.NDArray, list[tuple[int, int]]]:
     """Crop image to only be as large as the contained image excluding black space."""
     if return_bounds:
-        bounds = get_bounds(image, bg_val=0, as_slice=False)
-        if isinstance(bounds, tuple):
-            raise ValueError("Incorrect bounds format returned by `get_bounds`")
+        bounds: list[tuple[int, int]] = get_bounds(image, bg_val=0, as_slice=False)
         bounds_slice = tuple([slice(b[0], b[1]) for b in bounds])
         return image[bounds_slice], bounds
     else:
@@ -322,8 +329,9 @@ def mask_by_triplet(
     requires scikit-image which is not a requirement of the rest of GOUDA
     """
     # TODO - Add tests
+    import skimage.measure  # noqa: PLC0415
 
-    if 0.0 >= area_thresh > 1.0:
+    if 0.0 <= area_thresh < 1.0:
         area_thresh = pred.size * area_thresh
 
     flat_pred = np.squeeze(pred)
@@ -338,8 +346,8 @@ def mask_by_triplet(
         valid_idx = np.nonzero(np.bincount(valid.ravel()))[0][1:]
         final_mask = np.isin(bases, valid_idx)
     else:
-        peaks, _ = nd.label(flat_pred > upper_thresh)
-        bases, _ = nd.label(flat_pred > lower_thresh)
+        peaks = skimage.measure.label(flat_pred > upper_thresh)
+        bases = skimage.measure.label(flat_pred > lower_thresh)
         indices, counts = np.unique(peaks, return_counts=True)
         obj_mask = np.zeros(mask_shape, dtype=bool)
         for idx, count in zip(indices[1:], counts[1:], strict=True):

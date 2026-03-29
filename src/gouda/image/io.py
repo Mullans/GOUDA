@@ -10,7 +10,7 @@ from gouda import constants
 from gouda.goudapath import GPathLike
 from gouda.typing import ImageArrayType
 
-__all__ = ["imread", "imsave", "imwrite"]
+__all__ = ["imread", "imwrite"]
 
 
 def imread(path: GPathLike, flag: int = constants.RGB) -> npt.NDArray:
@@ -75,6 +75,3 @@ def imwrite(path: GPathLike, image: ImageArrayType, as_rgb: bool = True) -> None
         cv2.imwrite(path, image[:, :, ::-1])
     else:
         cv2.imwrite(path, image)
-
-
-imsave = imwrite
