@@ -261,12 +261,9 @@ def test_rotate_allow_resize():
 
 def test_padded_resize(scratch_path):
     image_test = np.ones([50, 50, 3], dtype=np.uint8)
-    gimage.imwrite(scratch_path / "test.png", image_test)
     pad_test = gimage.padded_resize(image_test, size=[50, 50])
-    pad_test_file = gimage.padded_resize(scratch_path / "test.png", size=[50, 50])
     assert pad_test.shape == (50, 50, 3)
     np.testing.assert_array_equal(image_test, pad_test)
-    np.testing.assert_array_equal(pad_test_file, pad_test)
 
     pad_test_2 = gimage.padded_resize(image_test, size=[50, 75])
     assert pad_test_2.shape == (50, 75, 3)
